@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.1</TargetFramework>
+    <RootNamespace>GitHubUpdate</RootNamespace>
+    <AssemblyName>GitHubUpdate</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="publish.bat" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Octokit" Version="0.32.0" />
+    <PackageReference Include="Semver" Version="2.0.4" />
+  </ItemGroup>
+
+</Project>

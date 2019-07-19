@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
+    <AssemblyName>ImageEnhancingUtility.Core</AssemblyName>
+    <RootNamespace>ImageEnhancingUtility.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="interpModels.py" />
+    <None Remove="pthReader.py" />
+    <None Remove="upscaleDefault.py" />
+    <None Remove="upscaleFolderForImage.py" />
+    <None Remove="upscaleFolderForModel.py" />
+    <None Remove="upscaleFolderStructure.py" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="interpModels.py" />
+    <EmbeddedResource Include="pthReader.py" />
+    <EmbeddedResource Include="upscaleDefault.py" />
+    <EmbeddedResource Include="upscaleFolderForImage.py" />
+    <EmbeddedResource Include="upscaleFolderForModel.py" />
+    <EmbeddedResource Include="upscaleFolderStructure.py" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DdsFileTypePlusHack" Version="1.1.0-beta1" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.13.1" />
+    <PackageReference Include="NetVips" Version="1.0.7" />
+    <PackageReference Include="NetVips.Native.win-x64" Version="8.7.4" />
+    <PackageReference Include="protobuf-net" Version="2.4.0" />
+    <PackageReference Include="ReactiveUI" Version="9.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+    <PackageReference Include="NetVips.Native.linux-x64" Version="8.7.4" />
+    <PackageReference Include="NetVips.Native.osx-x64" Version="8.7.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GitHubUpdateStandard\GitHubUpdateStandard.csproj" />
+  </ItemGroup>
+
+</Project>

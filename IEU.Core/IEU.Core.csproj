@@ -27,8 +27,8 @@
   <ItemGroup>
     <PackageReference Include="DdsFileTypePlusHack" Version="1.1.0-beta1" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.13.1" />
-    <PackageReference Include="NetVips" Version="1.0.7" />
-    <PackageReference Include="NetVips.Native.win-x64" Version="8.7.4" />
+    <PackageReference Include="NetVips" Version="1.1.0-rc3" />
+    <PackageReference Include="NetVips.Native.win-x64" Version="8.8.0" />
     <PackageReference Include="protobuf-net" Version="2.4.0" />
     <PackageReference Include="ReactiveUI" Version="9.0.1" />
   </ItemGroup>

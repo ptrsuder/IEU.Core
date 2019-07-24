@@ -55,17 +55,16 @@ namespace ImageEnhancingUtility.Core
         int hotModelUpscaleSize = 0;
 
         #region DDS SETTINGS
-        private Dictionary<string, int> _ddsTextureType;
-        public Dictionary<string, int> ddsTextureType
-        {
-            get => _ddsTextureType;
-            set
+      
+        public static Dictionary<string, int> ddsTextureType = new Dictionary<string, int>
             {
-                this.RaiseAndSetIfChanged(ref _ddsTextureType, value);
-            }
-        }
+                { "Color", 0 },
+                { "Color + Alpha", 1 },
+                { "Normal Map", 2 }
+            };
+
         private List<DdsFileFormatSetting> _ddsFileFormatCurrent = new List<DdsFileFormatSetting>();
-        public List<DdsFileFormatSetting> ddsFileFormatCurrent
+        public List<DdsFileFormatSetting> ddsFileFormatsCurrent
         {
             get => _ddsFileFormatCurrent;
             set
@@ -73,6 +72,40 @@ namespace ImageEnhancingUtility.Core
                 ddsFileFormat = value[0];
                 this.RaiseAndSetIfChanged(ref _ddsFileFormatCurrent, value);
             }
+        }
+
+        private int _ddsTextureTypeSelectedIndex = 0;
+        [DataMember(Order = 20)]
+        public int ddsTextureTypeSelectedIndex
+        {
+            get => _ddsTextureTypeSelectedIndex;
+            set
+            {
+                ddsFileFormatsCurrent = ddsFileFormats[value];
+                ddsFileFormat = ddsFileFormatsCurrent[0];
+                this.RaiseAndSetIfChanged(ref _ddsTextureTypeSelectedIndex, value);
+            }
+        }
+
+        private int _ddsFileFormatSelectedIndex = 0;
+        [DataMember(Order = 21)]
+        public int ddsFileFormatSelectedIndex
+        {
+            get => _ddsFileFormatSelectedIndex;
+            set
+            {
+                if (ddsFileFormatsCurrent.Count > 0)
+                    ddsFileFormat = ddsFileFormatsCurrent[value];
+                this.RaiseAndSetIfChanged(ref _ddsFileFormatSelectedIndex, value);
+            }
+        }
+
+        private int _ddsBC7CompressionSelected = 0;
+        [DataMember(Order = 22)]
+        public int ddsBC7CompressionSelected
+        {
+            get => _ddsBC7CompressionSelected;
+            set => this.RaiseAndSetIfChanged(ref _ddsBC7CompressionSelected, value);
         }
 
         List<DdsFileFormatSetting> ddsFileFormatsColor;
@@ -100,7 +133,9 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _ddsBC7CompressionMode, value);
         }
 
-        bool ddsGenerateMipmaps = true;
+        [DataMember(Order = 31)]
+        public bool ddsGenerateMipmaps = true;
+
         #endregion
 
         private List<ModelInfo> _modelsItems = new List<ModelInfo>();
@@ -311,39 +346,7 @@ namespace ImageEnhancingUtility.Core
             get => _checkForUpdates;
             set => this.RaiseAndSetIfChanged(ref _checkForUpdates, value);
         }
-
-        private int _ddsTextureTypeSelected = 0;
-        [DataMember(Order = 20)]
-        public int ddsTextureTypeSelected
-        {
-            get => _ddsTextureTypeSelected;
-            set
-            {
-                ddsFileFormatCurrent = ddsFileFormats[value];
-                ddsFileFormat = ddsFileFormatCurrent[0];
-                this.RaiseAndSetIfChanged(ref _ddsTextureTypeSelected, value);
-            }
-        }
-
-        private int _ddsFileFormatSelected = 0;
-        [DataMember(Order = 21)]
-        public int ddsFileFormatSelected
-        {
-            get => _ddsFileFormatSelected;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _ddsFileFormatSelected, value);
-            }
-        }
-
-        private int _ddsBC7CompressionSelected = 0;
-        [DataMember(Order = 22)]
-        public int ddsBC7CompressionSelected
-        {
-            get => _ddsBC7CompressionSelected;
-            set => this.RaiseAndSetIfChanged(ref _ddsBC7CompressionSelected, value);
-        }
-
+               
         #endregion
 
         #region MAINTAB_PROGRESS
@@ -628,7 +631,7 @@ namespace ImageEnhancingUtility.Core
             //WriteToLogsThreadSafe("Windows: " + RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             //WriteToLogsThreadSafe("OSx: " + RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
 
-            ReadSettings();
+            
 
             #region DDS OUTPUT SETTINGS         
 
@@ -658,17 +661,10 @@ namespace ImageEnhancingUtility.Core
                 new DdsFileFormatSetting("Loseless", DdsFileFormat.R8G8B8A8)
             };
 
-            ddsFileFormatCurrent = ddsFileFormatsColor;
+            ddsFileFormatsCurrent = ddsFileFormatsColor;
 
             ddsFileFormats = new List<DdsFileFormatSetting>[] {
-                ddsFileFormatsColor, ddsFileFormatsColorAlpha, ddsFileFormatsNormalMap };
-
-            ddsTextureType = new Dictionary<string, int>
-            {
-                { "Color", 0 },
-                { "Color + Alpha", 1 },
-                { "Normal Map", 2 }
-            };
+                ddsFileFormatsColor, ddsFileFormatsColorAlpha, ddsFileFormatsNormalMap };          
 
             ddsBC7CompressionModes = new List<BC7CompressionMode>
             {
@@ -677,6 +673,8 @@ namespace ImageEnhancingUtility.Core
                 BC7CompressionMode.Slow
             };
             #endregion
+
+            ReadSettings();
         }
 
         public void ReadSettings()

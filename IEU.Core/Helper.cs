@@ -141,16 +141,16 @@ namespace ImageEnhancingUtility
         }
     }
 
-    public class Message
+    public class LogMessage
     {
         public static string Text { get; internal set; }
         public static Color Color { get; internal set; }
 
-        public Message(string text, Color color)
+        public LogMessage(string text, Color color)
         {
             Text = text; Color = color;
         }
-        public Message(string text)
+        public LogMessage(string text)
         {
             Text = text; Color = Color.White;
         }

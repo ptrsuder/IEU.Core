@@ -25,10 +25,11 @@ namespace GitHubUpdate
         public string RepositoryName { get; internal set; }
         internal string RepostoryBranch;
         internal Release LatestRelease;
+        bool IgnorePreleases = true;
 
         public string ErrorMessage = "";
 
-        void Init(string owner, string name, SemVersion version, string branch)
+        void Init(string owner, string name, SemVersion version, string branch, bool ignorePreleases)
         {
             Github = new GitHubClient(new ProductHeaderValue(name + @"-UpdateCheck"));
             _releaseClient = Github.Repository.Release;
@@ -37,9 +38,10 @@ namespace GitHubUpdate
             RepositoryName = name;
             CurrentVersion = version;
             RepostoryBranch = branch;
+            IgnorePreleases = ignorePreleases;
         }        
 
-        public UpdateChecker(string owner, string name, string version, string branch = "master")
+        public UpdateChecker(string owner, string name, string version, string branch = "master", bool ignorePreleases = true)
         {
             Helper.ArgumentNotNullOrEmptyString(owner, @"owner");
             Helper.ArgumentNotNullOrEmptyString(name, @"name");
@@ -48,7 +50,7 @@ namespace GitHubUpdate
 
             version = version.Substring(0, version.LastIndexOf('.'));
 
-            Init(owner, name, version, branch);
+            Init(owner, name, version, branch, ignorePreleases);
         }
 
         public async Task<UpdateType> CheckUpdate(UpdateType locked = UpdateType.None)
@@ -62,15 +64,14 @@ namespace GitHubUpdate
             {
                 ErrorMessage = ex.Message;
                 return UpdateType.Fail;
-            }
-
+            }            
             SemVersion lockedVersion;
             switch (locked)
             {
                 case UpdateType.Major:
                     lockedVersion = new SemVersion(CurrentVersion.Major + 1);
                     LatestRelease = releases.FirstOrDefault(
-                        release => !release.Prerelease &&
+                        release => (!release.Prerelease || !IgnorePreleases) &&
                         release.TargetCommitish == RepostoryBranch &&
                         Helper.StripInitialV(release.TagName) > CurrentVersion &&
                         Helper.StripInitialV(release.TagName) < lockedVersion
@@ -79,7 +80,7 @@ namespace GitHubUpdate
                 case UpdateType.Minor:
                     lockedVersion = new SemVersion(CurrentVersion.Major, CurrentVersion.Minor + 1);
                     LatestRelease = releases.FirstOrDefault(
-                        release => !release.Prerelease &&
+                        release => (!release.Prerelease || !IgnorePreleases) &&
                         release.TargetCommitish == RepostoryBranch &&
                         Helper.StripInitialV(release.TagName) > CurrentVersion &&
                         Helper.StripInitialV(release.TagName) < lockedVersion
@@ -87,7 +88,7 @@ namespace GitHubUpdate
                     break;
                 default:
                     LatestRelease = releases.FirstOrDefault(
-                        release => !release.Prerelease &&
+                        release => (!release.Prerelease || !IgnorePreleases) &&
                         release.TargetCommitish == RepostoryBranch);
                     break;
             }
@@ -110,9 +111,8 @@ namespace GitHubUpdate
         public async Task<string> RenderReleaseNotes()
         {
             if (LatestRelease == null)
-                throw new InvalidOperationException();
-            return LatestRelease.Body;
-            //return await Github.Miscellaneous.RenderRawMarkdown(LatestRelease.Body);
+                throw new InvalidOperationException();            
+            return await Github.Miscellaneous.RenderRawMarkdown(LatestRelease.Body);
         }        
     }
 }

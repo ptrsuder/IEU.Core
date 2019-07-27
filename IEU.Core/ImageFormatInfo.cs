@@ -1,12 +1,18 @@
-﻿using System;
+﻿using ProtoBuf;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace ImageEnhancingUtility.Core
 {
+    [ProtoContract]
     public class ImageFormatInfo
     {
+        static List<string> VipsNativeFormats = new List<string>() { ".png", ".tiff", ".webp" };
+        static List<string> ForeigntFormats = new List<string>() { ".tga", ".dds", ".jpg", ".bmp" };
+
         private string _extension;
+        [ProtoMember(1)]
         public string Extension
         {
             get => _extension;
@@ -14,18 +20,25 @@ namespace ImageEnhancingUtility.Core
             {
                 _extension = value;
                 DisplayName = _extension.ToUpper().Remove(0, 1);
-                VipsNative = losslessFormats.Contains(_extension);
+                VipsNative = VipsNativeFormats.Contains(_extension);
             }
-        }
+        }       
         public string DisplayName { get; set; }
-        public bool VipsNative { get; set; }
-        public bool Lossless { get; set; }
+        public bool VipsNative { get; set; }     
+        [ProtoMember(2)]
         public int CompressionFactor { get; set; }
+        [ProtoMember(3)]
+        public int QualityFactor { get; set; }
+        [ProtoMember(4)]
         public string CompressionMethod { get; set; }
-
+      
         public ImageFormatInfo(string extension)
         {
             Extension = extension;
+        }
+
+        public ImageFormatInfo()
+        {            
         }
 
         public override string ToString()
@@ -35,10 +48,7 @@ namespace ImageEnhancingUtility.Core
 
         static public bool IsVipsNative(string extension)
         {
-            return losslessFormats.Contains(extension);
+            return VipsNativeFormats.Contains(extension);
         }
-
-        static List<string> losslessFormats = new List<string>() { ".png", ".tiff", ".webp" };
-        static List<string> convertFormats = new List<string>() { ".tga", ".dds", ".jpg", ".bmp" };
     }
 }

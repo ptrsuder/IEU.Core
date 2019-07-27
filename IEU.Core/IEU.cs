@@ -228,10 +228,14 @@ namespace ImageEnhancingUtility.Core
                         lrPath = $"{value}{DirectorySeparator}LR";
                     if (string.IsNullOrEmpty(resultsPath))
                         resultsPath = $"{value}{DirectorySeparator}results";
-                    if (string.IsNullOrEmpty(imgPath))
-                        imgPath = $"{value}{DirectorySeparator}IEU_input";
-                    if (string.IsNullOrEmpty(resultsMergedPath))
-                        resultsMergedPath = $"{value}{DirectorySeparator}IEU_output";
+                    if (string.IsNullOrEmpty(inputDirectoryPath))
+                        inputDirectoryPath = $"{value}{DirectorySeparator}IEU_input";
+                    if (!Directory.Exists(inputDirectoryPath))
+                        Directory.CreateDirectory(inputDirectoryPath);
+                    if (string.IsNullOrEmpty(outputDirectoryPath))
+                        outputDirectoryPath = $"{value}{DirectorySeparator}IEU_output";
+                    if (!Directory.Exists(outputDirectoryPath))
+                        Directory.CreateDirectory(outputDirectoryPath);
                     this.RaiseAndSetIfChanged(ref _esrganPath, value);
                 }
             }
@@ -253,14 +257,14 @@ namespace ImageEnhancingUtility.Core
         }
         private string _imgPath;
         [ProtoMember(5)]
-        public string imgPath
+        public string inputDirectoryPath
         {
             get => _imgPath;
             set => this.RaiseAndSetIfChanged(ref _imgPath, value);
         }
         private string _resultsMergedPath;
         [ProtoMember(6)]
-        public string resultsMergedPath
+        public string outputDirectoryPath
         {
             get => _resultsMergedPath;
             set => this.RaiseAndSetIfChanged(ref _resultsMergedPath, value);
@@ -374,7 +378,7 @@ namespace ImageEnhancingUtility.Core
 
         private bool _checkForUpdates = true;
         [ProtoMember(19)]
-        public bool checkForUpdates
+        public bool CheckForUpdates
         {
             get => _checkForUpdates;
             set => this.RaiseAndSetIfChanged(ref _checkForUpdates, value);
@@ -929,37 +933,37 @@ namespace ImageEnhancingUtility.Core
                     int tile_X1 = j * tileWidth;
                     int tile_Y1 = i * tileHeight;
 
-                    Directory.CreateDirectory($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(imgPath, "")}");
+                    Directory.CreateDirectory($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}");
 
                     if (imageHasAlpha && !IgnoreAlpha) //Crop Alpha
                     {
                         MagickImage outputImageAlpha = (MagickImage)inputImageAlpha.Clone();
                         outputImageAlpha.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
                         if (UseDifferentModelForAlpha)
-                            outputImageAlpha.Write($"{lrPathAlpha}\\{Path.GetDirectoryName(fileAlpha.FullName).Replace(imgPath, "")}\\{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
+                            outputImageAlpha.Write($"{lrPathAlpha}\\{Path.GetDirectoryName(fileAlpha.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
                         else
-                            outputImageAlpha.Write($"{lrPath}\\{Path.GetDirectoryName(fileAlpha.FullName).Replace(imgPath, "")}\\{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
+                            outputImageAlpha.Write($"{lrPath}\\{Path.GetDirectoryName(fileAlpha.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
                     }
                     if (SplitRGB)
                     {
                         MagickImage outputImageRed = (MagickImage)inputImageRed.Clone();
                         outputImageRed.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
-                        outputImageRed.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(imgPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_R_tile-{tileIndex.ToString("D2")}.png");
+                        outputImageRed.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_R_tile-{tileIndex.ToString("D2")}.png");
 
                         MagickImage outputImageGreen = (MagickImage)inputImageGreen.Clone();
                         outputImageGreen.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
-                        outputImageGreen.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(imgPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_G_tile-{tileIndex.ToString("D2")}.png");
+                        outputImageGreen.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_G_tile-{tileIndex.ToString("D2")}.png");
 
                         MagickImage outputImageBlue = (MagickImage)inputImageBlue.Clone();
                         outputImageBlue.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
-                        outputImageBlue.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(imgPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_B_tile-{tileIndex.ToString("D2")}.png");
+                        outputImageBlue.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_B_tile-{tileIndex.ToString("D2")}.png");
                     }
                     else
                     {
                         MagickImage outputImage = (MagickImage)inputImage.Clone();
                         outputImage.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
                         MagickFormat format = MagickFormat.Png00;                 
-                        outputImage.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(imgPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex.ToString("D2")}.png", format);
+                        outputImage.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex.ToString("D2")}.png", format);
                     }
                 }
             }
@@ -1031,7 +1035,7 @@ namespace ImageEnhancingUtility.Core
             if(OverlapSize == 0)
                 WriteToLogsThreadSafe($"Overlap size is set to 0. Tiles merge may result in seams", System.Drawing.Color.LightYellow);
 
-            DirectoryInfo di = new DirectoryInfo(imgPath);
+            DirectoryInfo di = new DirectoryInfo(inputDirectoryPath);
             WriteToLogsThreadSafe("Creating tiles...");
 
             tasks = new List<Task>();
@@ -1121,7 +1125,7 @@ namespace ImageEnhancingUtility.Core
             int upscaleModificator = imageResult.Width / (imageWidth + expandSize * 2);
             int edgeSize = upscaleModificator * expandSize;
             Image tempImage = imageResult.Copy();
-            tempImage.ExtractArea(edgeSize, edgeSize, imageResult.Width - edgeSize * 2, imageResult.Height - edgeSize * 2).Copy();
+            tempImage = tempImage.ExtractArea(edgeSize, edgeSize, imageResult.Width - edgeSize * 2, imageResult.Height - edgeSize * 2).Copy();
             return tempImage;
         }
         bool WriteToFileVipsNative(Image imageResult, ImageFormatInfo outputFormat, string destinationPath)
@@ -1386,10 +1390,10 @@ namespace ImageEnhancingUtility.Core
             if (outputFormat == null)
                 outputFormat = new ImageFormatInfo(file.Extension);
 
-            string destinationPath = resultsMergedPath + basePath + outputFormat;
+            string destinationPath = outputDirectoryPath + basePath + outputFormat;
 
             if (OutputDestinationMode == 3)            
-                destinationPath = $"{resultsMergedPath}{Path.GetDirectoryName(file.FullName).Replace(imgPath, "")}{DirectorySeparator}" +
+                destinationPath = $"{outputDirectoryPath}{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}{DirectorySeparator}" +
                     $"{Path.GetFileNameWithoutExtension(file.Name)}{outputFormat}";
         
             if (imageResult.Width % image.Width != 0 || imageResult.Height % image.Height != 0) //seamlessTexture
@@ -1443,8 +1447,8 @@ namespace ImageEnhancingUtility.Core
             if (OverwriteMode == 2)
             {
                 file.Delete();
-                destinationPath = $"{resultsMergedPath}{DirectorySeparator}" +
-                    $"{Path.GetDirectoryName(file.FullName).Replace(imgPath, "")}\\{file.Name}";
+                destinationPath = $"{outputDirectoryPath}{DirectorySeparator}" +
+                    $"{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{file.Name}";
             }
             else
             {
@@ -1472,7 +1476,7 @@ namespace ImageEnhancingUtility.Core
             WriteToLogsThreadSafe("Merging tiles...");
 
             tasks = new List<Task>();
-            DirectoryInfo di = new DirectoryInfo(imgPath);
+            DirectoryInfo di = new DirectoryInfo(inputDirectoryPath);
 
             filesDone = 0;
             filesNumber = 0;
@@ -1551,7 +1555,7 @@ namespace ImageEnhancingUtility.Core
             tasks.Clear();
             GC.Collect();
             WriteToLogsThreadSafe("Finished!", System.Drawing.Color.LightGreen);
-            string pathToMergedFiles = resultsMergedPath;
+            string pathToMergedFiles = outputDirectoryPath;
             if (OutputDestinationMode == 1)
                 pathToMergedFiles += $"{DirectorySeparator}images";
             if (OutputDestinationMode == 2)

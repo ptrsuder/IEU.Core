@@ -229,9 +229,9 @@ namespace ImageEnhancingUtility.Core
                     if (string.IsNullOrEmpty(resultsPath))
                         resultsPath = $"{value}{DirectorySeparator}results";
                     if (string.IsNullOrEmpty(imgPath))
-                        imgPath = $"{value}{DirectorySeparator}img";
+                        imgPath = $"{value}{DirectorySeparator}IEU_input";
                     if (string.IsNullOrEmpty(resultsMergedPath))
-                        resultsMergedPath = $"{value}{DirectorySeparator}merged_results";
+                        resultsMergedPath = $"{value}{DirectorySeparator}IEU_output";
                     this.RaiseAndSetIfChanged(ref _esrganPath, value);
                 }
             }

@@ -53,4 +53,30 @@
     <ProjectReference Include="..\GitHubUpdateStandard\GitHubUpdateStandard.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+    <Reference Update="System">
+      <Private>false</Private>
+    </Reference> 
+    <Reference Update="System.Core">
+      <Private>false</Private>
+    </Reference> 
+    <Reference Update="System.Data">
+      <Private>false</Private>
+    </Reference>  
+    <Reference Update="System.Drawing">
+      <Private>false</Private>
+    </Reference> 
+    <Reference Update="System.IO.Compression.FileSystem">
+      <Private>false</Private>
+    </Reference>  
+    <Reference Update="System.Numerics">
+      <Private>false</Private>
+    </Reference> 
+    <Reference Update="System.Runtime.Serialization">
+      <Private>false</Private>
+    </Reference>  
+    <Reference Update="System.Xml">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup> 
 </Project>

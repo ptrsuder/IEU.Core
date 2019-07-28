@@ -1521,6 +1521,11 @@ namespace ImageEnhancingUtility.Core
                 if (OutputDestinationMode == 2)
                 {
                     DirectoryInfo modelsFolder = new DirectoryInfo(resultsPath + $"{DirectorySeparator}models{DirectorySeparator}");
+                    if (!modelsFolder.Exists)
+                    {
+                        WriteToLogsThreadSafe(modelsFolder.FullName + " doesn't exist!", Color.Red);
+                        return;
+                    }
 
                     foreach (var modelFolder in modelsFolder.GetDirectories("*", SearchOption.TopDirectoryOnly))
                     {

@@ -1344,10 +1344,9 @@ namespace ImageEnhancingUtility.Core
             if (outputMode == 1) // grab alpha tiles from different folder
             {
                 string fileName = Path.GetFileNameWithoutExtension(file.Name);
-                basePathAlpha = Regex.Replace(
-                    basePathAlpha,
-                    $@"{DirectorySeparator}images{DirectorySeparator}{fileName}",
-                    $@"{DirectorySeparator}images{DirectorySeparator}{fileName}_alpha");
+                basePathAlpha = basePathAlpha.Replace(
+                    $"{DirectorySeparator}images{DirectorySeparator}{fileName}",
+                    $"{DirectorySeparator}images{DirectorySeparator}{fileName}_alpha");
             }
 
             bool imageHasAlpha = false;

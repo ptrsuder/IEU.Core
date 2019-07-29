@@ -1503,7 +1503,7 @@ namespace ImageEnhancingUtility.Core
 
                     if (!imagesFolder.Exists || imagesFolder.GetFiles().Length == 0)
                     {
-                        WriteLogOpenError(file, "Can't find tiles in result folder");
+                        WriteLogOpenError(file, "Can't find tiles in result folder for " + file.Name);
                         return;
                     }
 

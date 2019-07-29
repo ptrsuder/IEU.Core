@@ -2,4 +2,7 @@
 
 Core library for Image Enhancing Utility.
 
-[Winfroms GUI](https://github.com/ptrsuder/IEU.Winforms)
+[Winforms GUI](https://github.com/ptrsuder/IEU.Winforms)
+
+## Build instructions
+Copy this repository, copy IEU.Winforms repository so that IEU.Winforms project folder is inside solution directory with ImageEnhancingUtility.sln.

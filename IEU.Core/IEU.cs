@@ -797,7 +797,8 @@ namespace ImageEnhancingUtility.Core
                 filesDoneSuccesfully++;
             }
             filesDone++;
-            progressBarValue = filesDone / filesNumber * 100;
+            double progress = ((double)filesDone / (double)filesNumber) * 100;
+            progressBarValue = (int) progress;
             progressLabel = $@"{filesDone}/{filesNumber}";
         }
 

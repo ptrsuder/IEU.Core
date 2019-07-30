@@ -1020,6 +1020,7 @@ namespace ImageEnhancingUtility.Core
 
             WriteToLogsThreadSafe($"{file.Name} DONE", Color.LightGreen);
             ReportProgressThreadSafe();
+            GC.Collect();
         }
         async public Task Split(FileInfo[] inputFiles = null)
         {
@@ -1440,6 +1441,7 @@ namespace ImageEnhancingUtility.Core
 
                 if (DeleteResults)
                     tileFilesToDelete.ForEach(x => x.Delete());
+                GC.Collect();
                 return;
             }
 
@@ -1479,8 +1481,8 @@ namespace ImageEnhancingUtility.Core
             WriteToLogsThreadSafe($"{file.Name} DONE", Color.LightGreen);
             if (DeleteResults)
                 tileFilesToDelete.ForEach(x => x.Delete());
+            GC.Collect();
             return;
-
             #endregion
         }
         async public Task Merge()

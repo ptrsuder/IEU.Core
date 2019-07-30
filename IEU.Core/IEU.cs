@@ -61,7 +61,7 @@ namespace ImageEnhancingUtility.Core
     [ProtoContract]    
     public class IEU : ReactiveObject
     {
-        public readonly string AppVersion = "0.9.01";
+        public readonly string AppVersion = "0.10.02";
         public readonly string GitHubRepoName = "IEU.Core";
 
         public static Dictionary<TiffCompression, string> TiffCompressionModes = new Dictionary<TiffCompression, string>()

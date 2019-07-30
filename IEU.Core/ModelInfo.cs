@@ -11,6 +11,9 @@
         public string ParentFolder
         { get; set; }
 
+        public int UpscaleFactor
+        { get; set; }
+
         public ModelInfo(string name, string path)
         {
             Name = name;

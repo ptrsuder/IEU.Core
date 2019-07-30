@@ -6,6 +6,7 @@ using System.Reflection;
 using PaintDotNet;
 using System.Runtime.InteropServices;
 using Color = System.Drawing.Color;
+using ImageEnhancingUtility.Core;
 
 namespace ImageEnhancingUtility
 {
@@ -139,6 +140,16 @@ namespace ImageEnhancingUtility
             }
             return new int[] { tilesWidth, tilesHeight };
         }
+
+        public static void RenameModelFile(ModelInfo model, int scaleSize)
+        {
+            string newName = $"{scaleSize}x_" + model.Name;
+            string newFullname = model.FullName.Replace(model.Name, newName);
+            File.Move(model.FullName, newFullname);
+            model.FullName = newFullname;
+            model.Name = newName;           
+        }
+
     }
 
     public class LogMessage

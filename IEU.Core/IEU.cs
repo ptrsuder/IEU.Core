@@ -11,15 +11,14 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Image = NetVips.Image;
 using ReactiveCommand = ReactiveUI.ReactiveCommand;
 using Unit = System.Reactive.Unit;
 using Color = System.Drawing.Color;
-using Splat;
 using System.Runtime.CompilerServices;
+
 
 
 //TODO:
@@ -1728,6 +1727,25 @@ namespace ImageEnhancingUtility.Core
         
         #region PYTHON PROCESS STUFF
 
+        async Task<bool> DetectModelUpscaleFactor(ModelInfo checkedModel)
+        {
+            int processExitCodePthReader = -666;
+            Process pthReaderProcess = PthReader(checkedModel.FullName);
+            WriteToLogsThreadSafe($"Detecting {checkedModel.Name} upscale size...");
+            processExitCodePthReader = await RunProcessAsync(pthReaderProcess);
+            if (processExitCodePthReader != 0)
+            {
+                WriteToLogsThreadSafe($"Failed to detect {checkedModel.Name} upscale size!", Color.Red);
+                return false;
+            }
+            WriteToLogsThreadSafe($"{checkedModel.Name} upscale size is {hotModelUpscaleSize}", Color.LightGreen);
+            checkedModel.UpscaleFactor = hotModelUpscaleSize;
+            Helper.RenameModelFile(checkedModel, checkedModel.UpscaleFactor);
+            WriteToLogsThreadSafe($"Changed model filename to {checkedModel.Name}", Color.LightBlue);
+            CreateModelTree();            
+            return true;
+        }
+
         async Task<Process> ESRGAN()
         {
             if (checkedModels.Count > 1 && UseDifferentModelForAlpha)
@@ -1753,57 +1771,41 @@ namespace ImageEnhancingUtility.Core
                     noValidModel = false;
                 }
                 else
-                {
-                    int processExitCodePthReader = -666;
-                    Process pthReaderProcess = PthReader(checkedModel.FullName);
-                    WriteToLogsThreadSafe($"Detecting {checkedModel.Name} upscale size...");
-                    processExitCodePthReader = await RunProcessAsync(pthReaderProcess);
-                    if (processExitCodePthReader != 0)
-                    {
-                        WriteToLogsThreadSafe($"Error trying detect {checkedModel.Name} upscale size!", Color.Red);
+                {                    
+                    if (!await DetectModelUpscaleFactor(checkedModel))
                         continue;
-                    }
-                    WriteToLogsThreadSafe($"{checkedModel.Name} upscale size is {hotModelUpscaleSize}", Color.LightGreen);                   
-                    upscaleMultiplayer = hotModelUpscaleSize;
+                    upscaleMultiplayer = checkedModel.UpscaleFactor;
                     noValidModel = false;
                 }                
                 process.StartInfo.Arguments += $" & python hackallimages.py \"{checkedModel.FullName}\" {upscaleMultiplayer} {torchDevice} \"{LrPath+"\\*"}\" \"{ResultsPath}\"";                
             }
 
             if (UseDifferentModelForAlpha)
-            {
-                //detect upsacle factor for alpha model
+            {   //detect upsacle factor for alpha model
                 bool validModelAlpha = false;
-                int upscaleSizeAlpha = 0;
+                int upscaleMultiplayerAlpha = 0;
                 var regResultAlpha = Regex.Match(ModelForAlpha.Name.ToLower(), upscaleSizePattern);
                 if (regResultAlpha.Success && regResultAlpha.Groups.Count == 1)
                 {
-                    upscaleSizeAlpha = int.Parse(regResultAlpha.Value.Replace("x", "").Replace("_", ""));
+                    upscaleMultiplayerAlpha = int.Parse(regResultAlpha.Value.Replace("x", "").Replace("_", ""));
                     validModelAlpha = true;
                 }
                 else
                 {
-                    int processExitCodePthReader = -666;
-                    Process pthReaderProcess = PthReader(ModelForAlpha.FullName);
-                    WriteToLogsThreadSafe($"Detecting {ModelForAlpha.Name} upscale size...");
-                    processExitCodePthReader = await RunProcessAsync(pthReaderProcess);
-                    if (processExitCodePthReader != 0)
-                        WriteToLogsThreadSafe($"Error trying detect {ModelForAlpha.Name} upscale size!", Color.Red);
-                    else
+                    if (await DetectModelUpscaleFactor(ModelForAlpha))                
                     {
-                        upscaleSizeAlpha = hotModelUpscaleSize;
-                        WriteToLogsThreadSafe($"{ModelForAlpha.Name} upscale size is {upscaleSizeAlpha}", Color.LightGreen);
+                        upscaleMultiplayerAlpha = ModelForAlpha.UpscaleFactor;                       
                         validModelAlpha = true;
                     }
                 }
-                if (upscaleMultiplayer != upscaleSizeAlpha)
+                if (upscaleMultiplayer != upscaleMultiplayerAlpha)
                 {
                     WriteToLogsThreadSafe("Upscale size for rgb model and alpha model must be the same");
                     return null;
                 }
 
                 if (validModelAlpha)
-                    process.StartInfo.Arguments += $" & python hackallimages.py \"{ModelForAlpha.FullName}\" {upscaleSizeAlpha} {torchDevice} \"{LrPath + "_alpha\\*"}\" \"{ResultsPath}\"";
+                    process.StartInfo.Arguments += $" & python hackallimages.py \"{ModelForAlpha.FullName}\" {upscaleMultiplayerAlpha} {torchDevice} \"{LrPath + "_alpha\\*"}\" \"{ResultsPath}\"";
             }
             if (noValidModel)
             {

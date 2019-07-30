@@ -16,13 +16,16 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Image = NetVips.Image;
 using ReactiveCommand = ReactiveUI.ReactiveCommand;
+using Unit = System.Reactive.Unit;
 using Color = System.Drawing.Color;
+using Splat;
+using System.Runtime.CompilerServices;
 
 
 //TODO:
 //new filter: (doesn't)have result
 //write log file
-
+[assembly: InternalsVisibleTo("ImageEnhancingUtility.Tests")]
 namespace ImageEnhancingUtility.Core
 {
     public enum OverwriteMode
@@ -46,7 +49,6 @@ namespace ImageEnhancingUtility.Core
         Deflate = 3,
         LZW = 4
     }
-
     public enum WebpPreset
     {
         Default,
@@ -57,7 +59,7 @@ namespace ImageEnhancingUtility.Core
         Text
     }
 
-    [ProtoContract]
+    [ProtoContract]    
     public class IEU : ReactiveObject
     {
         public readonly string AppVersion = "0.9.01";
@@ -215,34 +217,34 @@ namespace ImageEnhancingUtility.Core
         #region FOLDER_PATHS
         private string _esrganPath;
         [ProtoMember(3)]
-        public string esrganPath
+        public string EsrganPath
         {
             get => _esrganPath;
             set
             {
                 if (!string.IsNullOrEmpty(value))
                 {
-                    if (string.IsNullOrEmpty(modelsPath))
-                        modelsPath = $"{value}{DirectorySeparator}models";
-                    if (string.IsNullOrEmpty(lrPath))
-                        lrPath = $"{value}{DirectorySeparator}LR";
-                    if (string.IsNullOrEmpty(resultsPath))
-                        resultsPath = $"{value}{DirectorySeparator}results";
-                    if (string.IsNullOrEmpty(inputDirectoryPath))
-                        inputDirectoryPath = $"{value}{DirectorySeparator}IEU_input";
-                    if (!Directory.Exists(inputDirectoryPath))
-                        Directory.CreateDirectory(inputDirectoryPath);
-                    if (string.IsNullOrEmpty(outputDirectoryPath))
-                        outputDirectoryPath = $"{value}{DirectorySeparator}IEU_output";
-                    if (!Directory.Exists(outputDirectoryPath))
-                        Directory.CreateDirectory(outputDirectoryPath);
+                    if (string.IsNullOrEmpty(ModelsPath))
+                        ModelsPath = $"{value}{DirectorySeparator}models";
+                    if (string.IsNullOrEmpty(LrPath))
+                        LrPath = $"{value}{DirectorySeparator}LR";
+                    if (string.IsNullOrEmpty(ResultsPath))
+                        ResultsPath = $"{value}{DirectorySeparator}results";
+                    if (string.IsNullOrEmpty(InputDirectoryPath))
+                        InputDirectoryPath = $"{value}{DirectorySeparator}IEU_input";
+                    if (!Directory.Exists(InputDirectoryPath))
+                        Directory.CreateDirectory(InputDirectoryPath);
+                    if (string.IsNullOrEmpty(OutputDirectoryPath))
+                        OutputDirectoryPath = $"{value}{DirectorySeparator}IEU_output";
+                    if (!Directory.Exists(OutputDirectoryPath))
+                        Directory.CreateDirectory(OutputDirectoryPath);
                     this.RaiseAndSetIfChanged(ref _esrganPath, value);
                 }
             }
         }
         private string _modelsPath;
         [ProtoMember(4)]
-        public string modelsPath
+        public string ModelsPath
         {
             get => _modelsPath;
             set
@@ -257,28 +259,28 @@ namespace ImageEnhancingUtility.Core
         }
         private string _imgPath;
         [ProtoMember(5)]
-        public string inputDirectoryPath
+        public string InputDirectoryPath
         {
             get => _imgPath;
             set => this.RaiseAndSetIfChanged(ref _imgPath, value);
         }
         private string _resultsMergedPath;
         [ProtoMember(6)]
-        public string outputDirectoryPath
+        public string OutputDirectoryPath
         {
             get => _resultsMergedPath;
             set => this.RaiseAndSetIfChanged(ref _resultsMergedPath, value);
         }
         private string _lrPath;
         [ProtoMember(7)]
-        public string lrPath
+        public string LrPath
         {
             get => _lrPath;
             set => this.RaiseAndSetIfChanged(ref _lrPath, value);
         }
         private string _resultsPath;
         [ProtoMember(8)]
-        public string resultsPath
+        public string ResultsPath
         {
             get => _resultsPath;
             set => this.RaiseAndSetIfChanged(ref _resultsPath, value);
@@ -326,34 +328,34 @@ namespace ImageEnhancingUtility.Core
         }
 
         private int _maxTileResolution = 512 * 380;
-        public int maxTileResolution
+        public int MaxTileResolution
         {
             get => _maxTileResolution;
             set => this.RaiseAndSetIfChanged(ref _maxTileResolution, value);
         }           
         private int _maxTileResolutionWidth = 512;
         [ProtoMember(14)]
-        public int maxTileResolutionWidth
+        public int MaxTileResolutionWidth
         {
             get => _maxTileResolutionWidth;
             set
             {
                 if (value == 0)
                     value = 16;
-                maxTileResolution = value * maxTileResolutionHeight;
+                MaxTileResolution = value * MaxTileResolutionHeight;
                 this.RaiseAndSetIfChanged(ref _maxTileResolutionWidth, value);
             }
         }
         private int _maxTileResolutionHeight = 380;
         [ProtoMember(15)]
-        public int maxTileResolutionHeight
+        public int MaxTileResolutionHeight
         {
             get => _maxTileResolutionHeight;
             set
             {
                 if(value == 0)
                     value = 16;
-                maxTileResolution = value * maxTileResolutionWidth;
+                MaxTileResolution = value * MaxTileResolutionWidth;
                 this.RaiseAndSetIfChanged(ref _maxTileResolutionHeight, value);
             }
         }
@@ -402,35 +404,35 @@ namespace ImageEnhancingUtility.Core
         }
 
         private int _progressBarValue = 0;
-        public int progressBarValue
+        public int ProgressBarValue
         {
             get => _progressBarValue;
             set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
         }
 
         private int _filesDone = 0;
-        public int filesDone
+        public int FilesDone
         {
             get => _filesDone;
             set => this.RaiseAndSetIfChanged(ref _filesDone, value);
         }
 
         private int _filesDoneSuccesfully = 0;
-        public int filesDoneSuccesfully
+        public int FilesDoneSuccesfully
         {
             get => _filesDoneSuccesfully;
             set => this.RaiseAndSetIfChanged(ref _filesDoneSuccesfully, value);
         }
 
         private int _filesNumber = 0;
-        public int filesNumber
+        public int FilesNumber
         {
             get => _filesNumber;
             set => this.RaiseAndSetIfChanged(ref _filesNumber, value);
         }
 
         private string _progressLabel = "0/0";
-        public string progressLabel
+        public string ProgressLabel
         {
             get => _progressLabel;
             set => this.RaiseAndSetIfChanged(ref _progressLabel, value);
@@ -440,76 +442,75 @@ namespace ImageEnhancingUtility.Core
         #region ADVANCED
 
         private bool _advancedUseResultSuffix = false;
-        public bool advancedUseResultSuffix
+        public bool AdvancedUseResultSuffix
         {
             get => _advancedUseResultSuffix;
             set => _advancedUseResultSuffix = value;
         }
         private string _advancedResultSuffix = "";
-        public string advancedResultSuffix
+        public string AdvancedResultSuffix
         {
             get => _advancedResultSuffix;
             set => _advancedResultSuffix = value;
         }
 
         private bool _filterFilenameContainsEnabled = false;
-        public bool filterFilenameContainsEnabled
+        public bool FilterFilenameContainsEnabled
         {
             get => _filterFilenameContainsEnabled;
             set => _filterFilenameContainsEnabled = value;
         }
         private bool _filterFilenameNotContainsEnabled = false;
-        public bool filterFilenameNotContainsEnabled
+        public bool FilterFilenameNotContainsEnabled
         {
             get => _filterFilenameNotContainsEnabled;
             set => _filterFilenameNotContainsEnabled = value;
         }
         private bool _filterFilenameCaseSensitive = false;
-        public bool filterFilenameCaseSensitive
+        public bool FilterFilenameCaseSensitive
         {
             get => _filterFilenameCaseSensitive;
             set => _filterFilenameCaseSensitive = value;
         }
         private string _filterFilenameContainsPattern = "";
-        public string filterFilenameContainsPattern
+        public string FilterFilenameContainsPattern
         {
             get => _filterFilenameContainsPattern;
             set => _filterFilenameContainsPattern = value;
         }
         private string _filterFilenameNotContainsPattern = "";
-        public string filterFilenameNotContainsPattern
+        public string FilterFilenameNotContainsPattern
         {
             get => _filterFilenameNotContainsPattern;
             set => _filterFilenameNotContainsPattern = value;
         }
 
         private int _filterAlpha = 0;
-        public int filterAlpha
+        public int FilterAlpha
         {
             get => _filterAlpha;
             set => _filterAlpha = value;
         }
-
         private bool _filterImageResolutionEnabled = false;
-        public bool filterImageResolutionEnabled
+        public bool FilterImageResolutionEnabled
         {
             get => _filterImageResolutionEnabled;
             set => _filterImageResolutionEnabled = value;
         }
         private bool _filterImageResolutionOr = true;
-        public bool filterImageResolutionOr
+        public bool FilterImageResolutionOr
         {
             get => _filterImageResolutionOr;
             set => _filterImageResolutionOr = value;
         }
         private int _filterImageResolutionMaxWidth = 4096;
-        public int filterImageResolutionMaxWidth
+        public int FilterImageResolutionMaxWidth
         {
             get => _filterImageResolutionMaxWidth;
             set => _filterImageResolutionMaxWidth = value;
         }
         private int _filterImageResolutionMaxHeight = 4096;
-        public int filterImageResolutionMaxHeight
+        public int FilterImageResolutionMaxHeight
         {
             get => _filterImageResolutionMaxHeight;
             set => _filterImageResolutionMaxHeight = value;
@@ -518,26 +519,26 @@ namespace ImageEnhancingUtility.Core
         public static readonly List<string> filterExtensionsList = new List<string>() {
             ".PNG", ".TGA", ".DDS", ".JPG",
             ".JPEG", ".BMP", ".TIFF"};
-        public List<string> filterSelectedExtensionsList { get; set; }
+        public List<string> FilterSelectedExtensionsList { get; set; }
 
         public readonly string[] postprocessNoiseFilter = new string[] {
              "None", "Enhance", "Despeckle", "Adaptive blur"};
         private int _noiseReductionType = 0;
-        public int noiseReductionType
+        public int NoiseReductionType
         {
             get => _noiseReductionType;
             set => _noiseReductionType = value;
         }
 
-        public bool thresholdEnabled { get; set; } = false;
+        public bool ThresholdEnabled { get; set; } = false;
         private int _thresholdBlackValue = 0;
-        public int thresholdBlackValue
+        public int ThresholdBlackValue
         {
             get => _thresholdBlackValue;
             set => _thresholdBlackValue = value;
         }
         private int _thresholdWhiteValue = 100;
-        public int thresholdWhiteValue
+        public int ThresholdWhiteValue
         {
             get => _thresholdWhiteValue;
             set => _thresholdWhiteValue = value;
@@ -545,13 +546,13 @@ namespace ImageEnhancingUtility.Core
 
         public static List<double> ResizeImageScaleFactors = new List<double>() { 0.25, 0.5, 1.0, 2.0, 4.0 };
         private double _resizeImageBeforeScaleFactor = 1.0;
-        public double resizeImageBeforeScaleFactor
+        public double ResizeImageBeforeScaleFactor
         {
             get => _resizeImageBeforeScaleFactor;
             set => _resizeImageBeforeScaleFactor = value;
         }
         private double _resizeImageAfterScaleFactor = 1.0;
-        public double resizeImageAfterScaleFactor
+        public double ResizeImageAfterScaleFactor
         {
             get => _resizeImageAfterScaleFactor;
             set => _resizeImageAfterScaleFactor = value;
@@ -564,13 +565,13 @@ namespace ImageEnhancingUtility.Core
             { (int)FilterType.Lanczos, "Lanczos" }
         };
         private int _resizeImageBeforeFilterType = 2;
-        public int resizeImageBeforeFilterType
+        public int ResizeImageBeforeFilterType
         {
             get => _resizeImageBeforeFilterType;
             set => _resizeImageBeforeFilterType = value;
         }
         private int _resizeImageAfterFilterType = 2;
-        public int resizeImageAfterFilterType
+        public int ResizeImageAfterFilterType
         {
             get => _resizeImageAfterFilterType;
             set => _resizeImageAfterFilterType = value;
@@ -595,8 +596,8 @@ namespace ImageEnhancingUtility.Core
             get => _selectedOutputFormatIndex;
             set
             {
-                if(formatInfos != null)
-                    SelectedOutputFormat = formatInfos[value];
+                if(FormatInfos != null)
+                    SelectedOutputFormat = FormatInfos[value];
                 this.RaiseAndSetIfChanged(ref _selectedOutputFormatIndex, value);
             }
         }
@@ -636,10 +637,10 @@ namespace ImageEnhancingUtility.Core
        
         #endregion
 
-        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SplitCommand { get; }
-        public ReactiveCommand<System.Reactive.Unit, bool> UpscaleCommand { get; }
-        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> MergeCommand { get; }
-        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SplitUpscaleMergeCommand { get; }
+        public ReactiveCommand<FileInfo[], Unit> SplitCommand { get; }
+        public ReactiveCommand<Unit, bool> UpscaleCommand { get; }
+        public ReactiveCommand<Unit, Unit> MergeCommand { get; }
+        public ReactiveCommand<Unit, Unit> SplitUpscaleMergeCommand { get; }
 
         private bool _avaloniaDarkThemeEnabled = false;
         [ProtoMember(23)]
@@ -665,7 +666,7 @@ namespace ImageEnhancingUtility.Core
         public ImageFormatInfo jpgFormat = new ImageFormatInfo(".jpg");
         public ImageFormatInfo bmpFormat = new ImageFormatInfo(".bmp");
         private List<ImageFormatInfo> _formatInfos;
-        public List<ImageFormatInfo> formatInfos
+        public List<ImageFormatInfo> FormatInfos
         {
             get => _formatInfos;
             set
@@ -676,10 +677,15 @@ namespace ImageEnhancingUtility.Core
 
         public IEU()
         {
-            SplitCommand = ReactiveCommand.CreateFromTask(Split);
+            Func<FileInfo[], Task> splitFunc = x => Split(x);
+            SplitCommand = ReactiveCommand.CreateFromTask(splitFunc);
+          
             UpscaleCommand = ReactiveCommand.CreateFromTask(Upscale);
+          
             MergeCommand = ReactiveCommand.CreateFromTask(Merge);
-            SplitUpscaleMergeCommand = ReactiveCommand.CreateFromTask(SplitUpscaleMerge);            
+          
+            SplitUpscaleMergeCommand = ReactiveCommand.CreateFromTask(SplitUpscaleMerge);
+           
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DirectorySeparator = @"\";
@@ -731,8 +737,8 @@ namespace ImageEnhancingUtility.Core
 
             ReadSettings();
 
-            formatInfos = new List<ImageFormatInfo>() { pngFormat, tiffFormat, webpFormat, tgaFormat, ddsFormat, jpgFormat, bmpFormat };
-            SelectedOutputFormat = formatInfos[0];
+            FormatInfos = new List<ImageFormatInfo>() { pngFormat, tiffFormat, webpFormat, tgaFormat, ddsFormat, jpgFormat, bmpFormat };
+            SelectedOutputFormat = FormatInfos[0];
         }
 
         public void ReadSettings()
@@ -756,7 +762,7 @@ namespace ImageEnhancingUtility.Core
         void CreateModelTree()
         {
             List<ModelInfo> ModelsItemsTemp = new List<ModelInfo>();
-            DirectoryInfo di = new DirectoryInfo(modelsPath);
+            DirectoryInfo di = new DirectoryInfo(ModelsPath);
             if (!di.Exists)
             {
                 WriteToLogsThreadSafe($"{di.FullName} doesn't exist!");
@@ -794,12 +800,12 @@ namespace ImageEnhancingUtility.Core
         {
             if (filtered)
             {
-                filesDoneSuccesfully++;
+                FilesDoneSuccesfully++;
             }
-            filesDone++;
-            double progress = ((double)filesDone / (double)filesNumber) * 100;
-            progressBarValue = (int) progress;
-            progressLabel = $@"{filesDone}/{filesNumber}";
+            FilesDone++;
+            double progress = ((double)FilesDone / (double)FilesNumber) * 100;
+            ProgressBarValue = (int) progress;
+            ProgressLabel = $@"{FilesDone}/{FilesNumber}";
         }
 
         MagickImage LoadImage(FileInfo file)
@@ -858,14 +864,14 @@ namespace ImageEnhancingUtility.Core
         }
         void ImagePreprocess(MagickImage image)
         {
-            if (resizeImageBeforeScaleFactor != 1.0)
+            if (ResizeImageBeforeScaleFactor != 1.0)
             {
-                image = ResizeImage(image, resizeImageBeforeScaleFactor, (FilterType)resizeImageBeforeFilterType);
+                image = ResizeImage(image, ResizeImageBeforeScaleFactor, (FilterType)ResizeImageBeforeFilterType);
                 //imageWidth = Convert.ToInt32(image.Width * resizeImageBeforeScaleFactor);
                 //imageHeight = Convert.ToInt32(image.Height * resizeImageBeforeScaleFactor);
             }
 
-            switch (noiseReductionType)
+            switch (NoiseReductionType)
             {
                 case 0:
                     break;
@@ -883,7 +889,7 @@ namespace ImageEnhancingUtility.Core
         void CreateTiles(FileInfo file, MagickImage inputImage, bool imageHasAlpha, MagickImage inputImageAlpha = null)
         {
             FileInfo fileAlpha = new FileInfo(file.DirectoryName + DirectorySeparator + Path.GetFileNameWithoutExtension(file.Name) + "_alpha.png");
-            string lrPathAlpha = lrPath + "_alpha";
+            string lrPathAlpha = LrPath + "_alpha";
             int imageWidth = inputImage.Width, imageHeight = inputImage.Height;
             MagickImage inputImageRed = null, inputImageGreen = null, inputImageBlue = null;
 
@@ -905,8 +911,8 @@ namespace ImageEnhancingUtility.Core
             }
 
             int[] tiles;
-            if (imageHeight * imageWidth > maxTileResolution)
-                tiles = Helper.GetTilesSize(imageWidth, imageHeight, maxTileResolution);
+            if (imageHeight * imageWidth > MaxTileResolution)
+                tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
             else
                 tiles = new int[] { 1, 1 };
 
@@ -934,37 +940,37 @@ namespace ImageEnhancingUtility.Core
                     int tile_X1 = j * tileWidth;
                     int tile_Y1 = i * tileHeight;
 
-                    Directory.CreateDirectory($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}");
+                    Directory.CreateDirectory($"{LrPath}\\{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}");
 
                     if (imageHasAlpha && !IgnoreAlpha) //Crop Alpha
                     {
                         MagickImage outputImageAlpha = (MagickImage)inputImageAlpha.Clone();
                         outputImageAlpha.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
                         if (UseDifferentModelForAlpha)
-                            outputImageAlpha.Write($"{lrPathAlpha}\\{Path.GetDirectoryName(fileAlpha.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
+                            outputImageAlpha.Write($"{lrPathAlpha}\\{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
                         else
-                            outputImageAlpha.Write($"{lrPath}\\{Path.GetDirectoryName(fileAlpha.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
+                            outputImageAlpha.Write($"{LrPath}\\{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
                     }
                     if (SplitRGB)
                     {
                         MagickImage outputImageRed = (MagickImage)inputImageRed.Clone();
                         outputImageRed.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
-                        outputImageRed.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_R_tile-{tileIndex.ToString("D2")}.png");
+                        outputImageRed.Write($"{LrPath}\\{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_R_tile-{tileIndex.ToString("D2")}.png");
 
                         MagickImage outputImageGreen = (MagickImage)inputImageGreen.Clone();
                         outputImageGreen.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
-                        outputImageGreen.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_G_tile-{tileIndex.ToString("D2")}.png");
+                        outputImageGreen.Write($"{LrPath}\\{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_G_tile-{tileIndex.ToString("D2")}.png");
 
                         MagickImage outputImageBlue = (MagickImage)inputImageBlue.Clone();
                         outputImageBlue.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
-                        outputImageBlue.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_B_tile-{tileIndex.ToString("D2")}.png");
+                        outputImageBlue.Write($"{LrPath}\\{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_B_tile-{tileIndex.ToString("D2")}.png");
                     }
                     else
                     {
                         MagickImage outputImage = (MagickImage)inputImage.Clone();
                         outputImage.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
                         MagickFormat format = MagickFormat.Png00;                 
-                        outputImage.Write($"{lrPath}\\{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex.ToString("D2")}.png", format);
+                        outputImage.Write($"{LrPath}\\{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex.ToString("D2")}.png", format);
                     }
                 }
             }
@@ -1015,41 +1021,44 @@ namespace ImageEnhancingUtility.Core
             WriteToLogsThreadSafe($"{file.Name} DONE", Color.LightGreen);
             ReportProgressThreadSafe();
         }
-        async public Task Split()
+        async public Task Split(FileInfo[] inputFiles = null)
         {
-            DirectoryInfo directory = new DirectoryInfo(lrPath);
-            DirectoryInfo directoryAlpha = new DirectoryInfo(lrPath + "_alpha");
-            if (UseDifferentModelForAlpha && !directoryAlpha.Exists)
-                directoryAlpha.Create();
+            DirectoryInfo lrDirectory = new DirectoryInfo(LrPath);
+            DirectoryInfo lrAlphaDirectory = new DirectoryInfo(LrPath + "_alpha");
+            if (UseDifferentModelForAlpha && !lrAlphaDirectory.Exists)
+                lrAlphaDirectory.Create();
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
             if (OutputDestinationMode == 3)
                 searchOption = SearchOption.AllDirectories;
-            directory.GetFiles("*", searchOption).ToList().ForEach(x => x.Delete());
-            WriteToLogsThreadSafe($"'{lrPath}' is cleared", System.Drawing.Color.LightBlue);
+            lrDirectory.GetFiles("*", searchOption).ToList().ForEach(x => x.Delete());
+            WriteToLogsThreadSafe($"'{LrPath}' is cleared", Color.LightBlue);
 
             if (UseDifferentModelForAlpha)
             {
-                directoryAlpha.GetFiles("*", searchOption).ToList().ForEach(x => x.Delete());
-                WriteToLogsThreadSafe($"'{lrPath + "_alpha"}' is cleared", System.Drawing.Color.LightBlue);
+                lrAlphaDirectory.GetFiles("*", searchOption).ToList().ForEach(x => x.Delete());
+                WriteToLogsThreadSafe($"'{LrPath + "_alpha"}' is cleared", Color.LightBlue);
             }
             
             if(OverlapSize == 0)
-                WriteToLogsThreadSafe($"Overlap size is set to 0. Tiles merge may result in seams", System.Drawing.Color.LightYellow);
+                WriteToLogsThreadSafe($"Overlap size is set to 0. Tiles merge may result in seams", Color.LightYellow);
 
-            DirectoryInfo di = new DirectoryInfo(inputDirectoryPath);
+            DirectoryInfo di = new DirectoryInfo(InputDirectoryPath);
             WriteToLogsThreadSafe("Creating tiles...");
 
+            if (inputFiles == null)
+                inputFiles = di.GetFiles("*", searchOption);
+
             tasks = new List<Task>();
-            filesDone = 0;
-            filesNumber = di.GetFiles("*", searchOption).Length;
+            FilesDone = 0;
+            FilesNumber = inputFiles.Length;
 
             if (CreateMemoryImage)
             {
-                Image image = Image.Black(maxTileResolutionWidth, maxTileResolutionHeight);
-                image.WriteToFile($"{lrPath}{DirectorySeparator}(000)000.png");
+                Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
+                image.WriteToFile($"{LrPath}{DirectorySeparator}([000])000)_memory_image.png");
             }
 
-            foreach (var file in di.GetFiles("*", searchOption))
+            foreach (var file in inputFiles)
             {
                 if (!file.Exists)
                     continue;
@@ -1057,7 +1066,7 @@ namespace ImageEnhancingUtility.Core
                 if (!ApplyFilters(file))
                 {
                     ReportProgressThreadSafe(false);
-                    WriteToLogsThreadSafe($"{file.Name} is filtered, skipping", System.Drawing.Color.HotPink);
+                    WriteToLogsThreadSafe($"{file.Name} is filtered, skipping", Color.HotPink);
                     continue;
                 }
                 //SplitTask(file);
@@ -1065,7 +1074,7 @@ namespace ImageEnhancingUtility.Core
             }
             await Task.WhenAll(tasks.ToArray());
             tasks.Clear();
-            WriteToLogsThreadSafe("Finished!", System.Drawing.Color.LightGreen);
+            WriteToLogsThreadSafe("Finished!", Color.LightGreen);
         }
 
         async public Task<bool> Upscale()
@@ -1078,7 +1087,7 @@ namespace ImageEnhancingUtility.Core
                 return false;
             }
 
-            DirectoryInfo directory = new DirectoryInfo(resultsPath);
+            DirectoryInfo directory = new DirectoryInfo(ResultsPath);
             if (!directory.Exists)
                 directory.Create();
 
@@ -1090,10 +1099,10 @@ namespace ImageEnhancingUtility.Core
                 return false;
             if (processExitCode != 0)
             {
-                WriteToLogsThreadSafe("Error ocured during ESRGAN work!", System.Drawing.Color.Red);
+                WriteToLogsThreadSafe("Error ocured during ESRGAN work!", Color.Red);
                 return false;
             }
-            WriteToLogsThreadSafe("ESRGAN finished!", System.Drawing.Color.LightGreen);
+            WriteToLogsThreadSafe("ESRGAN finished!", Color.LightGreen);
             return true;
         }
 
@@ -1104,9 +1113,9 @@ namespace ImageEnhancingUtility.Core
             MagickImageInfo lastTile;
             try
             {
-                string pathToLastTile = $"{resultsPath + basePath}_tile-{((tiles[1] - 1) * tiles[0] + tiles[0] - 1).ToString("D2")}{resultSuffix}.png";
+                string pathToLastTile = $"{ResultsPath + basePath}_tile-{((tiles[1] - 1) * tiles[0] + tiles[0] - 1).ToString("D2")}{resultSuffix}.png";
                 if (SplitRGB)
-                    pathToLastTile = $"{resultsPath + basePath}_R_tile-{((tiles[1] - 1) * tiles[0] + tiles[0] - 1).ToString("D2")}{resultSuffix}.png";
+                    pathToLastTile = $"{ResultsPath + basePath}_R_tile-{((tiles[1] - 1) * tiles[0] + tiles[0] - 1).ToString("D2")}{resultSuffix}.png";
 
                 lastTile = new MagickImageInfo(pathToLastTile);
             }
@@ -1171,25 +1180,25 @@ namespace ImageEnhancingUtility.Core
         }
         void ImagePostrpocess(MagickImage finalImage)
         {
-            if (thresholdBlackValue != 0)
-                finalImage.BlackThreshold(new Percentage((double)thresholdBlackValue));
-            if (thresholdWhiteValue != 100)
-                finalImage.WhiteThreshold(new Percentage((double)thresholdWhiteValue));
+            if (ThresholdBlackValue != 0)
+                finalImage.BlackThreshold(new Percentage((double)ThresholdBlackValue));
+            if (ThresholdWhiteValue != 100)
+                finalImage.WhiteThreshold(new Percentage((double)ThresholdWhiteValue));
 
-            if (resizeImageAfterScaleFactor != 1.0)
+            if (ResizeImageAfterScaleFactor != 1.0)
             {
-                finalImage = ResizeImage(finalImage, resizeImageAfterScaleFactor, (FilterType)resizeImageAfterFilterType);
+                finalImage = ResizeImage(finalImage, ResizeImageAfterScaleFactor, (FilterType)ResizeImageAfterFilterType);
             }
         }
         Image JoinRGB(string basePath, int tileIndex, string resultSuffix, List<FileInfo> tileFilesToDelete)
         {
             Image imageNextTileR = null, imageNextTileG = null, imageNextTileB = null;
-            imageNextTileR = Image.NewFromFile($"{resultsPath + basePath}_R_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
-            tileFilesToDelete.Add(new FileInfo($"{resultsPath + basePath}_R_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
-            imageNextTileG = Image.NewFromFile($"{resultsPath + basePath}_G_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
-            tileFilesToDelete.Add(new FileInfo($"{resultsPath + basePath}_G_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
-            imageNextTileB = Image.NewFromFile($"{resultsPath + basePath}_B_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
-            tileFilesToDelete.Add(new FileInfo($"{resultsPath + basePath}_B_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+            imageNextTileR = Image.NewFromFile($"{ResultsPath + basePath}_R_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
+            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePath}_R_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+            imageNextTileG = Image.NewFromFile($"{ResultsPath + basePath}_G_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
+            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePath}_G_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+            imageNextTileB = Image.NewFromFile($"{ResultsPath + basePath}_B_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
+            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePath}_B_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
             return imageNextTileR.Bandjoin(imageNextTileG).Bandjoin(imageNextTileB);
         }
         void UseGlobalbalance(Image imageResult, ref bool cancelGlobalbalance, string filename)
@@ -1250,8 +1259,8 @@ namespace ImageEnhancingUtility.Core
                             imageNextTile = JoinRGB(basePath, tileIndex, resultSuffix, tileFilesToDelete);                        
                         else
                         {
-                            imageNextTile = Image.NewFromFile($"{resultsPath + basePath}_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false);
-                            tileFilesToDelete.Add(new FileInfo($"{resultsPath + basePath}_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+                            imageNextTile = Image.NewFromFile($"{ResultsPath + basePath}_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false);
+                            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePath}_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
                         }
                     }
                     catch (VipsException ex)
@@ -1264,8 +1273,8 @@ namespace ImageEnhancingUtility.Core
                     {
                         try
                         {
-                            imageAlphaNextTile = Image.NewFromFile($"{resultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false);
-                            tileFilesToDelete.Add(new FileInfo($"{resultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+                            imageAlphaNextTile = Image.NewFromFile($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false);
+                            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
 
                             if (j == 0)
                             {
@@ -1281,7 +1290,7 @@ namespace ImageEnhancingUtility.Core
                         catch (VipsException ex)
                         {
                             alphaReadError = true;
-                            WriteLogOpenError(new FileInfo($"{resultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"), ex.Message);
+                            WriteLogOpenError(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"), ex.Message);
                         }
                     }
 
@@ -1331,16 +1340,16 @@ namespace ImageEnhancingUtility.Core
             }
             return imageResult;
         }
-        
-        void MergeTask(FileInfo file, string basePath, int outputMode)
+
+        internal void MergeTask(FileInfo file, string basePath, int outputMode, string outputFilename = "")
         {           
             #region IMAGE READ
             
             string basePathAlpha = basePath;
             string resultSuffix = "";
 
-            if (advancedUseResultSuffix)
-                resultSuffix = advancedResultSuffix;
+            if (AdvancedUseResultSuffix)
+                resultSuffix = AdvancedResultSuffix;
 
             if (outputMode == 1) // grab alpha tiles from different folder
             {
@@ -1363,13 +1372,13 @@ namespace ImageEnhancingUtility.Core
             }
             catch
             {
-                WriteToLogsThreadSafe($"Failed to read file {file.Name}!", System.Drawing.Color.Red);
+                WriteToLogsThreadSafe($"Failed to read file {file.Name}!", Color.Red);
                 return;
             }
 
             int[] tiles;
-            if (imageHeight * imageWidth > maxTileResolution)
-                tiles = Helper.GetTilesSize(imageWidth, imageHeight, maxTileResolution);
+            if (imageHeight * imageWidth > MaxTileResolution)
+                tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
             else
                 tiles = new int[] { 1, 1 };
                        
@@ -1384,16 +1393,19 @@ namespace ImageEnhancingUtility.Core
 
             ImageFormatInfo outputFormat;
             if (UseOriginalImageFormat)
-                outputFormat = formatInfos.Where(x => x.Extension.Equals(file.Extension, StringComparison.InvariantCultureIgnoreCase)).First(); //hack, may be bad
+                outputFormat = FormatInfos.Where(x => x.Extension.Equals(file.Extension, StringComparison.InvariantCultureIgnoreCase)).First(); //hack, may be bad
             else
                 outputFormat = SelectedOutputFormat;
             if (outputFormat == null)
                 outputFormat = new ImageFormatInfo(file.Extension);
 
-            string destinationPath = outputDirectoryPath + basePath + outputFormat;
+            string destinationPath = OutputDirectoryPath + basePath + outputFormat;
+
+            if(outputFilename != "")
+                destinationPath = OutputDirectoryPath + basePath.Replace(Path.GetFileNameWithoutExtension(file.Name), outputFilename) + outputFormat;
 
             if (OutputDestinationMode == 3)            
-                destinationPath = $"{outputDirectoryPath}{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}{DirectorySeparator}" +
+                destinationPath = $"{OutputDirectoryPath}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}{DirectorySeparator}" +
                     $"{Path.GetFileNameWithoutExtension(file.Name)}{outputFormat}";
         
             if (imageResult.Width % image.Width != 0 || imageResult.Height % image.Height != 0) //seamlessTexture
@@ -1404,9 +1416,9 @@ namespace ImageEnhancingUtility.Core
             if (                
                 outputFormat.VipsNative &&
                 !ConvertImageFormat &&
-                thresholdBlackValue == 0 &&
-                thresholdWhiteValue == 100 &&
-                resizeImageAfterScaleFactor == 1.0) //no need to convert to MagickImage, save fast with vips
+                ThresholdBlackValue == 0 &&
+                ThresholdWhiteValue == 100 &&
+                ResizeImageAfterScaleFactor == 1.0) //no need to convert to MagickImage, save fast with vips
             {                
                 if (OverwriteMode == 2)
                 {
@@ -1418,13 +1430,13 @@ namespace ImageEnhancingUtility.Core
                     string a = Path.GetDirectoryName(destinationPath);
                     if (!Directory.Exists(a))
                         Directory.CreateDirectory(a);
-                }
+                }              
 
                 if (!WriteToFileVipsNative(imageResult, outputFormat, destinationPath))
                     return;
                 
                 ReportProgressThreadSafe();
-                WriteToLogsThreadSafe($"<{file.Name}> DONE", System.Drawing.Color.LightGreen);
+                WriteToLogsThreadSafe($"<{file.Name}> DONE", Color.LightGreen);
 
                 if (DeleteResults)
                     tileFilesToDelete.ForEach(x => x.Delete());
@@ -1447,8 +1459,8 @@ namespace ImageEnhancingUtility.Core
             if (OverwriteMode == 2)
             {
                 file.Delete();
-                destinationPath = $"{outputDirectoryPath}{DirectorySeparator}" +
-                    $"{Path.GetDirectoryName(file.FullName).Replace(inputDirectoryPath, "")}\\{file.Name}";
+                destinationPath = $"{OutputDirectoryPath}{DirectorySeparator}" +
+                    $"{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}\\{file.Name}";
             }
             else
             {
@@ -1464,7 +1476,7 @@ namespace ImageEnhancingUtility.Core
             
             finalImage.Dispose();
             ReportProgressThreadSafe();
-            WriteToLogsThreadSafe($"{file.Name} DONE", System.Drawing.Color.LightGreen);
+            WriteToLogsThreadSafe($"{file.Name} DONE", Color.LightGreen);
             if (DeleteResults)
                 tileFilesToDelete.ForEach(x => x.Delete());
             return;
@@ -1476,11 +1488,11 @@ namespace ImageEnhancingUtility.Core
             WriteToLogsThreadSafe("Merging tiles...");
 
             tasks = new List<Task>();
-            DirectoryInfo di = new DirectoryInfo(inputDirectoryPath);
+            DirectoryInfo di = new DirectoryInfo(InputDirectoryPath);
 
-            filesDone = 0;
-            filesNumber = 0;
-            filesDoneSuccesfully = 0;
+            FilesDone = 0;
+            FilesNumber = 0;
+            FilesDoneSuccesfully = 0;
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
             if (OutputDestinationMode == 3)
@@ -1494,13 +1506,13 @@ namespace ImageEnhancingUtility.Core
                 if (!ApplyFilters(file))
                 {
                     //ReportProgressThreadSafe(false);
-                    WriteToLogsThreadSafe($"{file.Name} is filtered, skipping", System.Drawing.Color.HotPink);
+                    WriteToLogsThreadSafe($"{file.Name} is filtered, skipping", Color.HotPink);
                     continue;
                 }
 
                 if (OutputDestinationMode == 1)
                 {
-                    DirectoryInfo imagesFolder = new DirectoryInfo(resultsPath + $"{DirectorySeparator}images{DirectorySeparator}" + Path.GetFileNameWithoutExtension(file.Name));
+                    DirectoryInfo imagesFolder = new DirectoryInfo(ResultsPath + $"{DirectorySeparator}images{DirectorySeparator}" + Path.GetFileNameWithoutExtension(file.Name));
 
                     if (!imagesFolder.Exists || imagesFolder.GetFiles().Length == 0)
                     {
@@ -1512,7 +1524,7 @@ namespace ImageEnhancingUtility.Core
                     {
                         string s = $"{DirectorySeparator}images{DirectorySeparator}{Path.GetFileNameWithoutExtension(file.Name)}{DirectorySeparator}{Path.GetFileNameWithoutExtension(image.Name)}";
                         s = s.Remove(s.Length - 8, 8);
-                        filesNumber++;
+                        FilesNumber++;
                         //MergeTask(file, s, 1);
                         tasks.Add(Task.Run(() => MergeTask(file, s, OutputDestinationMode)));
                     }
@@ -1521,7 +1533,7 @@ namespace ImageEnhancingUtility.Core
 
                 if (OutputDestinationMode == 2)
                 {
-                    DirectoryInfo modelsFolder = new DirectoryInfo(resultsPath + $"{DirectorySeparator}models{DirectorySeparator}");
+                    DirectoryInfo modelsFolder = new DirectoryInfo(ResultsPath + $"{DirectorySeparator}models{DirectorySeparator}");
                     if (!modelsFolder.Exists)
                     {
                         WriteToLogsThreadSafe(modelsFolder.FullName + " doesn't exist!", Color.Red);
@@ -1532,7 +1544,7 @@ namespace ImageEnhancingUtility.Core
                     {
                         foreach (var image in modelFolder.GetFiles("*", SearchOption.TopDirectoryOnly).Where(x => x.Name.Contains(Path.GetFileNameWithoutExtension(file.Name) + "_tile-")))
                         {
-                            filesNumber++; ;
+                            FilesNumber++; ;
                             //MergeTask(file, $"\\models\\{modelFolder.Name}\\{Path.GetFileNameWithoutExtension(file.Name)}", 2);                            
                             tasks.Add(Task.Run(() =>
                             MergeTask(
@@ -1546,21 +1558,21 @@ namespace ImageEnhancingUtility.Core
                 }
                 if (OutputDestinationMode == 3)
                 {
-                    filesNumber = di.GetFiles("*", searchOption).Length;
+                    FilesNumber = di.GetFiles("*", searchOption).Length;
                     //MergeTask(file, "\\" + Path.GetFileNameWithoutExtension(file.Name), 3);                     
                     tasks.Add(Task.Run(() => MergeTask(file, DirectorySeparator
                         + Path.GetFileNameWithoutExtension(file.Name), OutputDestinationMode)));
                     continue;
                 }
-                filesNumber = di.GetFiles().Length;
+                FilesNumber = di.GetFiles().Length;
                 //MergeTask(file, DirectorySeparator + Path.GetFileNameWithoutExtension(file.Name), 0);
                 tasks.Add(Task.Run(() => MergeTask(file, DirectorySeparator + Path.GetFileNameWithoutExtension(file.Name), 0)));
             }
             await Task.WhenAll(tasks.ToArray());
             tasks.Clear();
             GC.Collect();
-            WriteToLogsThreadSafe("Finished!", System.Drawing.Color.LightGreen);
-            string pathToMergedFiles = outputDirectoryPath;
+            WriteToLogsThreadSafe("Finished!", Color.LightGreen);
+            string pathToMergedFiles = OutputDirectoryPath;
             if (OutputDestinationMode == 1)
                 pathToMergedFiles += $"{DirectorySeparator}images";
             if (OutputDestinationMode == 2)
@@ -1584,16 +1596,16 @@ namespace ImageEnhancingUtility.Core
         bool ApplyFilters(FileInfo file)
         {
             bool alphaFilter = true, filenameFilter = true, sizeFilter = true, resultsFilter = true;
-            string[] patternsContains = filterFilenameContainsPattern.Split(new char[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
-            string[] patternsNotContains = filterFilenameNotContainsPattern.Split(new char[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] patternsContains = FilterFilenameContainsPattern.Split(new char[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] patternsNotContains = FilterFilenameNotContainsPattern.Split(new char[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
             string filename = file.Name;
-            if (!filterFilenameCaseSensitive)
+            if (!FilterFilenameCaseSensitive)
             {
                 filename = filename.ToUpper();
                 for (int i = 0; i < patternsContains.Length; i++)
                     patternsContains[i] = patternsContains[i].ToUpper();
             }
-            if (filterFilenameContainsEnabled)
+            if (FilterFilenameContainsEnabled)
             {
                 bool matchPattern = false;
                 foreach (string pattern in patternsContains)
@@ -1601,7 +1613,7 @@ namespace ImageEnhancingUtility.Core
 
                 filenameFilter = filenameFilter && matchPattern;
             }
-            if (filterFilenameNotContainsEnabled)
+            if (FilterFilenameNotContainsEnabled)
             {
                 bool matchPattern = false;
                 foreach (string pattern in patternsNotContains)
@@ -1611,19 +1623,19 @@ namespace ImageEnhancingUtility.Core
             }
             if (!filenameFilter) return false;
 
-            if (filterSelectedExtensionsList?.Count() > 0 &&
-                !filterSelectedExtensionsList.Contains(file.Extension.ToUpper()))
+            if (FilterSelectedExtensionsList?.Count() > 0 &&
+                !FilterSelectedExtensionsList.Contains(file.Extension.ToUpper()))
                 return false;
 
-            if (filterAlpha != 0 || filterImageResolutionEnabled) //need to load Magick image
+            if (FilterAlpha != 0 || FilterImageResolutionEnabled) //need to load Magick image
             {
                 try
                 {
                     using (MagickImage image = new MagickImage(file.FullName))
                     {
-                        if (filterAlpha != 0)
+                        if (FilterAlpha != 0)
                         {
-                            switch (filterAlpha) // switch alpha filter type
+                            switch (FilterAlpha) // switch alpha filter type
                             {
                                 case 1:
                                     alphaFilter = image.HasAlpha;
@@ -1636,12 +1648,12 @@ namespace ImageEnhancingUtility.Core
                             if (!alphaFilter) return false;
                         }
 
-                        if (filterImageResolutionEnabled)
+                        if (FilterImageResolutionEnabled)
                         {
-                            if (!filterImageResolutionOr) // OR
-                                sizeFilter = image.Width <= filterImageResolutionMaxWidth || image.Height <= filterImageResolutionMaxHeight;
+                            if (!FilterImageResolutionOr) // OR
+                                sizeFilter = image.Width <= FilterImageResolutionMaxWidth || image.Height <= FilterImageResolutionMaxHeight;
                             else // AND
-                                sizeFilter = image.Width <= filterImageResolutionMaxWidth && image.Height <= filterImageResolutionMaxHeight;
+                                sizeFilter = image.Width <= FilterImageResolutionMaxWidth && image.Height <= FilterImageResolutionMaxHeight;
                             if (!sizeFilter) return false;
                         }
                     }
@@ -1652,9 +1664,9 @@ namespace ImageEnhancingUtility.Core
                     {
                         using (Surface image = DdsFile.Load(file.FullName))
                         {
-                            if (filterAlpha != 0)
+                            if (FilterAlpha != 0)
                             {
-                                switch (filterAlpha) // switch alpha filter type
+                                switch (FilterAlpha) // switch alpha filter type
                                 {
                                     case 1:
                                         alphaFilter = DdsFile.HasTransparency(image);
@@ -1666,12 +1678,12 @@ namespace ImageEnhancingUtility.Core
                                 if (!alphaFilter) return false;
                             }
 
-                            if (!filterImageResolutionEnabled)
+                            if (!FilterImageResolutionEnabled)
                             {
-                                if (!filterImageResolutionOr) // OR
-                                    sizeFilter = image.Width <= filterImageResolutionMaxWidth || image.Height <= filterImageResolutionMaxHeight;
+                                if (!FilterImageResolutionOr) // OR
+                                    sizeFilter = image.Width <= FilterImageResolutionMaxWidth || image.Height <= FilterImageResolutionMaxHeight;
                                 else // AND
-                                    sizeFilter = image.Width <= filterImageResolutionMaxWidth && image.Height <= filterImageResolutionMaxHeight;
+                                    sizeFilter = image.Width <= FilterImageResolutionMaxWidth && image.Height <= FilterImageResolutionMaxHeight;
                                 if (!sizeFilter) return false;
                             }
                         }
@@ -1709,7 +1721,7 @@ namespace ImageEnhancingUtility.Core
             if (OverwriteMode == 2)
                 script = Regex.Replace(script, "results", "LR");
 
-            File.WriteAllText(esrganPath + $"{DirectorySeparator}hackallimages.py", script);
+            File.WriteAllText(EsrganPath + $"{DirectorySeparator}hackallimages.py", script);
         }
         
         #region PYTHON PROCESS STUFF
@@ -1723,15 +1735,16 @@ namespace ImageEnhancingUtility.Core
             }
 
             Process process = new Process();
+            string upscaleSizePattern = "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)";
 
-            process.StartInfo.Arguments = $"{esrganPath}";
+            process.StartInfo.Arguments = $"{EsrganPath}";
             bool noValidModel = true;
             string torchDevice = UseCPU ? "cpu" : "cuda";
             int upscaleMultiplayer = 0;
 
             foreach (ModelInfo checkedModel in checkedModels)
             {
-                var regResult = Regex.Match(checkedModel.Name.ToLower(), "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)");
+                var regResult = Regex.Match(checkedModel.Name.ToLower(), upscaleSizePattern);
                 if (regResult.Success && regResult.Groups.Count == 1)
                 {
                     upscaleMultiplayer = int.Parse(regResult.Value.Replace("x", "").Replace("_", ""));                    
@@ -1745,14 +1758,14 @@ namespace ImageEnhancingUtility.Core
                     processExitCodePthReader = await RunProcessAsync(pthReaderProcess);
                     if (processExitCodePthReader != 0)
                     {
-                        WriteToLogsThreadSafe($"Error trying detect {checkedModel.Name} upscale size!", System.Drawing.Color.Red);
+                        WriteToLogsThreadSafe($"Error trying detect {checkedModel.Name} upscale size!", Color.Red);
                         continue;
                     }
-                    WriteToLogsThreadSafe($"{checkedModel.Name} upscale size is {hotModelUpscaleSize}", System.Drawing.Color.LightGreen);                   
+                    WriteToLogsThreadSafe($"{checkedModel.Name} upscale size is {hotModelUpscaleSize}", Color.LightGreen);                   
                     upscaleMultiplayer = hotModelUpscaleSize;
                     noValidModel = false;
                 }                
-                process.StartInfo.Arguments += $" & python hackallimages.py \"{checkedModel.FullName}\" {upscaleMultiplayer} {torchDevice} \"{lrPath+"\\*"}\" \"{resultsPath}\"";                
+                process.StartInfo.Arguments += $" & python hackallimages.py \"{checkedModel.FullName}\" {upscaleMultiplayer} {torchDevice} \"{LrPath+"\\*"}\" \"{ResultsPath}\"";                
             }
 
             if (UseDifferentModelForAlpha)
@@ -1760,7 +1773,7 @@ namespace ImageEnhancingUtility.Core
                 //detect upsacle factor for alpha model
                 bool validModelAlpha = false;
                 int upscaleSizeAlpha = 0;
-                var regResultAlpha = Regex.Match(ModelForAlpha.Name.ToLower(), "(?:_?[1-4]x_)|(?:_x[1-4]_?)|(?:_[1-4]x_?)|(?:_?x[1-4]_)");
+                var regResultAlpha = Regex.Match(ModelForAlpha.Name.ToLower(), upscaleSizePattern);
                 if (regResultAlpha.Success && regResultAlpha.Groups.Count == 1)
                 {
                     upscaleSizeAlpha = int.Parse(regResultAlpha.Value.Replace("x", "").Replace("_", ""));
@@ -1773,11 +1786,11 @@ namespace ImageEnhancingUtility.Core
                     WriteToLogsThreadSafe($"Detecting {ModelForAlpha.Name} upscale size...");
                     processExitCodePthReader = await RunProcessAsync(pthReaderProcess);
                     if (processExitCodePthReader != 0)
-                        WriteToLogsThreadSafe($"Error trying detect {ModelForAlpha.Name} upscale size!", System.Drawing.Color.Red);
+                        WriteToLogsThreadSafe($"Error trying detect {ModelForAlpha.Name} upscale size!", Color.Red);
                     else
                     {
                         upscaleSizeAlpha = hotModelUpscaleSize;
-                        WriteToLogsThreadSafe($"{ModelForAlpha.Name} upscale size is {upscaleSizeAlpha}", System.Drawing.Color.LightGreen);
+                        WriteToLogsThreadSafe($"{ModelForAlpha.Name} upscale size is {upscaleSizeAlpha}", Color.LightGreen);
                         validModelAlpha = true;
                     }
                 }
@@ -1788,7 +1801,7 @@ namespace ImageEnhancingUtility.Core
                 }
 
                 if (validModelAlpha)
-                    process.StartInfo.Arguments += $" & python hackallimages.py \"{ModelForAlpha.FullName}\" {upscaleSizeAlpha} {torchDevice} \"{lrPath + "_alpha\\*"}\" \"{resultsPath}\"";
+                    process.StartInfo.Arguments += $" & python hackallimages.py \"{ModelForAlpha.FullName}\" {upscaleSizeAlpha} {torchDevice} \"{LrPath + "_alpha\\*"}\" \"{ResultsPath}\"";
             }
             if (noValidModel)
             {
@@ -1801,16 +1814,16 @@ namespace ImageEnhancingUtility.Core
             process.ErrorDataReceived += SortOutputHandler;
             process.OutputDataReceived += SortOutputHandler;
 
-            if (!Directory.Exists(lrPath))
+            if (!Directory.Exists(LrPath))
             {
-                WriteToLogsThreadSafe(lrPath + " doen't exist!");
+                WriteToLogsThreadSafe(LrPath + " doen't exist!");
                 return null;
             }
-            filesNumber = Directory.GetFiles(lrPath).Count() * checkedModels.Count;
+            FilesNumber = Directory.GetFiles(LrPath).Count() * checkedModels.Count;
             if(UseDifferentModelForAlpha)
-                filesNumber += Directory.GetFiles(lrPath + "_alpha").Count();
-            filesDone = 0;
-            filesDoneSuccesfully = 0;
+                FilesNumber += Directory.GetFiles(LrPath + "_alpha").Count();
+            FilesDone = 0;
+            FilesDoneSuccesfully = 0;
 
             WriteToLogsThreadSafe("Starting ESRGAN...");
 
@@ -1885,15 +1898,15 @@ namespace ImageEnhancingUtility.Core
 
             string outputPath;
             if (outputName != "")
-                outputPath = $"{modelsPath}{DirectorySeparator}{outputName}";
+                outputPath = $"{ModelsPath}{DirectorySeparator}{outputName}";
             else
-                outputPath = $"{modelsPath}{DirectorySeparator}{Path.GetFileNameWithoutExtension(a)}_{Path.GetFileNameWithoutExtension(b)}_interp_{alpha.ToString().Replace(",", "")}.pth";
+                outputPath = $"{ModelsPath}{DirectorySeparator}{Path.GetFileNameWithoutExtension(a)}_{Path.GetFileNameWithoutExtension(b)}_interp_{alpha.ToString().Replace(",", "")}.pth";
 
             string script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.interpModels.py");
-            File.WriteAllText(esrganPath + $"{DirectorySeparator}interpModels.py", script);
+            File.WriteAllText(EsrganPath + $"{DirectorySeparator}interpModels.py", script);
 
             Process process = new Process();
-            process.StartInfo.Arguments = $"{esrganPath}";
+            process.StartInfo.Arguments = $"{EsrganPath}";
             process.StartInfo.Arguments += $" & python interpModels.py \"{a}\" \"{b}\" {alpha.ToString().Replace(",",".")} \"{outputPath}\"";
             process.ErrorDataReceived += SortOutputHandler;
             process.OutputDataReceived += SortOutputHandler;
@@ -1912,7 +1925,7 @@ namespace ImageEnhancingUtility.Core
             // Collect the sort command output.
 
             if (!string.IsNullOrEmpty(outLine.Data)
-                && outLine.Data != $"{esrganPath}>"
+                && outLine.Data != $"{EsrganPath}>"
                 && outLine.Data != "^C"
                 && !outLine.Data.Contains("UserWarning")
                 && !outLine.Data.Contains("nn."))
@@ -1920,7 +1933,7 @@ namespace ImageEnhancingUtility.Core
                 if (Regex.IsMatch(outLine.Data, "^[0-9]+ .*$"))
                 {
                     ReportProgressThreadSafe();
-                    WriteToLogsThreadSafe(outLine.Data, System.Drawing.Color.LightGreen);
+                    WriteToLogsThreadSafe(outLine.Data, Color.LightGreen);
                 }
                 else
                     WriteToLogsThreadSafe(outLine.Data);

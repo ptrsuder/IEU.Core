@@ -1023,14 +1023,25 @@ namespace ImageEnhancingUtility.Core
         }
         async public Task Split(FileInfo[] inputFiles = null)
         {
-            DirectoryInfo lrDirectory = new DirectoryInfo(LrPath);
-            DirectoryInfo lrAlphaDirectory = new DirectoryInfo(LrPath + "_alpha");
-            if (UseDifferentModelForAlpha && !lrAlphaDirectory.Exists)
-                lrAlphaDirectory.Create();
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
             if (OutputDestinationMode == 3)
                 searchOption = SearchOption.AllDirectories;
-            lrDirectory.GetFiles("*", searchOption).ToList().ForEach(x => x.Delete());
+
+            DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
+            DirectoryInfo lrDirectory = new DirectoryInfo(LrPath);
+            FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption);
+            if(inputDirectoryFiles.Count() == 0)
+            {
+                WriteToLogsThreadSafe("No files in input folder!");
+                return;
+            }
+            FileInfo[] lrFiles = lrDirectory.GetFiles("*", searchOption);         
+
+            DirectoryInfo lrAlphaDirectory = new DirectoryInfo(LrPath + "_alpha");
+            if (UseDifferentModelForAlpha && !lrAlphaDirectory.Exists)
+                lrAlphaDirectory.Create();
+
+            lrFiles.ToList().ForEach(x => x.Delete());
             WriteToLogsThreadSafe($"'{LrPath}' is cleared", Color.LightBlue);
 
             if (UseDifferentModelForAlpha)
@@ -1041,12 +1052,11 @@ namespace ImageEnhancingUtility.Core
             
             if(OverlapSize == 0)
                 WriteToLogsThreadSafe($"Overlap size is set to 0. Tiles merge may result in seams", Color.LightYellow);
-
-            DirectoryInfo di = new DirectoryInfo(InputDirectoryPath);
+            
             WriteToLogsThreadSafe("Creating tiles...");
 
             if (inputFiles == null)
-                inputFiles = di.GetFiles("*", searchOption);
+                inputFiles = inputDirectoryFiles;
 
             tasks = new List<Task>();
             FilesDone = 0;
@@ -1055,7 +1065,7 @@ namespace ImageEnhancingUtility.Core
             if (CreateMemoryImage)
             {
                 Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
-                image.WriteToFile($"{LrPath}{DirectorySeparator}([000])000)_memory_image.png");
+                image.WriteToFile($"{LrPath}{DirectorySeparator}([000])000)_memory_helper_image.png");
             }
 
             foreach (var file in inputFiles)

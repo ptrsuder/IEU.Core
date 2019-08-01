@@ -61,7 +61,7 @@ namespace ImageEnhancingUtility.Core
     [ProtoContract]    
     public class IEU : ReactiveObject
     {
-        public readonly string AppVersion = "0.10.02";
+        public readonly string AppVersion = "0.10.3";
         public readonly string GitHubRepoName = "IEU.Core";
 
         public static Dictionary<TiffCompression, string> TiffCompressionModes = new Dictionary<TiffCompression, string>()
@@ -81,8 +81,7 @@ namespace ImageEnhancingUtility.Core
             { WebpPreset.Icon, "VIPS_FOREIGN_WEBP_PRESET_ICON" },
             { WebpPreset.Text, "VIPS_FOREIGN_WEBP_PRESET_TEXT" },
         };
-
-
+        
         #region PROPERTIES
 
         public double WindowMinWidth = 800, WindowMinHeight = 650;
@@ -378,7 +377,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         private bool _checkForUpdates = true;
-        [ProtoMember(19)]
+        [ProtoMember(19, IsRequired = true)]
         public bool CheckForUpdates
         {
             get => _checkForUpdates;
@@ -1032,7 +1031,7 @@ namespace ImageEnhancingUtility.Core
             FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption);
             if(inputDirectoryFiles.Count() == 0)
             {
-                WriteToLogsThreadSafe("No files in input folder!");
+                WriteToLogsThreadSafe("No files in input folder!", Color.Red);
                 return;
             }
             FileInfo[] lrFiles = lrDirectory.GetFiles("*", searchOption);         

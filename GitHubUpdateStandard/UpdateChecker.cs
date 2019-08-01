@@ -48,8 +48,6 @@ namespace GitHubUpdate
             Helper.ArgumentNotNullOrEmptyString(version, @"version");
             Helper.ArgumentNotNullOrEmptyString(version, @"branch");
 
-            version = version.Substring(0, version.LastIndexOf('.'));
-
             Init(owner, name, version, branch, ignorePreleases);
         }
 

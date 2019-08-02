@@ -358,7 +358,11 @@ namespace ImageEnhancingUtility.Core
         }
 
         [ProtoMember(25)]
-        public int OverlapSize = 16;   
+        public int OverlapSize
+        {
+            get => _overlapSize;
+            set => this.RaiseAndSetIfChanged(ref _overlapSize, value);
+        }
 
         private int _outputDestinationMode = 0;
         [ProtoMember(17)]

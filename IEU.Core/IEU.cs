@@ -1003,6 +1003,7 @@ namespace ImageEnhancingUtility.Core
                     }
                 }
             }
+            WriteToLogsThreadSafe($"{file.Name} DONE", Color.LightGreen);
         }
 
         void SplitTask(FileInfo file)
@@ -1045,9 +1046,7 @@ namespace ImageEnhancingUtility.Core
                     imageHasAlpha = false;
                 }
             }
-            CreateTiles(file, inputImage, imageHasAlpha, inputImageAlpha);
-
-            WriteToLogsThreadSafe($"{file.Name} DONE", Color.LightGreen);
+            CreateTiles(file, inputImage, imageHasAlpha, inputImageAlpha);            
             ReportProgressThreadSafe();
             GC.Collect();
         }

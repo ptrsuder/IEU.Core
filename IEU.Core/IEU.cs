@@ -356,7 +356,18 @@ namespace ImageEnhancingUtility.Core
                 this.RaiseAndSetIfChanged(ref _maxTileResolutionHeight, value);
             }
         }
-
+        private bool _preciseTileResolution = false;
+        [ProtoMember(40)]
+        public bool PreciseTileResolution
+        {
+            get => _preciseTileResolution;
+            set
+            {
+                OverlapSize = 0;
+                this.RaiseAndSetIfChanged(ref _preciseTileResolution, value);
+            }
+        }
+        private int _overlapSize = 16;
         [ProtoMember(25)]
         public int OverlapSize
         {
@@ -912,13 +923,30 @@ namespace ImageEnhancingUtility.Core
             }
 
             int[] tiles;
-            if (imageHeight * imageWidth > MaxTileResolution)
-                tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
+            if (PreciseTileResolution)
+            {
+                tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolutionWidth, MaxTileResolutionHeight);
+                if(tiles[0] == 0 || tiles[1] == 0)
+                {
+                    WriteToLogsThreadSafe(file.Name + " resolution is smaller than specified tile size");
+                    return;
+                }
+            }
             else
-                tiles = new int[] { 1, 1 };
+            {
+                if (imageHeight * imageWidth > MaxTileResolution)
+                    tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
+                else
+                    tiles = new int[] { 1, 1 };
+            }
 
             int tileWidth = imageWidth / tiles[0];
             int tileHeight = imageHeight / tiles[1];
+            if (PreciseTileResolution)
+            {
+                tileWidth = MaxTileResolutionWidth;
+                tileHeight = MaxTileResolutionHeight;
+            }
             int rightOverlap = 1;
             int bottomOverlap = 1;
 

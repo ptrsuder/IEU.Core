@@ -141,6 +141,14 @@ namespace ImageEnhancingUtility
             return new int[] { tilesWidth, tilesHeight };
         }
 
+        public static int[] GetTilesSize(int width, int height, int tileWidth, int tileHeight)
+        {
+            int tilesHeight = 1, tilesWidth = 1;
+            tilesWidth = width / tileHeight;
+            tilesHeight = height / tileHeight;
+            return new int[] { tilesWidth, tilesHeight };
+        }
+
         public static void RenameModelFile(ModelInfo model, int scaleSize)
         {
             string newName = $"{scaleSize}x_" + model.Name;

@@ -167,8 +167,7 @@ namespace ImageEnhancingUtility.Core
             get => _ddsBC7CompressionMode;
             set => this.RaiseAndSetIfChanged(ref _ddsBC7CompressionMode, value);
         }
-
-        [ProtoMember(31)]
+        [ProtoMember(31, IsRequired = true)]
         public bool ddsGenerateMipmaps = true;
 
         #endregion
@@ -302,11 +301,11 @@ namespace ImageEnhancingUtility.Core
             get => _ignoreAlpha;
             set => this.RaiseAndSetIfChanged(ref _ignoreAlpha, value);
         }
-        [ProtoMember(34)]
+        [ProtoMember(34, IsRequired = true)]
         public bool IgnoreSingleColorAlphas = true;
         [ProtoMember(35)]
         public bool BalanceMonotonicImages = false;
-        [ProtoMember(36)]
+        [ProtoMember(36, IsRequired = true)]
         public bool BalanceAlphas = true;
 
         private bool _preserveImageFormat;

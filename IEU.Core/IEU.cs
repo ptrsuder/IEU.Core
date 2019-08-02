@@ -154,7 +154,6 @@ namespace ImageEnhancingUtility.Core
             BC7CompressionMode.Normal,
             BC7CompressionMode.Slow
         };
-
         private DdsFileFormatSetting _ddsFileFormat;
         public DdsFileFormatSetting ddsFileFormat
         {
@@ -337,8 +336,6 @@ namespace ImageEnhancingUtility.Core
             get => _maxTileResolutionWidth;
             set
             {
-                if (value == 0)
-                    value = 16;
                 MaxTileResolution = value * MaxTileResolutionHeight;
                 this.RaiseAndSetIfChanged(ref _maxTileResolutionWidth, value);
             }
@@ -691,7 +688,8 @@ namespace ImageEnhancingUtility.Core
         {
             Func<FileInfo[], Task> splitFunc = x => Split(x);
             SplitCommand = ReactiveCommand.CreateFromTask(splitFunc);
-          
+         
+
             UpscaleCommand = ReactiveCommand.CreateFromTask(Upscale);
           
             MergeCommand = ReactiveCommand.CreateFromTask(Merge);
@@ -1079,9 +1077,6 @@ namespace ImageEnhancingUtility.Core
                 lrAlphaDirectory.GetFiles("*", searchOption).ToList().ForEach(x => x.Delete());
                 WriteToLogsThreadSafe($"'{LrPath + "_alpha"}' is cleared", Color.LightBlue);
             }
-            
-            if(OverlapSize == 0)
-                WriteToLogsThreadSafe($"Overlap size is set to 0. Tiles merge may result in seams", Color.LightYellow);
             
             WriteToLogsThreadSafe("Creating tiles...");
 

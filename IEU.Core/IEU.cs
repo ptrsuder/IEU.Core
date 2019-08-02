@@ -1022,6 +1022,7 @@ namespace ImageEnhancingUtility.Core
         }
         async public Task Split(FileInfo[] inputFiles = null)
         {
+            SaveSettings();
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
             if (OutputDestinationMode == 3)
                 searchOption = SearchOption.AllDirectories;
@@ -1088,6 +1089,7 @@ namespace ImageEnhancingUtility.Core
 
         async public Task<bool> Upscale()
         {
+            SaveSettings();
             checkedModels = SelectedModelsItems;
 
             if (checkedModels.Count == 0)
@@ -1495,6 +1497,7 @@ namespace ImageEnhancingUtility.Core
         }
         async public Task Merge()
         {
+            SaveSettings();
             WriteToLogsThreadSafe("Merging tiles...");
 
             tasks = new List<Task>();

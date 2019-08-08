@@ -171,6 +171,8 @@ namespace ImageEnhancingUtility.Core
 
         #endregion
 
+        
+
         private List<ModelInfo> _modelsItems = new List<ModelInfo>();
         public List<ModelInfo> ModelsItems
         {
@@ -209,6 +211,8 @@ namespace ImageEnhancingUtility.Core
             get => _logPanelWidth;
             set => this.RaiseAndSetIfChanged(ref _logPanelWidth, value);
         }
+
+        //Preset GloabalPreset;
 
         #region FOLDER_PATHS
         private string _esrganPath;
@@ -907,7 +911,6 @@ namespace ImageEnhancingUtility.Core
             {
                 if (inputImage.ColorSpace == ColorSpace.RGB || inputImage.ColorSpace == ColorSpace.sRGB)
                 {
-
                     inputImageRed = (MagickImage)inputImage.Separate(Channels.Red).FirstOrDefault();
                     inputImageGreen = (MagickImage)inputImage.Separate(Channels.Green).FirstOrDefault();
                     inputImageBlue = (MagickImage)inputImage.Separate(Channels.Blue).FirstOrDefault();
@@ -994,7 +997,7 @@ namespace ImageEnhancingUtility.Core
                     }
                     else
                     {
-                        MagickImage outputImage = (MagickImage)inputImage.Clone();
+                        MagickImage outputImage = (MagickImage)inputImage.Clone();                      
                         outputImage.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
                         MagickFormat format = MagickFormat.Png00;                 
                         outputImage.Write($"{LrPath}\\{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}\\{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex.ToString("D2")}.png", format);
@@ -1020,6 +1023,7 @@ namespace ImageEnhancingUtility.Core
             catch (Exception ex)
             {
                 WriteToLogsThreadSafe($"Failed to read file {file.Name}!", Color.Red);
+                WriteToLogsThreadSafe(ex.Message);
                 return;
             }                      
             
@@ -1151,7 +1155,13 @@ namespace ImageEnhancingUtility.Core
             {
                 string pathToLastTile = $"{ResultsPath + basePath}_tile-{((tiles[1] - 1) * tiles[0] + tiles[0] - 1).ToString("D2")}{resultSuffix}.png";
                 if (SplitRGB)
-                    pathToLastTile = $"{ResultsPath + basePath}_R_tile-{((tiles[1] - 1) * tiles[0] + tiles[0] - 1).ToString("D2")}{resultSuffix}.png";
+                    if (OutputDestinationMode == 1)
+                    {
+                        string baseName = Path.GetFileNameWithoutExtension(file.Name);
+                        pathToLastTile = $"{ResultsPath + basePath.Replace(baseName, baseName + "_R")}_tile-{((tiles[1] - 1) * tiles[0] + tiles[0] - 1).ToString("D2")}{resultSuffix}.png";
+                    }
+                    else
+                        pathToLastTile = $"{ResultsPath + basePath}_R_tile-{((tiles[1] - 1) * tiles[0] + tiles[0] - 1).ToString("D2")}{resultSuffix}.png";
 
                 lastTile = new MagickImageInfo(pathToLastTile);
             }
@@ -1222,15 +1232,29 @@ namespace ImageEnhancingUtility.Core
                 finalImage = ResizeImage(finalImage, ResizeImageAfterScaleFactor, (FilterType)ResizeImageAfterFilterType);
             }
         }
-        Image JoinRGB(string basePath, int tileIndex, string resultSuffix, List<FileInfo> tileFilesToDelete)
+        Image JoinRGB(string basePath, string baseName, int tileIndex, string resultSuffix, List<FileInfo> tileFilesToDelete)
         {
             Image imageNextTileR = null, imageNextTileG = null, imageNextTileB = null;
-            imageNextTileR = Image.NewFromFile($"{ResultsPath + basePath}_R_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
-            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePath}_R_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
-            imageNextTileG = Image.NewFromFile($"{ResultsPath + basePath}_G_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
-            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePath}_G_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
-            imageNextTileB = Image.NewFromFile($"{ResultsPath + basePath}_B_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false)[0];
-            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePath}_B_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+            FileInfo tileR, tileG, tileB;
+            if(OutputDestinationMode == 1)
+            {                
+                tileR = new FileInfo($"{ResultsPath + basePath.Replace(baseName, baseName + "_R")}_tile-{tileIndex.ToString("D2")}{resultSuffix}.png");
+                tileG = new FileInfo($"{ResultsPath + basePath.Replace(baseName, baseName + "_G")}_tile-{tileIndex.ToString("D2")}{resultSuffix}.png");
+                tileB = new FileInfo($"{ResultsPath + basePath.Replace(baseName, baseName + "_B")}_tile-{tileIndex.ToString("D2")}{resultSuffix}.png");
+            }
+            else
+            {
+                tileR = new FileInfo($"{ResultsPath + basePath}_R_tile-{tileIndex.ToString("D2")}{resultSuffix}.png");
+                tileG = new FileInfo($"{ResultsPath + basePath}_G_tile-{tileIndex.ToString("D2")}{resultSuffix}.png");
+                tileB = new FileInfo($"{ResultsPath + basePath}_B_tile-{tileIndex.ToString("D2")}{resultSuffix}.png");
+            }
+
+            imageNextTileR = Image.NewFromFile(tileR.FullName, false)[0];
+            tileFilesToDelete.Add(tileR);
+            imageNextTileG = Image.NewFromFile(tileG.FullName, false)[0];
+            tileFilesToDelete.Add(tileG);
+            imageNextTileB = Image.NewFromFile(tileB.FullName, false)[0];
+            tileFilesToDelete.Add(tileB);
             return imageNextTileR.Bandjoin(imageNextTileG).Bandjoin(imageNextTileB);
         }
         void UseGlobalbalance(Image imageResult, ref bool cancelGlobalbalance, string filename)
@@ -1288,7 +1312,7 @@ namespace ImageEnhancingUtility.Core
                     try
                     {
                         if (SplitRGB)                        
-                            imageNextTile = JoinRGB(basePath, tileIndex, resultSuffix, tileFilesToDelete);                        
+                            imageNextTile = JoinRGB(basePath, Path.GetFileNameWithoutExtension(file.Name), tileIndex, resultSuffix, tileFilesToDelete);                        
                         else
                         {
                             imageNextTile = Image.NewFromFile($"{ResultsPath + basePath}_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false);
@@ -1554,21 +1578,40 @@ namespace ImageEnhancingUtility.Core
 
                 if (OutputDestinationMode == 1)
                 {
-                    DirectoryInfo imagesFolder = new DirectoryInfo(ResultsPath + $"{DirectorySeparator}images{DirectorySeparator}" + Path.GetFileNameWithoutExtension(file.Name));
+                    DirectoryInfo imagesFolder;
 
-                    if (!imagesFolder.Exists || imagesFolder.GetFiles().Length == 0)
-                    {
-                        WriteLogOpenError(file, "Can't find tiles in result folder for " + file.Name);
-                        return;
+                    if (SplitRGB)
+                    {                       
+                        imagesFolder = new DirectoryInfo(ResultsPath + $"{DirectorySeparator}images{DirectorySeparator}" + Path.GetFileNameWithoutExtension(file.Name) + "_R");
+
+                        foreach (var image in imagesFolder.GetFiles("*", SearchOption.TopDirectoryOnly).
+                            Where(x => x.Name.Contains(Path.GetFileNameWithoutExtension(file.Name) + "_R" + "_tile-00")))
+                        {
+                            string basePath = $"{DirectorySeparator}images{DirectorySeparator}{Path.GetFileNameWithoutExtension(file.Name)}{DirectorySeparator}" +
+                                $"{Path.GetFileNameWithoutExtension(image.Name).Replace("_R","")}";
+                            basePath = basePath.Remove(basePath.Length - 8, 8);
+                            FilesNumber++;
+                            //MergeTask(file, s, 1);
+                            tasks.Add(Task.Run(() => MergeTask(file, basePath, OutputDestinationMode)));
+                        }                        
                     }
-
-                    foreach (var image in imagesFolder.GetFiles("*", SearchOption.TopDirectoryOnly).Where(x => x.Name.Contains(Path.GetFileNameWithoutExtension(file.Name) + "_tile-00")))
+                    else
                     {
-                        string s = $"{DirectorySeparator}images{DirectorySeparator}{Path.GetFileNameWithoutExtension(file.Name)}{DirectorySeparator}{Path.GetFileNameWithoutExtension(image.Name)}";
-                        s = s.Remove(s.Length - 8, 8);
-                        FilesNumber++;
-                        //MergeTask(file, s, 1);
-                        tasks.Add(Task.Run(() => MergeTask(file, s, OutputDestinationMode)));
+                        imagesFolder = new DirectoryInfo(ResultsPath + $"{DirectorySeparator}images{DirectorySeparator}" + Path.GetFileNameWithoutExtension(file.Name));
+                        if (!imagesFolder.Exists || imagesFolder.GetFiles().Length == 0)
+                        {
+                            WriteLogOpenError(file, "Can't find tiles in result folder for " + file.Name);
+                            return;
+                        }
+
+                        foreach (var image in imagesFolder.GetFiles("*", SearchOption.TopDirectoryOnly).Where(x => x.Name.Contains(Path.GetFileNameWithoutExtension(file.Name) + "_tile-00")))
+                        {
+                            string basePath = $"{DirectorySeparator}images{DirectorySeparator}{Path.GetFileNameWithoutExtension(file.Name)}{DirectorySeparator}{Path.GetFileNameWithoutExtension(image.Name)}";                            
+                            basePath = basePath.Remove(basePath.Length - 8, 8); //remove "_tile-00"
+                            FilesNumber++;
+                            //MergeTask(file, s, 1);
+                            tasks.Add(Task.Run(() => MergeTask(file, basePath, OutputDestinationMode)));
+                        }
                     }
                     continue;
                 }
@@ -1747,10 +1790,10 @@ namespace ImageEnhancingUtility.Core
             return newImage;
         }
 
-        void CreateUpscaleScript()
+        void WriteTestScriptToDisk()
         {
             string script = "";
-
+                        
             if (OutputDestinationMode == 0)
                 script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.upscaleDefault.py");
             if (OutputDestinationMode == 1)
@@ -1854,7 +1897,7 @@ namespace ImageEnhancingUtility.Core
                 return null;
             }
 
-            CreateUpscaleScript();
+            WriteTestScriptToDisk();
 
             process.ErrorDataReceived += SortOutputHandler;
             process.OutputDataReceived += SortOutputHandler;
@@ -1995,5 +2038,5 @@ namespace ImageEnhancingUtility.Core
         }
 
         #endregion
-    }       
+    }    
 }

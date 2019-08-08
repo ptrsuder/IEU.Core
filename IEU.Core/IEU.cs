@@ -1163,12 +1163,8 @@ namespace ImageEnhancingUtility.Core
             tileWidth = lastTile.Width; tileHeight = lastTile.Height;
             return true;
         }
-        Image ExtractTiledTexture(Image imageResult, int imageWidth, int imageHeight)
-        {
-            int expandSize = 15;
-            if (imageHeight <= 32 || imageWidth <= 32)
-                expandSize = 5;
-            int upscaleModificator = imageResult.Width / (imageWidth + expandSize * 2);
+        Image ExtractTiledTexture(Image imageResult, int upscaleModificator, int expandSize)
+        {            
             int edgeSize = upscaleModificator * expandSize;
             Image tempImage = imageResult.Copy();
             tempImage = tempImage.ExtractArea(edgeSize, edgeSize, imageResult.Width - edgeSize * 2, imageResult.Height - edgeSize * 2).Copy();
@@ -1444,9 +1440,17 @@ namespace ImageEnhancingUtility.Core
                 destinationPath = $"{OutputDirectoryPath}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}{DirectorySeparator}" +
                     $"{Path.GetFileNameWithoutExtension(file.Name)}{outputFormat}";
         
-            if (imageResult.Width % image.Width != 0 || imageResult.Height % image.Height != 0) //seamlessTexture
+            if (imageResult.Width % image.Width != 0 || imageResult.Height % image.Height != 0) // result image dimensions are wrong
             {
-                imageResult = ExtractTiledTexture(imageResult, image.Width, image.Height);
+                int expandSize = 15;
+                if (image.Height <= 32 || image.Width <= 32)
+                    expandSize = 5;
+                int upscaleModificator = imageResult.Width / (imageWidth + expandSize * 2);
+
+                if (imageResult.Width - upscaleModificator * image.Width == 15 * 2 * upscaleModificator || imageResult.Width - upscaleModificator * image.Width == 5 * 2 * upscaleModificator) //seamlessTexture
+                    imageResult = ExtractTiledTexture(imageResult, upscaleModificator, expandSize);
+                else
+                    WriteToLogsThreadSafe($"Wrong dimensions for merged {file.Name}");
             }
 
             if (                

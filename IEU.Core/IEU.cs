@@ -688,6 +688,8 @@ namespace ImageEnhancingUtility.Core
             }
         }
 
+        public bool GreyscaleModel = false;
+
         public IEU()
         {
             Func<FileInfo[], Task> splitFunc = x => Split(x);
@@ -1795,13 +1797,15 @@ namespace ImageEnhancingUtility.Core
             string script = "";
                         
             if (OutputDestinationMode == 0)
-                script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.upscaleDefault.py");
+                script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.upscaleDefault.py");            
             if (OutputDestinationMode == 1)
                 script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.upscaleFolderForImage.py");
             if (OutputDestinationMode == 2)
                 script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.upscaleFolderForModel.py");
             if (OutputDestinationMode == 3)
                 script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.upscaleFolderStructure.py");
+            if (GreyscaleModel)
+                script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.upscaleGrayscale.py");
 
             if (OverwriteMode == 2)
                 script = Regex.Replace(script, "results", "LR");

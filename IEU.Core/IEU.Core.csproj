@@ -27,6 +27,7 @@
     <None Remove="upscaleFolderForImage.py" />
     <None Remove="upscaleFolderForModel.py" />
     <None Remove="upscaleFolderStructure.py" />
+    <None Remove="upscaleGrayscale.py" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,6 +7,7 @@ using PaintDotNet;
 using System.Runtime.InteropServices;
 using Color = System.Drawing.Color;
 using ImageEnhancingUtility.Core;
+using Path = System.IO.Path;
 
 namespace ImageEnhancingUtility
 {

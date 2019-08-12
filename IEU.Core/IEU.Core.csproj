@@ -44,6 +44,7 @@
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.13.1" />
     <PackageReference Include="NetVips" Version="1.1.0-rc3" />
     <PackageReference Include="NetVips.Native.win-x64" Version="8.8.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="protobuf-net" Version="2.4.0" />
     <PackageReference Include="ReactiveUI" Version="9.0.1" />
   </ItemGroup>
@@ -81,6 +82,21 @@
     </Reference>  
     <Reference Update="System.Xml">
       <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System">
+      <HintPath>System</HintPath>
+    </Reference>
+    <Reference Include="System.Data">
+      <HintPath>System.Data</HintPath>
+    </Reference>
+    <Reference Include="System.Drawing">
+      <HintPath>System.Drawing</HintPath>
+    </Reference>
+    <Reference Include="System.Xml">
+      <HintPath>System.Xml</HintPath>
     </Reference>
   </ItemGroup> 
 </Project>

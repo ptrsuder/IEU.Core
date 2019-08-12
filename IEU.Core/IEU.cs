@@ -1934,7 +1934,7 @@ namespace ImageEnhancingUtility.Core
             return process;
         }
 
-        Task<int> RunProcessAsync(Process process)
+        public Task<int> RunProcessAsync(Process process)
         {
             var tcs = new TaskCompletionSource<int>();
             if (process == null) // something goes wrong
@@ -2044,3 +2044,6 @@ namespace ImageEnhancingUtility.Core
         #endregion
     }    
 }
+
+
+

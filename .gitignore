@@ -332,7 +332,11 @@ ASALocalRun/
 
 # Local History for Visual Studio
 .localhistory/
+
 IEU.Avalonia/*
 IEU.Winforms/*
+IETU.Winforms/*
 IEU.Avalonia/
 IEU.Winforms/
+IETU.Winforms/
+IEU.NUnitTests/Test_*

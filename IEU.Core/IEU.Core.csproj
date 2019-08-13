@@ -37,6 +37,7 @@
     <EmbeddedResource Include="upscaleFolderForImage.py" />
     <EmbeddedResource Include="upscaleFolderForModel.py" />
     <EmbeddedResource Include="upscaleFolderStructure.py" />
+    <EmbeddedResource Include="upscaleGrayscale.py" />
   </ItemGroup>
 
   <ItemGroup>

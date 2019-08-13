@@ -938,7 +938,17 @@ namespace ImageEnhancingUtility.Core
             else
             {
                 if (imageHeight * imageWidth > MaxTileResolution)
+                {                    
                     tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
+                    bool dimensionsAreOK = imageWidth % tiles[0] == 0 && imageHeight % tiles[1] == 0;
+                    if(!dimensionsAreOK)
+                    {                        
+                        inputImage = PadImage(inputImage, tiles[0], tiles[1]);
+                        imageWidth = inputImage.Width;
+                        imageHeight = inputImage.Height;
+                        tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
+                    }
+                }
                 else
                     tiles = new int[] { 1, 1 };
             }
@@ -1436,7 +1446,15 @@ namespace ImageEnhancingUtility.Core
 
             int[] tiles;
             if (imageHeight * imageWidth > MaxTileResolution)
+            {
                 tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
+                bool dimensionsAreOK = imageWidth % tiles[0] == 0 && imageHeight % tiles[1] == 0;
+                if (!dimensionsAreOK)
+                {
+                    int[] newDimensions = Helper.GetGoodDimensions(image.Width, image.Height, tiles[0], tiles[1]);                   
+                    tiles = Helper.GetTilesSize(newDimensions[0], newDimensions[1], MaxTileResolution);
+                }
+            }
             else
                 tiles = new int[] { 1, 1 };
                        
@@ -1476,7 +1494,10 @@ namespace ImageEnhancingUtility.Core
                 if (imageResult.Width - upscaleModificator * image.Width == 15 * 2 * upscaleModificator || imageResult.Width - upscaleModificator * image.Width == 5 * 2 * upscaleModificator) //seamlessTexture
                     imageResult = ExtractTiledTexture(imageResult, upscaleModificator, expandSize);
                 else
-                    WriteToLogsThreadSafe($"Wrong dimensions for merged {file.Name}");
+                {
+                    upscaleModificator = imageResult.Width / imageWidth;
+                    imageResult = imageResult.Crop(0, 0, image.Width * upscaleModificator, image.Height * upscaleModificator);                 
+                }
             }
 
             if (                
@@ -1790,6 +1811,14 @@ namespace ImageEnhancingUtility.Core
             //image.Scale(new Percentage(resizeFactor));        
             newImage.Resize((int)(resizeFactor * image.Width), (int)(resizeFactor * image.Height));
             return newImage;
+        }
+
+        MagickImage PadImage(MagickImage image, int x, int y)
+        {
+            MagickImage result = (MagickImage)image.Clone();
+            int[] newDimensions = Helper.GetGoodDimensions(image.Width, image.Height, x, y);
+            result.Extent(newDimensions[0], newDimensions[1]);          
+            return result;
         }
 
         void WriteTestScriptToDisk()

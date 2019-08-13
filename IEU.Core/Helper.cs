@@ -104,21 +104,30 @@ namespace ImageEnhancingUtility
             return Surface.CopyFromBitmap(processedBitmap);
         }
 
+        public static int[] GetGoodDimensions(int width, int height, int x, int y)
+        {
+            if (width % x != 0)
+                width += (x - width % x);
+
+            if (height % y != 0)
+                height += (y - height % y);
+
+            return new int[] { width, height };
+        }
+
         public static int[] GetTilesSize(int width, int height, int maxTileResolution)
         {
             int tilesHeight = 1, tilesWidth = 1;
             while ((height / tilesHeight) * (width / tilesWidth) > maxTileResolution)
             {
                 int oldTilesHeight = tilesHeight, oldTilesWidth = tilesWidth;
-                if (tilesHeight <= tilesWidth)
+                if (height/tilesHeight >= width/tilesWidth)
                 {
-                    for (int i = 2; i < 4; i++)
+                    for (int i = 0; i < 5; i++)
                     {
-                        if (height % i == 0)
-                        {
-                            tilesHeight *= i;
+                        tilesHeight++;
+                        if (height % tilesHeight == 0)
                             break;
-                        }
                     }
                     if (tilesHeight == oldTilesHeight)
                         tilesHeight++;
@@ -126,13 +135,11 @@ namespace ImageEnhancingUtility
                 }
                 else
                 {
-                    for (int i = 2; i < 4; i++)
+                    for (int i = 0; i < 5; i++)
                     {
-                        if (width % i == 0)
-                        {
-                            tilesWidth *= i;
+                        tilesWidth++;
+                        if (width % tilesWidth == 0)
                             break;
-                        }
                     }
                     if (tilesWidth == oldTilesWidth)
                         tilesWidth++;

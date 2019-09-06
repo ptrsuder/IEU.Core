@@ -1083,19 +1083,18 @@ namespace ImageEnhancingUtility.Core
             {
                 WriteToLog("No files in input folder!", Color.Red);
                 return;
-            }
-            FileInfo[] lrFiles = lrDirectory.GetFiles("*", searchOption);         
+            }                 
 
             DirectoryInfo lrAlphaDirectory = new DirectoryInfo(LrPath + "_alpha");
             if (UseDifferentModelForAlpha && !lrAlphaDirectory.Exists)
                 lrAlphaDirectory.Create();
-
-            lrFiles.ToList().ForEach(x => x.Delete());
+     
+            lrDirectory.GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(x => x.Delete());
             WriteToLog($"'{LrPath}' is cleared", Color.LightBlue);
 
             if (UseDifferentModelForAlpha)
             {
-                lrAlphaDirectory.GetFiles("*", searchOption).ToList().ForEach(x => x.Delete());
+                lrAlphaDirectory.GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(x => x.Delete());
                 WriteToLog($"'{LrPath + "_alpha"}' is cleared", Color.LightBlue);
             }
             

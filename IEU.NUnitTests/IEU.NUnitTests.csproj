@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+
+    <AssemblyName>ImageEnhancingUtility.Tests</AssemblyName>
+
+    <RootNamespace>ImageEnhancingUtility</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="nunit" Version="3.11.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.11.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IEU.Core\IEU.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ReactiveUI">
+      <HintPath>..\IEU.Core\bin\Debug\net461\ReactiveUI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -98,9 +98,9 @@ namespace GitHubUpdate
 
             if (latestVersion.Major > CurrentVersion.Major)
                 return UpdateType.Major;
-            if (latestVersion.Minor > CurrentVersion.Minor)
+            if (latestVersion.Minor > CurrentVersion.Minor && latestVersion.Major == CurrentVersion.Major)
                 return UpdateType.Minor;
-            if (latestVersion.Patch > CurrentVersion.Patch)
+            if (latestVersion.Patch > CurrentVersion.Patch && latestVersion.Minor == CurrentVersion.Minor)
                 return UpdateType.Patch;
 
             return UpdateType.None;

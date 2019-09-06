@@ -10,31 +10,10 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using ImageEnhancingUtility.BasicSR;
 
 namespace ImageEnhancingUtility.Train
-{
-    public enum DownscaleType
-    {
-        Nearest = 0,
-        Linear = 1,
-        Cubic = 2,
-        Area = 3,
-        Lancoz = 4,
-        LinearExact = 5
-    }
-    
-    public enum NoiseType
-    {      
-        Jpeg,
-        Gaussian,
-        Quantize,
-        Poisson,
-        Dither,
-        Speckle,
-        SaltPepper,        
-        Clean
-    }
-    
+{ 
     [ProtoContract]
     public class IETU: ReactiveObject
     {
@@ -115,8 +94,7 @@ namespace ImageEnhancingUtility.Train
             DirectoryInfo configDir = new DirectoryInfo("configs");
             if (!configDir.Exists)
                 return;
-            List<FileInfo> tempList = new List<FileInfo>();
-            var ff = configDir.GetFiles();
+            List<FileInfo> tempList = new List<FileInfo>();           
             foreach (var file in configDir.GetFiles("*.json"))
                 tempList.Add(file);
                 //tempList.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
@@ -143,6 +121,8 @@ namespace ImageEnhancingUtility.Train
             TrainConfig.WhenAnyValue(x => x.Path.Root).Subscribe(y => TrainConfig.Datasets.Train.DatarootLR = y + "\\datasets\\lr");
             TrainConfig.WhenAnyValue(x => x.Path.Root).Subscribe(y => TrainConfig.Datasets.Val.DatarootHR = y + "\\datasets\\val\\hr");
             TrainConfig.WhenAnyValue(x => x.Path.Root).Subscribe(y => TrainConfig.Datasets.Val.DatarootLR = y + "\\datasets\\val\\lr");
+
+            TrainConfig.WhenAnyValue(x => x.Datasets.Train.HRSize).Subscribe(y => TrainConfig.NetworkD.WhichModelD = $"discriminator_vgg_{y}");
 
             Core = new IEU();
             CreateConfigList();
@@ -247,18 +227,17 @@ namespace ImageEnhancingUtility.Train
 
         public async Task Train()
         {
-            Process process = await GetTrainProcess();
-
-            int processExitCode = -666;
-            processExitCode = await Core.RunProcessAsync(process);
+            Process process = GetTrainProcess();
+                       
+            int processExitCode = await Core.RunProcessAsync(process);
             
             if (processExitCode != 0)
             {
-                Core.WriteToLogsThreadSafe("Error ocured during training!", System.Drawing.Color.Red);               
+                Core.WriteToLog("Error ocured during training!", System.Drawing.Color.Red);               
             }
         }
 
-        async Task<Process> GetTrainProcess()
+        Process GetTrainProcess()
         {
             SaveConfig("Current_Train_Config", TrainConfig.Path.Root);
             Process process = new Process();
@@ -271,7 +250,7 @@ namespace ImageEnhancingUtility.Train
             process.ErrorDataReceived += SortOutputHandler;
             process.OutputDataReceived += SortOutputHandler;
 
-            Core.WriteToLogsThreadSafe("Starting training with current config...");
+            Core.WriteToLog("Starting training with current config...");
 
             return process;
         }
@@ -279,7 +258,7 @@ namespace ImageEnhancingUtility.Train
         private void SortOutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
         {
             if (!string.IsNullOrEmpty(outLine.Data))            
-                Core.WriteToLogsThreadSafe(outLine.Data);            
+                Core.WriteToLog(outLine.Data);            
         }
 
     }

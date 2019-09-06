@@ -3,44 +3,17 @@ using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 
-namespace ImageEnhancingUtility.Train
+namespace ImageEnhancingUtility.BasicSR
 {
-    public class TrainConfig : ReactiveObject
-    {
-        [JsonProperty("name")]
-        public string Name { get; set; } = "001_HFEN";
-        [JsonProperty("use_tb_logger")]
-        public bool UseTbLogger { get; set; } = true;
-        string _model = "srragan_hfen";
-        [JsonProperty("model")]
-        public string Model
-        {
-            get => _model;
-            set
-            {
-                if (value == "srragan_hfen")
-                    InitHfen();
-                if (value == "ppon")
-                    InitPPON();
-                _model = value;
-            }
-        }
-        [JsonProperty("scale")]
-        public int Scale { get; set; } = 4;
-        [JsonProperty("gpu_ids")]
-        [Browsable(false)]
-        public int[] GpuIds { get; set; } = { 0 };
-        [JsonProperty("path")]
-        [Browsable(false)]
-        public Path Path { get; set; } = new Path();
+    public class TrainConfig : BasicConfig
+    {     
         Datasets _datasets = new Datasets();
         [JsonProperty("datasets")]
         [Browsable(false)]
         public Datasets Datasets { get => _datasets; set => this.RaiseAndSetIfChanged(ref _datasets, value); }
-        [JsonProperty("network_G")]
-        [Browsable(false)]
-        public NetworkG NetworkG { get; set; } = new NetworkG();
+        
         [Browsable(false)]
         [JsonProperty("network_D")]
         public NetworkD NetworkD { get; set; } = new NetworkD();
@@ -64,7 +37,7 @@ namespace ImageEnhancingUtility.Train
         [Browsable(false)]
         public new IObservable<Exception> ThrownExceptions { get; }
 
-        void InitPPON()
+        override internal void InitPPON()
         {
             Name = "001_PPON";
             Datasets.Train.HRSize = 192;
@@ -79,17 +52,16 @@ namespace ImageEnhancingUtility.Train
             Train.TvWeight = 1e-6;
             Train.Niter = 210000;
         }
-        void InitHfen()
+        override internal void InitHfen()
         {
             Name = "001_HFEN";
             Datasets.Train.HRSize = 128;
             NetworkG = new NetworkG();
             NetworkD = new NetworkD();
             Train = new Train();
-        }
-
+        }       
     }
-
+   
     public class TrainDataset : ReactiveObject
     {
         [JsonProperty("name")]
@@ -197,11 +169,9 @@ namespace ImageEnhancingUtility.Train
         public List<DownscaleType> LrDownscaleTypes { get; set; }
     }
     public class Datasets : ReactiveObject
-    {
-        TrainDataset _train = new TrainDataset();
+    {       
         [JsonProperty("train")]
-        public TrainDataset Train { get; set; } = new TrainDataset();
-        //{ get => _train; set => this.RaiseAndSetIfChanged(ref _train, value); }          
+        public TrainDataset Train { get; set; } = new TrainDataset();          
         [JsonProperty("val")]
         public ValDataset Val { get; set; } = new ValDataset();
     }

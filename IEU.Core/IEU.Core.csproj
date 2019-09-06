@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
+    <TargetFrameworks>net461;netcoreapp2.1</TargetFrameworks>
     <AssemblyName>ImageEnhancingUtility.Core</AssemblyName>
     <RootNamespace>ImageEnhancingUtility.Core</RootNamespace>
   </PropertyGroup>
@@ -21,8 +21,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Preset.cs" />
+    <Compile Remove="Settings.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="interpModels.py" />
     <None Remove="pthReader.py" />
+    <None Remove="Scripts\BasicSR\test_ppon.py" />
+    <None Remove="Scripts\BasicSR\upscaleDefault.py" />
+    <None Remove="Scripts\BasicSR\upscaleFolderForImage.py" />
+    <None Remove="Scripts\BasicSR\upscaleFolderStructure.py" />
     <None Remove="upscaleDefault.py" />
     <None Remove="upscaleFolderForImage.py" />
     <None Remove="upscaleFolderForModel.py" />
@@ -31,13 +40,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="interpModels.py" />
-    <EmbeddedResource Include="pthReader.py" />
-    <EmbeddedResource Include="upscaleDefault.py" />
-    <EmbeddedResource Include="upscaleFolderForImage.py" />
-    <EmbeddedResource Include="upscaleFolderForModel.py" />
-    <EmbeddedResource Include="upscaleFolderStructure.py" />
-    <EmbeddedResource Include="upscaleGrayscale.py" />
+    <EmbeddedResource Include="Scripts\BasicSR\test_ppon.py" />
+    <EmbeddedResource Include="Scripts\BasicSR\upscaleDefault.py" />
+    <EmbeddedResource Include="Scripts\BasicSR\upscaleFolderForImage.py" />
+    <EmbeddedResource Include="Scripts\BasicSR\upscaleFolderStructure.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\interpModels.py" />
+    <EmbeddedResource Include="Scripts\pthReader.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\upscaleDefault.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\upscaleFolderForImage.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\upscaleFolderForModel.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\upscaleFolderStructure.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\upscaleGrayscale.py" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Preset.cs" />
+    <None Include="Settings.cs" />
   </ItemGroup>
 
   <ItemGroup>

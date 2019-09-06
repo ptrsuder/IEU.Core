@@ -5,9 +5,12 @@ using ImageMagick;
 using System.Reflection;
 using PaintDotNet;
 using System.Runtime.InteropServices;
-using Color = System.Drawing.Color;
+
 using ImageEnhancingUtility.Core;
 using Path = System.IO.Path;
+using System.Drawing;
+using System.Linq;
+using DdsFileTypePlus;
 
 namespace ImageEnhancingUtility
 {
@@ -60,9 +63,10 @@ namespace ImageEnhancingUtility
         {
             var escapedArgs = cmd.Replace("\"", "\\\"");
 
-            var process = new Process
+            Process process;
+            using (var proc = new Process())
             {
-                StartInfo = new ProcessStartInfo
+                proc.StartInfo = new ProcessStartInfo
                 {
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
@@ -70,8 +74,9 @@ namespace ImageEnhancingUtility
                     WindowStyle = ProcessWindowStyle.Hidden,
                     FileName = "/bin/bash",
                     Arguments = $"-c \"{escapedArgs}\""
-                }
-            };
+                };
+                process = proc;
+            }; 
 
             process.Start();
             process.WaitForExit();
@@ -82,7 +87,7 @@ namespace ImageEnhancingUtility
         public static MagickImage ConvertToMagickImage(Surface surface)
         {
             MagickImage result;
-            System.Drawing.Bitmap bitmap = surface.CreateAliasedBitmap();
+            Bitmap bitmap = surface.CreateAliasedBitmap();
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
@@ -94,14 +99,58 @@ namespace ImageEnhancingUtility
 
         public static Surface ConvertToSurface(MagickImage image)
         {
-            System.Drawing.Bitmap processedBitmap;
+            Bitmap processedBitmap;
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 image.Write(memoryStream);
                 memoryStream.Position = 0;
-                processedBitmap = System.Drawing.Image.FromStream(memoryStream) as System.Drawing.Bitmap;
+                processedBitmap = Image.FromStream(memoryStream) as Bitmap;
             }
             return Surface.CopyFromBitmap(processedBitmap);
+        }
+
+        public static Bitmap ConvertToBitmap(MagickImage image)
+        {
+            Bitmap processedBitmap;
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                image.Write(memoryStream);
+                memoryStream.Position = 0;
+                processedBitmap = Image.FromStream(memoryStream) as Bitmap;
+            }
+            return processedBitmap;
+        }
+
+        public static MagickImage LoadImage(FileInfo file)
+        {
+            MagickImage image;
+            if (file.Extension.ToLower() == ".dds" && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Surface surface = DdsFile.Load(file.FullName);
+                image = ConvertToMagickImage(surface);
+                image.HasAlpha = DdsFile.HasTransparency(surface);
+            }
+            else
+                image = new MagickImage(file.FullName);
+            return image;
+        }
+
+        public static Image LoadImageToBitmap(string fullname)
+        {
+            string extension = Path.GetExtension(fullname).ToUpper();
+            if (!IEU.filterExtensionsList.Contains(extension))
+                return null;
+            Image image = null;
+            string[] simpleFormats = new string[] { "*.BMP", ".DIB", ".RLE", ".GIF", ".JPG", ".PNG", ".JPEG" };            
+
+            if (simpleFormats.Contains(extension))
+                image = Image.FromFile(fullname);
+            else
+            {
+                using(var img = LoadImage(new FileInfo(fullname)))
+                    image = ConvertToBitmap(img);
+            }
+            return image;
         }
 
         public static int[] GetGoodDimensions(int width, int height, int x, int y)
@@ -150,10 +199,9 @@ namespace ImageEnhancingUtility
         }
 
         public static int[] GetTilesSize(int width, int height, int tileWidth, int tileHeight)
-        {
-            int tilesHeight = 1, tilesWidth = 1;
-            tilesWidth = width / tileHeight;
-            tilesHeight = height / tileHeight;
+        {            
+            int tilesWidth = width / tileWidth;
+            int tilesHeight = height / tileHeight;
             return new int[] { tilesWidth, tilesHeight };
         }
 
@@ -168,19 +216,4 @@ namespace ImageEnhancingUtility
 
     }
 
-    public class LogMessage
-    {
-        public static string Text { get; internal set; }
-        public static Color Color { get; internal set; }
-
-        public LogMessage(string text, Color color)
-        {
-            Text = text; Color = color;
-        }
-        public LogMessage(string text)
-        {
-            Text = text; Color = Color.White;
-        }
-
-    }
 }

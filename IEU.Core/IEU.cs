@@ -751,8 +751,6 @@ namespace ImageEnhancingUtility.Core
             if(!IsSub)
                 ReadSettings();
 
-            UseBasicSR = false;
-
             FormatInfos = new List<ImageFormatInfo>() { pngFormat, tiffFormat, webpFormat, tgaFormat, ddsFormat, jpgFormat, bmpFormat };
             selectedOutputFormat = FormatInfos[0];     
         }

@@ -44,7 +44,7 @@
     <EmbeddedResource Include="Scripts\BasicSR\upscaleDefault.py" />
     <EmbeddedResource Include="Scripts\BasicSR\upscaleFolderForImage.py" />
     <EmbeddedResource Include="Scripts\BasicSR\upscaleFolderStructure.py" />
-    <EmbeddedResource Include="Scripts\ESRGAN\interpModels.py" />
+    <EmbeddedResource Include="Scripts\interpModels.py" />
     <EmbeddedResource Include="Scripts\pthReader.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleDefault.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleFolderForImage.py" />

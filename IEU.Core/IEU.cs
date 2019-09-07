@@ -2193,9 +2193,17 @@ namespace ImageEnhancingUtility.Core
         async public Task<System.Drawing.Bitmap> CreatePreview(System.Drawing.Bitmap original, string modelPath)
         {
             string previewDirPath = $"{EsrganPath}{DirectorySeparator}IEU_preview";
+            if (!Directory.Exists(previewDirPath))
+                Directory.CreateDirectory(previewDirPath);
             string previewResultsDirPath = previewDirPath + $"{DirectorySeparator}results";
+            if (!Directory.Exists(previewResultsDirPath))
+                Directory.CreateDirectory(previewResultsDirPath);
             string previewLrDirPath = previewDirPath + $"{DirectorySeparator}LR";
+            if (!Directory.Exists(previewLrDirPath))
+                Directory.CreateDirectory(previewLrDirPath);
             string previewInputDirPath = previewDirPath + $"{DirectorySeparator}input";
+            if (!Directory.Exists(previewInputDirPath))
+                Directory.CreateDirectory(previewInputDirPath);
             FileInfo previewOriginal = new FileInfo(previewInputDirPath + $"{DirectorySeparator}preview.png");
             FileInfo preview = new FileInfo(previewDirPath + $"{DirectorySeparator}preview.png");
             original.Save(previewOriginal.FullName, ImageFormat.Png);

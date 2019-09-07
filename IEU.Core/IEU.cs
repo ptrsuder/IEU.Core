@@ -2188,50 +2188,58 @@ namespace ImageEnhancingUtility.Core
 
         }
 
-        public IEU previeIEU;
+        private IEU previewIEU;
 
         async public Task<System.Drawing.Bitmap> CreatePreview(System.Drawing.Bitmap original, string modelPath)
-        {
-            string previewDirPath = $"{EsrganPath}{DirectorySeparator}IEU_preview";
-            if (!Directory.Exists(previewDirPath))
-                Directory.CreateDirectory(previewDirPath);
-            string previewResultsDirPath = previewDirPath + $"{DirectorySeparator}results";
-            if (!Directory.Exists(previewResultsDirPath))
-                Directory.CreateDirectory(previewResultsDirPath);
-            string previewLrDirPath = previewDirPath + $"{DirectorySeparator}LR";
-            if (!Directory.Exists(previewLrDirPath))
-                Directory.CreateDirectory(previewLrDirPath);
+        {            
+            string previewDirPath = $"{EsrganPath}{DirectorySeparator}IEU_preview";                
+            string previewResultsDirPath = previewDirPath + $"{DirectorySeparator}results";           
+            string previewLrDirPath = previewDirPath + $"{DirectorySeparator}LR";          
             string previewInputDirPath = previewDirPath + $"{DirectorySeparator}input";
-            if (!Directory.Exists(previewInputDirPath))
-                Directory.CreateDirectory(previewInputDirPath);
+
+            List<DirectoryInfo> previewFolders = new List<DirectoryInfo>() { 
+                new DirectoryInfo(previewDirPath),
+                new DirectoryInfo(previewResultsDirPath),
+                new DirectoryInfo(previewLrDirPath),
+                new DirectoryInfo(previewInputDirPath) };
+
+            foreach(var folder in previewFolders)
+            {
+                if (!folder.Exists)
+                    folder.Create();
+                else
+                    folder.GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(x => x.Delete());
+            }
+
             FileInfo previewOriginal = new FileInfo(previewInputDirPath + $"{DirectorySeparator}preview.png");
             FileInfo preview = new FileInfo(previewDirPath + $"{DirectorySeparator}preview.png");
             original.Save(previewOriginal.FullName, ImageFormat.Png);
 
-            if (previeIEU == null)
-                previeIEU = new IEU(true);       
+            if (previewIEU == null)
+                previewIEU = new IEU(true);       
             
-            previeIEU.EsrganPath = EsrganPath;
-            previeIEU.LrPath = previewLrDirPath;
-            previeIEU.InputDirectoryPath = previewInputDirPath;
-            previeIEU.ResultsPath = previewResultsDirPath;
-            previeIEU.OutputDirectoryPath = previewDirPath;
-            previeIEU.MaxTileResolution = MaxTileResolution;
-            previeIEU.OverlapSize = OverlapSize;
-            previeIEU.IgnoreAlpha = IgnoreAlpha;
-            previeIEU.OverwriteMode = 0;
-            previeIEU.OutputDestinationMode = 0;
+            previewIEU.EsrganPath = EsrganPath;
+            previewIEU.LrPath = previewLrDirPath;
+            previewIEU.InputDirectoryPath = previewInputDirPath;
+            previewIEU.ResultsPath = previewResultsDirPath;
+            previewIEU.OutputDirectoryPath = previewDirPath;
+            previewIEU.MaxTileResolution = MaxTileResolution;
+            previewIEU.OverlapSize = OverlapSize;
+            previewIEU.IgnoreAlpha = IgnoreAlpha;
+            previewIEU.OverwriteMode = 0;
+            previewIEU.OutputDestinationMode = 0;
+            previewIEU.UseCPU = UseCPU;
 
-            await previeIEU.Split(new FileInfo[] { previewOriginal });
+            await previewIEU.Split(new FileInfo[] { previewOriginal });
             ModelInfo previewModelInfo = new ModelInfo(Path.GetFileNameWithoutExtension(modelPath), modelPath);
-            previeIEU.SelectedModelsItems = new List<ModelInfo>() { previewModelInfo };
-            bool success = await previeIEU.Upscale(true);
+            previewIEU.SelectedModelsItems = new List<ModelInfo>() { previewModelInfo };
+            bool success = await previewIEU.Upscale(true);
             if (!success)
             {
-                File.WriteAllText(previewDirPath + $"{DirectorySeparator}log.txt", previeIEU.Logs);
+                File.WriteAllText(previewDirPath + $"{DirectorySeparator}log.txt", previewIEU.Logs);
                 return null;
             }
-            await previeIEU.Merge();            
+            await previewIEU.Merge();            
 
             System.Drawing.Bitmap result;
             using (var fs = new FileStream(preview.FullName, FileMode.Open))

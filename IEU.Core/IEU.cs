@@ -1541,7 +1541,7 @@ namespace ImageEnhancingUtility.Core
 
                 if (!WriteToFileVipsNative(imageResult, outputFormat, destinationPath))
                     return;
-                
+                IncrementDoneCounter();
                 ReportProgress();
                 WriteToLog($"<{file.Name}> DONE", Color.LightGreen);
 

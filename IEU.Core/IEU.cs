@@ -34,7 +34,7 @@ namespace ImageEnhancingUtility.Core
     [ProtoContract]    
     public class IEU : ReactiveObject
     {
-        public readonly string AppVersion = "0.11.01";
+        public readonly string AppVersion = "0.11.04";
         public readonly string GitHubRepoName = "IEU.Core";
 
         public static Dictionary<TiffCompression, string> TiffCompressionModes = new Dictionary<TiffCompression, string>()
@@ -717,6 +717,7 @@ namespace ImageEnhancingUtility.Core
             }
         }
 
+        [ProtoMember(42)]
         public bool GreyscaleModel = false;
 
         public IEU(bool isSub = false)
@@ -791,7 +792,7 @@ namespace ImageEnhancingUtility.Core
                 ModelsItemsTemp.Add(new ModelInfo(fi.Name, fi.FullName));
             ModelsItems = ModelsItemsTemp;
         }
-                     
+                   
 
         public void WriteToLog(string text)
         {
@@ -1840,6 +1841,75 @@ namespace ImageEnhancingUtility.Core
             int[] newDimensions = Helper.GetGoodDimensions(image.Width, image.Height, x, y);
             result.Extent(newDimensions[0], newDimensions[1]);          
             return result;
+        }
+
+        public async void InterpolateFolders(string originalPath, string resultsAPath, string resultsBPath, string destinationPath, double alpha)
+        {
+            DirectoryInfo originalDirectory = new DirectoryInfo(originalPath);
+            DirectoryInfo resultsADirectory = new DirectoryInfo(resultsAPath);
+            DirectoryInfo resultsBDirectory = new DirectoryInfo(resultsBPath);
+            DirectoryInfo destinationDirectory = new DirectoryInfo(destinationPath);
+
+            FileInfo[] originalFiles = originalDirectory.GetFiles("*", SearchOption.AllDirectories);
+            if (originalFiles.Count() == 0)
+            {
+                WriteToLog("No files in input folder!", Color.Red);
+                return;
+            }
+
+            List<Task> tasks = new List<Task>();
+            ResetDoneCounter();
+            FilesTotal = originalFiles.Count();
+
+            foreach (var file in originalFiles)
+            {
+                string originalExtension = file.Extension;
+                string baseFilePath = file.FullName.Replace(originalDirectory.FullName, "").Replace(originalExtension, selectedOutputFormat.Extension);                
+                string pathA = resultsADirectory.FullName + baseFilePath;
+                string pathB = resultsBDirectory.FullName + baseFilePath;
+                string destinationFilePath = destinationPath + baseFilePath;
+
+                if(!File.Exists(pathA) || !File.Exists(pathB))
+                {
+                    WriteToLog($"Results missing for {file.FullName}, skipping", Color.Red);
+                    IncrementDoneCounter(false);
+                    ReportProgress();
+                    continue;
+                }
+
+                if(File.Exists(destinationFilePath))
+                    continue;
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFilePath));
+                tasks.Add(Task.Factory.StartNew(() => InterpolateImages(pathA, pathB, destinationFilePath, alpha)));
+            }
+            await Task.WhenAll(tasks.ToArray());
+            tasks.Clear();
+        }
+
+        void InterpolateImages(string pathA, string pathB, string destinationFilePath, double alpha)
+        {
+            var result = ImageInterpolation.Interpolate(pathA, pathB, destinationFilePath, alpha);
+            if(result.Item1)
+            {
+                WriteToLog($"{Path.GetFileName(destinationFilePath)}", Color.LightGreen);
+                IncrementDoneCounter();                
+            }
+            else
+            {
+                WriteToLog($"{Path.GetFileName(destinationFilePath)}: failed to interpolate", Color.Red);
+                IncrementDoneCounter(false);               
+            }
+            ReportProgress();
+        }
+
+        public void InterpolateImages(System.Drawing.Image imageA, System.Drawing.Image imageB, string destinationPath, double alpha)
+        {
+            var result = ImageInterpolation.Interpolate(imageA, imageB, destinationPath, alpha);
+            if (result.Item1)            
+                WriteToLog($"{Path.GetFileName(destinationPath)}", Color.LightGreen);      
+            else            
+                WriteToLog($"{Path.GetFileName(destinationPath)}: failed to interpolate.\n{result.Item2}", Color.Red);        
         }
 
         void WriteTestScriptToDisk()

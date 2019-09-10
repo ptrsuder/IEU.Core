@@ -97,6 +97,18 @@ namespace ImageEnhancingUtility
             return result;
         }
 
+        public static MagickImage ConvertToMagickImage(Bitmap bitmap)
+        {
+            MagickImage result;            
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+                memoryStream.Position = 0;
+                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
+            }
+            return result;
+        }
+
         public static Surface ConvertToSurface(MagickImage image)
         {
             Bitmap processedBitmap;
@@ -112,27 +124,35 @@ namespace ImageEnhancingUtility
         public static Bitmap ConvertToBitmap(MagickImage image)
         {
             Bitmap processedBitmap;
+            Image test;
             using (MemoryStream memoryStream = new MemoryStream())
             {
-                image.Write(memoryStream);
+                image.Write(memoryStream, MagickFormat.Png24);
                 memoryStream.Position = 0;
-                processedBitmap = Image.FromStream(memoryStream) as Bitmap;
+                test = Image.FromStream(memoryStream);
             }
-            return processedBitmap;
+            return test as Bitmap;
         }
 
         public static MagickImage LoadImage(FileInfo file)
         {
-            MagickImage image;
-            if (file.Extension.ToLower() == ".dds" && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            try
             {
-                Surface surface = DdsFile.Load(file.FullName);
-                image = ConvertToMagickImage(surface);
-                image.HasAlpha = DdsFile.HasTransparency(surface);
+                MagickImage image;
+                if (file.Extension.ToLower() == ".dds" && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Surface surface = DdsFile.Load(file.FullName);
+                    image = ConvertToMagickImage(surface);
+                    image.HasAlpha = DdsFile.HasTransparency(surface);
+                }
+                else
+                    image = new MagickImage(file.FullName);
+                return image;
             }
-            else
-                image = new MagickImage(file.FullName);
-            return image;
+            catch
+            {
+                return null;
+            }
         }
 
         public static Image LoadImageToBitmap(string fullname)
@@ -212,6 +232,23 @@ namespace ImageEnhancingUtility
             File.Move(model.FullName, newFullname);
             model.FullName = newFullname;
             model.Name = newName;           
+        }
+
+        public static KeyValue<bool, double>  CheckAlphaValue(string value)
+        {
+            double alpha = 0.0;
+            KeyValue<bool, double> failResult = new KeyValue<bool, double>(false, 0.0);
+            try
+            {
+                alpha = double.Parse(value.Replace(',', '.'), System.Globalization.CultureInfo.InvariantCulture);
+                if (alpha <= 0.0 || alpha >= 1.0)               
+                    return failResult;                
+            }
+            catch
+            {
+                return failResult;
+            }
+            return new KeyValue<bool, double>(true, alpha);
         }
 
     }

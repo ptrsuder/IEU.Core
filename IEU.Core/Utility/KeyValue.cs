@@ -1,4 +1,4 @@
-﻿namespace ImageEnhancingUtility.Train
+﻿namespace ImageEnhancingUtility
 {
     public class KeyValue<TKey, TValue>
     {

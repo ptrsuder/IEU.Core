@@ -55,9 +55,7 @@ namespace ImageEnhancingUtility.Core
             { WebpPreset.Text, "VIPS_FOREIGN_WEBP_PRESET_TEXT" },
         };
         
-        #region PROPERTIES
-
-        public double WindowMinWidth = 800, WindowMinHeight = 650;
+        #region PROPERTIES              
 
         public bool IsSub = false;
 
@@ -193,7 +191,9 @@ namespace ImageEnhancingUtility.Core
         }
         public List<ModelInfo> checkedModels;
 
-        private double _windowWidth = 800;
+        public double WindowMinWidth = 800, WindowMinHeight = 650;
+
+        private double _windowWidth = 1000;
         [ProtoMember(1)]
         public double WindowWidth
         {
@@ -207,7 +207,7 @@ namespace ImageEnhancingUtility.Core
             get => _windowHeight;
             set => this.RaiseAndSetIfChanged(ref _windowHeight, value);
         }
-        private double _logPanelWidth = 200;
+        private double _logPanelWidth = 400;
         [ProtoMember(24)]
         public double LogPanelWidth
         {

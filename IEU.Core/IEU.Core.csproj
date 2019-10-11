@@ -21,11 +21,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Preset.cs" />
-    <Compile Remove="Settings.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="interpModels.py" />
     <None Remove="pthReader.py" />
     <None Remove="Scripts\BasicSR\test_ppon.py" />
@@ -51,11 +46,6 @@
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleFolderForModel.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleFolderStructure.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleGrayscale.py" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Preset.cs" />
-    <None Include="Settings.cs" />
   </ItemGroup>
 
   <ItemGroup>

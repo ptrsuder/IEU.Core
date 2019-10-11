@@ -61,13 +61,19 @@ def main():
             model.test()  # test
             visuals = model.get_current_visuals(need_HR=need_HR)
 
-            sr_img = util.tensor2img(visuals[modelKey])  # uint8
+			if opt['model'] == 'ppon':
+                sr_img_c = util.tensor2img(visuals['img_c'])
+                sr_img_s = util.tensor2img(visuals['img_s']) 
+            sr_img = util.tensor2img(visuals[modelKey])
 
             # save images
             baseinput = os.path.splitext(os.path.basename(img_path))[0][:-8]
             model_path = opt['path']['pretrain_model_G']
             modelname = os.path.splitext(os.path.basename(model_path))[0]
             save_img_path = os.path.join(dataset_dir, img_name + '.png')
+			if opt['model'] == 'ppon':
+                util.save_img(sr_img_c, os.path.join(dataset_dir, img_name + '_c.png'))
+                util.save_img(sr_img_s, os.path.join(dataset_dir, img_name + '_s.png'))
             util.save_img(sr_img, save_img_path)
             print(idx, img_name + '.png')
             sys.stdout.flush()

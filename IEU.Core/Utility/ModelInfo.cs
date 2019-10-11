@@ -1,16 +1,23 @@
-﻿namespace ImageEnhancingUtility.Core
+﻿using ProtoBuf;
+
+namespace ImageEnhancingUtility.Core
 {
+    [ProtoContract]
     public class ModelInfo
     {
+        [ProtoMember(1)]
         public string Name
         { get; set; }
 
+        [ProtoMember(2)]
         public string FullName
         { get; set; }
 
+        [ProtoMember(3)]
         public string ParentFolder
         { get; set; }
 
+        [ProtoMember(4)]
         public int UpscaleFactor
         { get; set; }
 
@@ -27,6 +34,7 @@
             FullName = path;
             ParentFolder = folder;
         }
-    }
 
+        public ModelInfo() {}
+    }
 }

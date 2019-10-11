@@ -20,7 +20,7 @@ namespace ImageEnhancingUtility.BasicSR
         {
             Path.PretrainModelG = modelPath;
             long modelFilesize = new FileInfo(modelPath).Length;
-            if (modelFilesize / (1024 * 1024) > 68)
+            if (modelFilesize / (1024 * 1024) > 65)
                 Model = "ppon";           
         }
 

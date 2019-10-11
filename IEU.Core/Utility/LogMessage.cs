@@ -1,4 +1,5 @@
-﻿using Color = System.Drawing.Color;
+﻿using System;
+using Color = System.Drawing.Color;
 
 namespace ImageEnhancingUtility
 {
@@ -9,11 +10,12 @@ namespace ImageEnhancingUtility
 
         public LogMessage(string text, Color color)
         {
-            Text = text; Color = color;
+            Text = $"\n[{DateTime.Now}] {text}";
+            Color = color;
         }
         public LogMessage(string text)
         {
-            Text = text;
+            Text = $"\n[{DateTime.Now}] {text}";
             Color = Color.White;
         }
 

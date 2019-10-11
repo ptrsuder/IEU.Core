@@ -1,16 +1,11 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
-using System.Text.RegularExpressions;
-using ImageMagick;
 using System.Reflection;
-using PaintDotNet;
 using System.Runtime.InteropServices;
-
+using System.Text.RegularExpressions;
 using ImageEnhancingUtility.Core;
 using Path = System.IO.Path;
-using System.Drawing;
-using System.Linq;
-using DdsFileTypePlus;
 
 namespace ImageEnhancingUtility
 {
@@ -82,96 +77,7 @@ namespace ImageEnhancingUtility
             process.WaitForExit();
 
             Exec("chmod 644 /path/to/file.txt");
-        }
-
-        public static MagickImage ConvertToMagickImage(Surface surface)
-        {
-            MagickImage result;
-            Bitmap bitmap = surface.CreateAliasedBitmap();
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
-                memoryStream.Position = 0;
-                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
-            }
-            return result;
-        }
-
-        public static MagickImage ConvertToMagickImage(Bitmap bitmap)
-        {
-            MagickImage result;            
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
-                memoryStream.Position = 0;
-                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
-            }
-            return result;
-        }
-
-        public static Surface ConvertToSurface(MagickImage image)
-        {
-            Bitmap processedBitmap;
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                image.Write(memoryStream);
-                memoryStream.Position = 0;
-                processedBitmap = Image.FromStream(memoryStream) as Bitmap;
-            }
-            return Surface.CopyFromBitmap(processedBitmap);
-        }
-
-        public static Bitmap ConvertToBitmap(MagickImage image)
-        {
-            Bitmap processedBitmap;
-            Image test;
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                image.Write(memoryStream, MagickFormat.Png24);
-                memoryStream.Position = 0;
-                test = Image.FromStream(memoryStream);
-            }
-            return test as Bitmap;
-        }
-
-        public static MagickImage LoadImage(FileInfo file)
-        {
-            try
-            {
-                MagickImage image;
-                if (file.Extension.ToLower() == ".dds" && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    Surface surface = DdsFile.Load(file.FullName);
-                    image = ConvertToMagickImage(surface);
-                    image.HasAlpha = DdsFile.HasTransparency(surface);
-                }
-                else
-                    image = new MagickImage(file.FullName);
-                return image;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        public static Image LoadImageToBitmap(string fullname)
-        {
-            string extension = Path.GetExtension(fullname).ToUpper();
-            if (!IEU.filterExtensionsList.Contains(extension))
-                return null;
-            Image image = null;
-            string[] simpleFormats = new string[] { "*.BMP", ".DIB", ".RLE", ".GIF", ".JPG", ".PNG", ".JPEG" };            
-
-            if (simpleFormats.Contains(extension))
-                image = Image.FromFile(fullname);
-            else
-            {
-                using(var img = LoadImage(new FileInfo(fullname)))
-                    image = ConvertToBitmap(img);
-            }
-            return image;
-        }
+        }        
 
         public static int[] GetGoodDimensions(int width, int height, int x, int y)
         {
@@ -184,7 +90,7 @@ namespace ImageEnhancingUtility
             return new int[] { width, height };
         }
 
-        public static int[] GetTilesSize(int width, int height, int maxTileResolution)
+        public static int[] GetTilesSize_(int width, int height, int maxTileResolution)
         {
             int tilesHeight = 1, tilesWidth = 1;
             while ((height / tilesHeight) * (width / tilesWidth) > maxTileResolution)
@@ -195,11 +101,13 @@ namespace ImageEnhancingUtility
                     for (int i = 0; i < 5; i++)
                     {
                         tilesHeight++;
-                        if (height % tilesHeight == 0)
-                            break;
+                        if (height % tilesHeight == 0)                                                    
+                            break;                        
                     }
-                    if (tilesHeight == oldTilesHeight)
-                        tilesHeight++;
+                    if (oldTilesHeight == tilesHeight)
+                    {                      
+                        tilesHeight = oldTilesHeight + 1;
+                    }
                     continue;
                 }
                 else
@@ -210,9 +118,33 @@ namespace ImageEnhancingUtility
                         if (width % tilesWidth == 0)
                             break;
                     }
-                    if (tilesWidth == oldTilesWidth)
-                        tilesWidth++;
+                    if (oldTilesWidth == tilesWidth)
+                    {                       
+                        tilesWidth = oldTilesWidth + 1;
+                    }
                     continue;
+                }
+            }
+            return new int[] { tilesWidth, tilesHeight };
+        }
+
+        public static int[] GetTilesSize(int width, int height, int maxTileResolution)
+        {
+            //width = 4096; height = 4096; maxTileResolution = 512 * 256;
+            int[] tiles_A = coverRectangleWithTiles(width, height, maxTileResolution);
+            int[] tiles_B = GetTilesSize_(width, height, maxTileResolution);
+
+            int tilesHeight = 1, tilesWidth = 1;
+            while ((height / tilesHeight) * (width / tilesWidth) > maxTileResolution)
+            {
+                int oldTilesHeight = tilesHeight, oldTilesWidth = tilesWidth;
+                if (height / tilesHeight >= width / tilesWidth)
+                {
+                    tilesHeight*=2;
+                }
+                else
+                {
+                    tilesWidth*=2;
                 }
             }
             return new int[] { tilesWidth, tilesHeight };
@@ -251,6 +183,52 @@ namespace ImageEnhancingUtility
             return new KeyValue<bool, double>(true, alpha);
         }
 
+        static int[] coverRectangleWithTiles(int rectWidth, int rectHeight, int maxArea)
+        {
+            int maxWidth = rectWidth;
+            int minWidth = maxArea / maxWidth;
+            // How many columns of tiles do we need at least?
+            var minColumns = (int)Math.Ceiling((double)rectWidth / maxWidth);
+            // ...and how many at most?
+            var maxColumns = (int)Math.Floor((double)rectWidth / minWidth);
+
+            // First see what how well we can do with minimum-width tiles:
+            var columns = maxColumns;
+            int rows = (int)Math.Ceiling((double)rectHeight / maxWidth);
+            // Lowest total found so far; we'll try to improve this below:
+            var minTiles = (int)columns * rows;
+
+            // Now try it with wider tiles; we only need to try the minimum
+            // tile width for each possible number of columns.  The case
+            // columns = maxColumns is already tried above, so we can exclude
+            // it (and should, because otherwise the formulas below might
+            // give tileWidth < minWidth, and thus tileHeight > maxWidth):
+
+            int tileCols=0, tileRows=0;
+            for (int col = minColumns; col < maxColumns; col++)
+            {
+                // Find the minimum tile width for this number of columns:
+                var tileWidth = rectWidth / col;
+                // ...the maximum height allowed for this width:
+                var tileHeight = maxArea / tileWidth;
+                // ...and the number of rows needed with this height:
+                var rows2 = (int)Math.Ceiling((double)rectHeight / tileHeight);
+
+                // Multiply columns with rows to get total number of tiles:
+                var tiles = col * rows2;
+                // ...and save it if it's smaller than the minimum so far:
+                if (tiles < minTiles)
+                {
+                    minTiles = tiles;
+                    tileCols = col;
+                    tileRows = rows2;
+                }
+                // Could also save the tile dimensions needed to obtain
+                // the minimum here.  
+                
+            }
+            return new int[] { tileCols, tileRows };
+        }
     }
 
 }

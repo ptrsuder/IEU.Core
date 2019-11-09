@@ -71,8 +71,7 @@ namespace ImageEnhancingUtility.Core
         public List<ModelInfo> checkedModels;
 
         public double WindowMinWidth = 800, WindowMinHeight = 650;
-        public bool WindowOnTop = true;
-
+       
         private double _windowWidth = 1000;
         [ProtoMember(1)]
         public double WindowWidth
@@ -252,8 +251,16 @@ namespace ImageEnhancingUtility.Core
         public bool CreateMemoryImage = false;
 
         [ProtoMember(15, IsRequired = true)]
-        public bool CheckForUpdates = true;       
-               
+        public bool CheckForUpdates = true;
+
+        bool _windowOnTop = true;
+        [ProtoMember(24, IsRequired = true)]
+        public bool WindowOnTop
+        {
+            get => _windowOnTop;
+            set => this.RaiseAndSetIfChanged(ref _windowOnTop, value);
+        }
+
         #endregion
 
         #region MAINTAB_PROGRESS

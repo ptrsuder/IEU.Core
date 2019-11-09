@@ -893,13 +893,7 @@ namespace ImageEnhancingUtility.Core
                        
             ResetDoneCounter();
             SetTotalCounter(inputFiles.Length);          
-            ReportProgress();
-
-            if (CreateMemoryImage)
-            {
-                Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
-                image.WriteToFile($"{LrPath}{DirectorySeparator}([000])000)_memory_helper_image.png");                
-            }
+            ReportProgress();           
             
             await Task.Run(() => Parallel.ForEach(inputFiles, parallelOptions: new ParallelOptions() { MaxDegreeOfParallelism = maxConcurrency }, file =>
             {
@@ -1546,6 +1540,12 @@ namespace ImageEnhancingUtility.Core
             DirectoryInfo directory = new DirectoryInfo(ResultsPath);
             if (!directory.Exists)
                 directory.Create();
+
+            if (CreateMemoryImage)
+            {
+                Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
+                image.WriteToFile($"{LrPath}{DirectorySeparator}([000])000)_memory_helper_image.png");
+            }
 
             Process process;
             if (UseBasicSR)

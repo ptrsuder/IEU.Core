@@ -771,7 +771,11 @@ namespace ImageEnhancingUtility.Core
                         MagickImage outputImageAlpha = (MagickImage)inputImageAlpha.Clone();
                         outputImageAlpha.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
                         if (HotProfile.UseDifferentModelForAlpha)
-                            outputImageAlpha.Write($"{lrPathAlpha}{DirectorySeparator}{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}{DirectorySeparator}{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
+                        {
+                            string lrAlphaFolderPath = $"{lrPathAlpha}{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}{DirectorySeparator}";
+                            Directory.CreateDirectory(lrAlphaFolderPath);
+                            outputImageAlpha.Write($"{lrAlphaFolderPath}{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");                            
+                        }
                         else
                             outputImageAlpha.Write($"{LrPath}{DirectorySeparator}{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}{DirectorySeparator}{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex.ToString("D2")}.png");
                     }
@@ -1698,7 +1702,7 @@ namespace ImageEnhancingUtility.Core
                 searchOption = SearchOption.AllDirectories;
             SetTotalCounter(Directory.GetFiles(LrPath, "*", searchOption).Count() * checkedModels.Count);
             if (HotProfile.UseDifferentModelForAlpha)
-                SetTotalCounter(FilesTotal + Directory.GetFiles(LrPath + "_alpha").Count());        
+                SetTotalCounter(FilesTotal + Directory.GetFiles(LrPath + "_alpha", "*", searchOption).Count());        
 
             ResetDoneCounter();
 

@@ -7,6 +7,7 @@ import argparse
 import numpy as np
 import cv2
 from collections import OrderedDict
+import re
 
 import options.options as option
 import utils.util as util
@@ -65,7 +66,8 @@ def main():
             sr_img = util.tensor2img(visuals['SR'])  # uint8
 
             # save images
-            baseinput = os.path.splitext(os.path.basename(img_path))[0][:-8]
+            baseinput = os.path.splitext(os.path.basename(img_path))[0]
+            baseinput = re.search('(.*)(_tile-[0-9]+)', baseinput, re.IGNORECASE).group(1)
             print('baseinput', baseinput)
             sys.stdout.flush()
             model_path = opt['path']['pretrain_model_G']

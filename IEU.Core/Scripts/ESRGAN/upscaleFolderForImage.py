@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import torch
 import architecture as arch
+import re
 
 model_path = sys.argv[1]  # models/RRDB_ESRGAN_x4.pth OR models/RRDB_PSNR_x4.pth
 upscaleSize = int(sys.argv[2])
@@ -84,8 +85,9 @@ for path in files_i_care_about:
     elif output.shape[0] == 4:
         output = output[[2, 1, 0, 3], :, :]
     output = np.transpose(output, (1, 2, 0))
-    output = (output * 255.0).round()
-    baseinput = os.path.splitext(os.path.basename(path))[0][:-8]
+    output = (output * 255.0).round()    
+    baseinput = os.path.splitext(os.path.basename(path))[0]
+    baseinput = re.search('(.*)(_tile-[0-9]+)', baseinput, re.IGNORECASE).group(1)
     modelname = os.path.splitext(os.path.basename(model_path))[0]    
     if not os.path.exists('{1:s}/Images/{0:s}/'.format(baseinput, output_folder)):
         os.makedirs('{1:s}/Images/{0:s}/'.format(baseinput, output_folder))

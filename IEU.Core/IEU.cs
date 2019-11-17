@@ -2080,12 +2080,13 @@ namespace ImageEnhancingUtility.Core
             previewIEU.ResultsPath = previewResultsDirPath;
             previewIEU.OutputDirectoryPath = previewDirPath;
             previewIEU.MaxTileResolution = MaxTileResolution;
-            previewIEU.OverlapSize = OverlapSize;
-            previewIEU.GlobalProfile.IgnoreAlpha = GlobalProfile.IgnoreAlpha;
-            previewIEU.GlobalProfile.OverwriteMode = 0;
+            previewIEU.OverlapSize = OverlapSize;     
             previewIEU.OutputDestinationMode = 0;
             previewIEU.UseCPU = UseCPU;
             previewIEU.UseBasicSR = UseBasicSR;
+            previewIEU.CurrentProfile = CurrentProfile.Clone();
+            previewIEU.CurrentProfile.OverwriteMode = 0;
+            previewIEU.DisableRuleSystem = true;
 
             await previewIEU.Split(new FileInfo[] { previewOriginal });
             ModelInfo previewModelInfo = new ModelInfo(Path.GetFileNameWithoutExtension(modelPath), modelPath);

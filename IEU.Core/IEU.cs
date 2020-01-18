@@ -670,10 +670,38 @@ namespace ImageEnhancingUtility.Core
         
         void ImagePostrpocess(ref MagickImage finalImage, Profile HotProfile)
         {
-            if (HotProfile.ThresholdBlackValue != 0)
-                finalImage.BlackThreshold(new Percentage((double)HotProfile.ThresholdBlackValue));
-            if (HotProfile.ThresholdWhiteValue != 100)
-                finalImage.WhiteThreshold(new Percentage((double)HotProfile.ThresholdWhiteValue));
+            if (HotProfile.ThresholdEnabled)
+            {
+                MagickImage alphaChannel = null;
+                if (!HotProfile.IgnoreAlpha && finalImage.HasAlpha)
+                {
+                    alphaChannel = finalImage.Separate(Channels.Alpha).First() as MagickImage;
+                }
+
+                if (HotProfile.ThresholdBlackValue != 0)
+                {
+                    finalImage.HasAlpha = false;
+                    finalImage.BlackThreshold(new Percentage((double)HotProfile.ThresholdBlackValue));
+                    if (alphaChannel != null)
+                    {                        
+                        alphaChannel.BlackThreshold(new Percentage((double)HotProfile.ThresholdBlackValue));
+                        finalImage.HasAlpha = true;
+                        finalImage.Composite(alphaChannel, CompositeOperator.CopyAlpha);
+                    }                    
+                }
+
+                if (HotProfile.ThresholdWhiteValue != 100)
+                {
+                    finalImage.HasAlpha = false;
+                    finalImage.WhiteThreshold(new Percentage((double)HotProfile.ThresholdWhiteValue));
+                    if (alphaChannel != null)
+                    {
+                        alphaChannel.WhiteThreshold(new Percentage((double)HotProfile.ThresholdWhiteValue));
+                        finalImage.HasAlpha = true;
+                        finalImage.Composite(alphaChannel, CompositeOperator.CopyAlpha);
+                    }                   
+                }
+            }
 
             if (HotProfile.ResizeImageAfterScaleFactor != 1.0)
             {
@@ -1274,10 +1302,10 @@ namespace ImageEnhancingUtility.Core
                 imageResult = imageResult.Crop(0, 0, image.Width * upscaleModificator, image.Height * upscaleModificator);
             }
 
-            if (                
+
+            if (
                 outputFormat.VipsNative &&
-                HotProfile.ThresholdBlackValue == 0 &&
-                HotProfile.ThresholdWhiteValue == 100 &&
+                (!HotProfile.ThresholdEnabled || (HotProfile.ThresholdBlackValue == 0 && HotProfile.ThresholdWhiteValue == 100)) &&
                 HotProfile.ResizeImageAfterScaleFactor == 1.0) //no need to convert to MagickImage, save fast with vips
             {
                 if (HotProfile.OverwriteMode == 2)

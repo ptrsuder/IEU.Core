@@ -247,8 +247,13 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _overwriteModes, value);            
         }
 
+        bool _createMemoryImage = true;
         [ProtoMember(14)]
-        public bool CreateMemoryImage = false;
+        public bool CreateMemoryImage
+        {
+            get => _createMemoryImage;
+            set => this.RaiseAndSetIfChanged(ref _createMemoryImage, value);
+        }
 
         [ProtoMember(15, IsRequired = true)]
         public bool CheckForUpdates = true;
@@ -348,8 +353,13 @@ namespace ImageEnhancingUtility.Core
             }
         }
 
+        bool _darkThemeEnabled = false;
         [ProtoMember(19)]
-        public bool DarkThemeEnabled = false;
+        public bool DarkThemeEnabled
+        {
+            get => _darkThemeEnabled;
+            set => this.RaiseAndSetIfChanged(ref _darkThemeEnabled, value);
+        }
 
         readonly string DirectorySeparator = Path.DirectorySeparatorChar.ToString(); //@"\"; 
 

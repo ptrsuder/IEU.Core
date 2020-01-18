@@ -1138,8 +1138,9 @@ namespace ImageEnhancingUtility.Core
                     else                    
                         JoinTiles(ref imageRow, imageNextTile, useMosaic, Enums.Direction.Horizontal, -tileWidth * j, 0); 
 
-                    UseGlobalbalance(ref imageRow, ref cancelRgbGlobalbalance, $"{file.Name}");                   
-                    imageNextTile.Dispose();                  
+                    if (HotProfile.BalanceRgb)
+                        UseGlobalbalance(ref imageRow, ref cancelRgbGlobalbalance, $"{file.Name}");
+                    imageNextTile.Dispose();
                 }
                
 
@@ -1154,7 +1155,8 @@ namespace ImageEnhancingUtility.Core
                     JoinTiles(ref imageResult, imageRow, useMosaic, Enums.Direction.Vertical, 0, -tileHeight * i);
                     imageRow.Dispose();
 
-                    UseGlobalbalance(ref imageResult, ref cancelRgbGlobalbalance, file.Name);
+                    if (HotProfile.BalanceRgb)
+                        UseGlobalbalance(ref imageResult, ref cancelRgbGlobalbalance, file.Name);
 
                     if (imageHasAlpha && !HotProfile.IgnoreAlpha && !alphaReadError)
                     {

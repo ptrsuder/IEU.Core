@@ -48,6 +48,14 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _balanceAlphas, value);
         }
 
+        bool _balanceRgb = true;
+        [ProtoMember(38, IsRequired = true)]
+        public bool BalanceRgb
+        {
+            get => _balanceRgb;
+            set => this.RaiseAndSetIfChanged(ref _balanceRgb, value);
+        }
+
         bool _useOriginalImageFormat = false;
         [ProtoMember(8)]
         public bool UseOriginalImageFormat

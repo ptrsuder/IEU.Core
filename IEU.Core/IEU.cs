@@ -399,6 +399,22 @@ namespace ImageEnhancingUtility.Core
             get => _disableRuleSystem;
             set => this.RaiseAndSetIfChanged(ref _disableRuleSystem, value);
         }
+       
+        bool _useCondaEnv = false;
+        [ProtoMember(25)]
+        public bool UseCondaEnv
+        {
+            get => _useCondaEnv;
+            set => this.RaiseAndSetIfChanged(ref _useCondaEnv, value);
+        }
+        string _condaEnv = "";
+        [ProtoMember(26)]
+        public string CondaEnv
+        {
+            get => _condaEnv;
+            set => this.RaiseAndSetIfChanged(ref _condaEnv, value);
+        }
+
         #endregion
 
         #endregion
@@ -1592,6 +1608,17 @@ namespace ImageEnhancingUtility.Core
                 return false;
             }
             WriteToLog("ESRGAN finished!", Color.LightGreen);
+
+
+            if (GetCondaEnv() != "")
+            {
+                Process pr = new Process();
+                pr.StartInfo.FileName = "cmd";
+                pr.StartInfo.Arguments = "/C conda activate";
+                pr.StartInfo.CreateNoWindow = true;                
+                pr.Start();
+            }
+
             return true;
         }
 
@@ -1616,6 +1643,14 @@ namespace ImageEnhancingUtility.Core
             string scriptPath = EsrganPath + $"{DirectorySeparator}IEU_test.py";
             if (UseBasicSR) scriptPath = EsrganPath + $"{DirectorySeparator}codes{DirectorySeparator}IEU_test.py";
             File.WriteAllText(scriptPath, script);
+        }
+
+        string GetCondaEnv()
+        {
+            if (UseCondaEnv && CondaEnv != "")
+                return $" & conda activate {CondaEnv}";
+            else
+                return "";
         }
 
         #region PYTHON PROCESS STUFF
@@ -1654,6 +1689,7 @@ namespace ImageEnhancingUtility.Core
             string upscaleSizePattern = "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)";
 
             process.StartInfo.Arguments = $"{EsrganPath}";
+            process.StartInfo.Arguments += GetCondaEnv();
             bool noValidModel = true;
             string torchDevice = UseCPU ? "cpu" : "cuda";
             int upscaleMultiplayer = 0;
@@ -1752,6 +1788,8 @@ namespace ImageEnhancingUtility.Core
             string upscaleSizePattern = "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)";
 
             process.StartInfo.Arguments = $"{EsrganPath}";
+            process.StartInfo.Arguments += GetCondaEnv();
+
             bool noValidModel = true;
             int upscaleMultiplayer = 0;
 
@@ -1857,6 +1895,7 @@ namespace ImageEnhancingUtility.Core
         {
             Process process = new Process();
             process.StartInfo.Arguments = $"{Helper.GetApplicationRoot()}";
+            process.StartInfo.Arguments += GetCondaEnv();
             process.StartInfo.Arguments += $" & python pthReader.py -p \"{modelPath}\"";
             process.StartInfo.CreateNoWindow = true;
 
@@ -1931,6 +1970,7 @@ namespace ImageEnhancingUtility.Core
             using (Process process = new Process())
             {
                 process.StartInfo.Arguments = $"{EsrganPath}";
+                process.StartInfo.Arguments += GetCondaEnv();
                 process.StartInfo.Arguments += $" & python interpModels.py \"{a}\" \"{b}\" {alpha.ToString().Replace(",", ".")} \"{outputPath}\"";
                 process.ErrorDataReceived += SortOutputHandler;
                 process.OutputDataReceived += SortOutputHandler;

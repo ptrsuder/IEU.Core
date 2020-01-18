@@ -1180,7 +1180,8 @@ namespace ImageEnhancingUtility.Core
                         catch (VipsException ex)
                         {
                             alphaReadError = true;
-                            WriteToLogOpenError(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"), ex.Message);
+                            if(!HotProfile.IgnoreSingleColorAlphas)
+                                WriteToLogOpenError(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"), ex.Message);
                         }
                     }
 

@@ -258,7 +258,7 @@ namespace ImageEnhancingUtility.Core
         [ProtoMember(15, IsRequired = true)]
         public bool CheckForUpdates = true;
 
-        bool _windowOnTop = true;
+        bool _windowOnTop = false;
         [ProtoMember(24, IsRequired = true)]
         public bool WindowOnTop
         {

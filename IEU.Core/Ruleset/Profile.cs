@@ -116,6 +116,15 @@ namespace ImageEnhancingUtility.Core
             get => _thresholdEnabled;
             set => this.RaiseAndSetIfChanged(ref _thresholdEnabled, value);
         }
+
+        bool _thresholdEnabledAlpha = false;
+        [ProtoMember(39)]
+        public bool ThresholdAlphaEnabled
+        {
+            get => _thresholdEnabledAlpha;
+            set => this.RaiseAndSetIfChanged(ref _thresholdEnabledAlpha, value);
+        }
+
         private int _thresholdBlackValue = 0;
         [ProtoMember(18)]
         public int ThresholdBlackValue

@@ -692,36 +692,35 @@ namespace ImageEnhancingUtility.Core
 
         void ImagePostrpocess(ref MagickImage finalImage, Profile HotProfile)
         {
-            if (HotProfile.ThresholdEnabled)
+            MagickImage alphaChannel = null;
+            if (!HotProfile.IgnoreAlpha && finalImage.HasAlpha && HotProfile.ThresholdAlphaEnabled)
             {
-                MagickImage alphaChannel = null;
-                if (!HotProfile.IgnoreAlpha && finalImage.HasAlpha)
-                {
-                    alphaChannel = finalImage.Separate(Channels.Alpha).First() as MagickImage;
-                }
+                alphaChannel = finalImage.Separate(Channels.Alpha).First() as MagickImage;
+            }
 
-                if (HotProfile.ThresholdBlackValue != 0)
-                {
-                    finalImage.HasAlpha = false;
+            if (HotProfile.ThresholdBlackValue != 0)
+            {
+                finalImage.HasAlpha = false;
+                if (HotProfile.ThresholdEnabled)
                     finalImage.BlackThreshold(new Percentage((double)HotProfile.ThresholdBlackValue));
-                    if (alphaChannel != null)
-                    {                        
-                        alphaChannel.BlackThreshold(new Percentage((double)HotProfile.ThresholdBlackValue));
-                        finalImage.HasAlpha = true;
-                        finalImage.Composite(alphaChannel, CompositeOperator.CopyAlpha);
-                    }                    
-                }
-
-                if (HotProfile.ThresholdWhiteValue != 100)
+                if (alphaChannel != null)
                 {
-                    finalImage.HasAlpha = false;
+                    alphaChannel.BlackThreshold(new Percentage((double)HotProfile.ThresholdBlackValue));
+                    finalImage.HasAlpha = true;
+                    finalImage.Composite(alphaChannel, CompositeOperator.CopyAlpha);
+                }
+            }
+
+            if (HotProfile.ThresholdWhiteValue != 100)
+            {
+                finalImage.HasAlpha = false;
+                if (HotProfile.ThresholdEnabled)
                     finalImage.WhiteThreshold(new Percentage((double)HotProfile.ThresholdWhiteValue));
-                    if (alphaChannel != null)
-                    {
-                        alphaChannel.WhiteThreshold(new Percentage((double)HotProfile.ThresholdWhiteValue));
-                        finalImage.HasAlpha = true;
-                        finalImage.Composite(alphaChannel, CompositeOperator.CopyAlpha);
-                    }                   
+                if (alphaChannel != null)
+                {
+                    alphaChannel.WhiteThreshold(new Percentage((double)HotProfile.ThresholdWhiteValue));
+                    finalImage.HasAlpha = true;
+                    finalImage.Composite(alphaChannel, CompositeOperator.CopyAlpha);
                 }
             }
 

@@ -40,7 +40,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _balanceMonotonicImages, value);
         }
 
-        bool _balanceAlphas = true;
+        bool _balanceAlphas = false;
         [ProtoMember(7, IsRequired = true)]
         public bool BalanceAlphas
         {
@@ -48,7 +48,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _balanceAlphas, value);
         }
 
-        bool _balanceRgb = true;
+        bool _balanceRgb = false;
         [ProtoMember(38, IsRequired = true)]
         public bool BalanceRgb
         {

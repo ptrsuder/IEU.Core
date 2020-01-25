@@ -216,7 +216,12 @@ namespace ImageEnhancingUtility.Core
         public bool UseDifferentModelForAlpha
         {
             get => _useDifferentModelForAlpha;
-            set => this.RaiseAndSetIfChanged(ref _useDifferentModelForAlpha, value);
+            set
+            {
+                if (value == true && UseFilterForAlpha == true)
+                    UseFilterForAlpha = false;
+                this.RaiseAndSetIfChanged(ref _useDifferentModelForAlpha, value);
+            }
         }
 
         private ModelInfo _modelForAlpha;
@@ -226,6 +231,28 @@ namespace ImageEnhancingUtility.Core
             get => _modelForAlpha;
             set => this.RaiseAndSetIfChanged(ref _modelForAlpha, value);
         }
+
+        bool _useFilterForAlpha = false;
+        [ProtoMember(40)]
+        public bool UseFilterForAlpha
+        {
+            get => _useFilterForAlpha;
+            set
+            {
+                if (value == true && UseDifferentModelForAlpha == true)
+                    UseDifferentModelForAlpha = false;
+                this.RaiseAndSetIfChanged(ref _useFilterForAlpha, value);
+            }
+        }
+
+        private int _alphaFilterType = 2;
+        [ProtoMember(41)]
+        public int AlphaFilterType
+        {
+            get => _alphaFilterType;
+            set => this.RaiseAndSetIfChanged(ref _alphaFilterType, value);
+        }  
+
 
         [ProtoMember(28)]
         public ImageFormatInfo pngFormat = new ImageFormatInfo(".png")

@@ -886,18 +886,22 @@ namespace ImageEnhancingUtility.Core
 
             if (imageHasAlpha && !HotProfile.IgnoreAlpha)
             {
-                bool isSolidWhite = inputImageAlpha.TotalColors == 1 && inputImageAlpha.Histogram().ContainsKey(new MagickColor("#FFFFFF"));
-                if (HotProfile.IgnoreSingleColorAlphas && isSolidWhite)
-                {
-                    inputImageAlpha.Dispose();
-                    imageHasAlpha = false;
-                }
+                if (HotProfile.UseFilterForAlpha)                
+                    imageHasAlpha = false;                
                 else
                 {
-                    if (HotProfile.SeamlessTexture)
-                        inputImageAlpha = ImageOperations.ExpandTiledTexture(inputImageAlpha);
+                    bool isSolidWhite = inputImageAlpha.TotalColors == 1 && inputImageAlpha.Histogram().ContainsKey(new MagickColor("#FFFFFF"));
+                    if (HotProfile.IgnoreSingleColorAlphas && isSolidWhite)
+                    {
+                        inputImageAlpha.Dispose();
+                        imageHasAlpha = false;
+                    }
+                    else
+                    {
+                        if (HotProfile.SeamlessTexture)
+                            inputImageAlpha = ImageOperations.ExpandTiledTexture(inputImageAlpha);
+                    }
                 }
-
             }
             CreateTiles(file, inputImage, imageHasAlpha, HotProfile, inputImageAlpha);
             IncrementDoneCounter();
@@ -1155,24 +1159,43 @@ namespace ImageEnhancingUtility.Core
                     {
                         try
                         {
-                            imageAlphaNextTile = Image.NewFromFile($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false, Enums.Access.Sequential);
-                            tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
-
-                            if (j == 0)
+                            if (HotProfile.UseFilterForAlpha)
                             {
-                                imageAlphaRow = imageAlphaNextTile;//.CopyMemory();
+                                MagickImage image = ImageOperations.LoadImage(file);
+                                MagickImage inputImageAlpha = (MagickImage)image.Separate(Channels.Alpha).First();
+                                MagickImage upscaledAlpha = null;
+
+                                int inputTileWidth = image.Width / tiles[0];
+                                int upscaleMod = tileWidth / inputTileWidth;
+                                if (upscaleMod != 1)
+                                    upscaledAlpha = ImageOperations.ResizeImage(inputImageAlpha, upscaleMod, (FilterType)HotProfile.AlphaFilterType);
+                                else
+                                    upscaledAlpha = inputImageAlpha;
+                                byte[] buffer = upscaledAlpha.ToByteArray(MagickFormat.Png00);
+                                imageAlphaResult = Image.NewFromBuffer(buffer);
+                                alphaReadError = true;
                             }
                             else
                             {
-                                JoinTiles(ref imageAlphaRow, imageAlphaNextTile, useMosaic, Enums.Direction.Horizontal, -tileWidth * (j), 0);
-                                if (HotProfile.BalanceAlphas)
-                                    UseGlobalbalance(ref imageAlphaRow, ref cancelAlphaGlobalbalance, $"{file.Name} alpha");
+                                imageAlphaNextTile = Image.NewFromFile($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png", false, Enums.Access.Sequential);
+                                tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+
+                                if (j == 0)
+                                {
+                                    imageAlphaRow = imageAlphaNextTile;//.CopyMemory();
+                                }
+                                else
+                                {
+                                    JoinTiles(ref imageAlphaRow, imageAlphaNextTile, useMosaic, Enums.Direction.Horizontal, -tileWidth * (j), 0);
+                                    if (HotProfile.BalanceAlphas)
+                                        UseGlobalbalance(ref imageAlphaRow, ref cancelAlphaGlobalbalance, $"{file.Name} alpha");
+                                }
                             }
                         }
                         catch (VipsException ex)
                         {
-                            alphaReadError = true;
-                            if(!HotProfile.IgnoreSingleColorAlphas)
+                            alphaReadError = true;                           
+                            if (!HotProfile.IgnoreSingleColorAlphas)
                                 WriteToLogOpenError(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"), ex.Message);
                         }
                     }
@@ -1214,9 +1237,10 @@ namespace ImageEnhancingUtility.Core
                 }
                 GC.Collect();
             }
-
-            if (imageHasAlpha && !HotProfile.IgnoreAlpha && !alphaReadError)
+            bool alphaIsUpscaledWithFilter = imageAlphaResult != null && imageAlphaResult.Width == imageResult.Width && imageAlphaResult.Height == imageResult.Height;
+            if ((imageHasAlpha && !HotProfile.IgnoreAlpha && !alphaReadError) || alphaIsUpscaledWithFilter)
             {
+                //WriteToLog("Detected alpha upscaled with filter", Color.LightBlue);
                 imageResult = imageResult.Bandjoin(imageAlphaResult);
                 imageResult = imageResult.Copy(interpretation: "srgb").Cast("uchar");
                 imageAlphaResult.Dispose();

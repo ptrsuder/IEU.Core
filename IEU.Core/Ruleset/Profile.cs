@@ -322,7 +322,7 @@ namespace ImageEnhancingUtility.Core
             new DdsFileFormatSetting("BC7 (Linear)", DdsFileTypePlus.DdsFileFormat.BC7),
             new DdsFileFormatSetting("BC7 (sRGB)", DdsFileTypePlus.DdsFileFormat.BC7Srgb),
             new DdsFileFormatSetting("BC4 (Grayscale)", DdsFileTypePlus.DdsFileFormat.BC4),
-            new DdsFileFormatSetting("Loseless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
+            new DdsFileFormatSetting("Lossless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
         };
         readonly static List<DdsFileFormatSetting> ddsFileFormatsColorAlpha = new List<DdsFileFormatSetting>
         {
@@ -331,12 +331,12 @@ namespace ImageEnhancingUtility.Core
             new DdsFileFormatSetting("BC2 (Linear)", DdsFileTypePlus.DdsFileFormat.BC2),
             new DdsFileFormatSetting("BC7 (Linear)", DdsFileTypePlus.DdsFileFormat.BC7),
             new DdsFileFormatSetting("BC7 (sRGB)", DdsFileTypePlus.DdsFileFormat.BC7Srgb),
-            new DdsFileFormatSetting("Loseless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
+            new DdsFileFormatSetting("Lossless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
         };
         readonly static List<DdsFileFormatSetting> ddsFileFormatsNormalMap = new List<DdsFileFormatSetting>
         {
             new DdsFileFormatSetting("BC5 (Two channels)", DdsFileTypePlus.DdsFileFormat.BC5),
-            new DdsFileFormatSetting("Loseless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
+            new DdsFileFormatSetting("Lossless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
         };
 
         readonly static List<DdsFileFormatSetting>[] ddsFileFormats = new List<DdsFileFormatSetting>[] {

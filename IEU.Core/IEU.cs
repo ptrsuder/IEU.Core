@@ -947,7 +947,7 @@ namespace ImageEnhancingUtility.Core
 
             await Task.Run(() => Parallel.ForEach(inputFiles, parallelOptions: new ParallelOptions() { MaxDegreeOfParallelism = maxConcurrency }, file =>
             {
-                if (!file.Exists)
+                if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper().Remove(0,1)))
                     return;
                 bool fileSkipped = true;
                 List<Rule> rules = new List<Rule>(Ruleset.Values);
@@ -1438,7 +1438,7 @@ namespace ImageEnhancingUtility.Core
             WriteToLog("Merging tiles...");
             await Task.Run(() => Parallel.ForEach(inputFiles, parallelOptions: new ParallelOptions() { MaxDegreeOfParallelism = maxConcurrency }, file =>
             {
-                if (!file.Exists)
+                if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper().Remove(0, 1)))
                     return;
 
                 Profile profile = new Profile();

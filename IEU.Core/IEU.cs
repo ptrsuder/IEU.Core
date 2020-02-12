@@ -2183,6 +2183,7 @@ namespace ImageEnhancingUtility.Core
             previewIEU.CurrentProfile = CurrentProfile.Clone();
             previewIEU.CurrentProfile.OverwriteMode = 0;
             previewIEU.DisableRuleSystem = true;
+            previewIEU.CreateMemoryImage = false;
 
             await previewIEU.Split(new FileInfo[] { previewOriginal });
             ModelInfo previewModelInfo = new ModelInfo(Path.GetFileNameWithoutExtension(modelPath), modelPath);

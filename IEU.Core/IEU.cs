@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -29,6 +31,7 @@ using Unit = System.Reactive.Unit;
 //new filter: (doesn't)have result
 //write log file
 //identical filenames with different extension
+//transfer gui setting to gui project?
 [assembly: InternalsVisibleTo("ImageEnhancingUtility.Tests")]
 namespace ImageEnhancingUtility.Core
 {
@@ -204,7 +207,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         private int _overlapSize = 16;
-        [ProtoMember(12)]
+        [ProtoMember(12, IsRequired = true)]
         public int OverlapSize
         {
             get => _overlapSize;
@@ -248,7 +251,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         bool _createMemoryImage = true;
-        [ProtoMember(14)]
+        [ProtoMember(14, IsRequired = true)]
         public bool CreateMemoryImage
         {
             get => _createMemoryImage;
@@ -264,6 +267,14 @@ namespace ImageEnhancingUtility.Core
         {
             get => _windowOnTop;
             set => this.RaiseAndSetIfChanged(ref _windowOnTop, value);
+        }
+
+        bool _showPopups = true;
+        [ProtoMember(27, IsRequired = true)]
+        public bool ShowPopups
+        {
+            get => _showPopups;
+            set => this.RaiseAndSetIfChanged(ref _showPopups, value);
         }
 
         #endregion
@@ -328,11 +339,21 @@ namespace ImageEnhancingUtility.Core
 
         public static List<double> ResizeImageScaleFactors = new List<double>() { 0.25, 0.5, 1.0, 2.0, 4.0 };
 
+        bool _useCPU = false;
         [ProtoMember(16)]
-        public bool UseCPU = false;
+        public bool UseCPU
+        {
+            get => _useCPU;
+            set => this.RaiseAndSetIfChanged(ref _useCPU, value);
+        }
 
+        bool _useBasicSR = false;
         [ProtoMember(17)]
-        public bool UseBasicSR = false;
+        public bool UseBasicSR
+        {
+            get => _useBasicSR;
+            set => this.RaiseAndSetIfChanged(ref _useBasicSR, value);
+        }
 
         string _lastModelForAlphaPath;
         [ProtoMember(18)]
@@ -435,6 +456,7 @@ namespace ImageEnhancingUtility.Core
         public ReactiveCommand<Unit, Unit> SplitUpscaleMergeCommand { get; }
 
         #region CONSTRUCTOR
+        public IEU() { }
         public IEU(bool isSub = false)
         {
             IsSub = isSub;
@@ -494,12 +516,12 @@ namespace ImageEnhancingUtility.Core
             FileStream fileStream = new FileStream("settings.proto", FileMode.Open)
             {
                 Position = 0
-            };
+            };            
             Serializer.Merge(fileStream, this);
             fileStream.Close();
         }
         public void SaveSettings()
-        {
+        {            
             FileStream fileStream = new FileStream("settings.proto", FileMode.Create);
             Serializer.Serialize(fileStream, this);
             fileStream.Close();
@@ -668,7 +690,20 @@ namespace ImageEnhancingUtility.Core
             ProgressLabel = $@"{FilesDone}/{FilesTotal}";
         }
         #endregion
-        
+
+        MagickImage PrefilterImage(System.Drawing.Image image, InterpolationMode interpolationMode)
+        {
+            Bitmap result = new Bitmap(image.Width, image.Height);
+            int w = image.Width, h = image.Height;
+            using (Graphics g = Graphics.FromImage(result))
+            {
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.InterpolationMode = interpolationMode;
+                g.DrawImage(image, new Rectangle(0, 0, w, h), new Rectangle(0, 0, w, h), GraphicsUnit.Pixel);
+            }
+            return ImageOperations.ConvertToMagickImage(result);
+        }
+
         void ImagePreprocess(ref MagickImage image, Profile HotProfile)
         {
             if (HotProfile.ResizeImageBeforeScaleFactor != 1.0)
@@ -731,6 +766,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         int maxConcurrency = 99;
+        int maxImagesToWrite = 5;
 
         #region SPLIT    
 
@@ -1218,7 +1254,7 @@ namespace ImageEnhancingUtility.Core
                 {
                     imageResult = imageRow;//.Copy();
                     if (imageHasAlpha && !HotProfile.IgnoreAlpha && !alphaReadError)
-                        imageAlphaResult = imageAlphaRow.Copy();
+                        imageAlphaResult = imageAlphaRow;//.Copy();
                 }
                 else
                 {
@@ -1247,6 +1283,7 @@ namespace ImageEnhancingUtility.Core
             }
             return imageResult;
         }
+
 
         internal void MergeTask(FileInfo file, string basePath, Profile HotProfile, string outputFilename = "")
         {
@@ -1344,7 +1381,6 @@ namespace ImageEnhancingUtility.Core
                 int upscaleModificator = imageResult.Width / imageWidth;
                 imageResult = imageResult.Crop(0, 0, image.Width * upscaleModificator, image.Height * upscaleModificator);
             }
-
 
             if (
                 outputFormat.VipsNative &&
@@ -2021,6 +2057,12 @@ namespace ImageEnhancingUtility.Core
                 && !outLine.Data.Contains("UserWarning")
                 && !outLine.Data.Contains("nn."))
             {
+                //if(outLine.Data.Contains("b'"))
+                //{
+                //    string base64img = outLine.Data.Remove(0, 2);
+                //    base64img = base64img.Remove(base64img.Length - 1, 1);
+                //    MagickImage magickImage = MagickImage.FromBase64(base64img) as MagickImage;                   
+                //}
                 if (Regex.IsMatch(outLine.Data, "^[0-9]+ .*$"))
                 {
                     IncrementDoneCounter();
@@ -2126,19 +2168,23 @@ namespace ImageEnhancingUtility.Core
             ReportProgress();
         }
 
-        public void InterpolateImages(System.Drawing.Image imageA, System.Drawing.Image imageB, string destinationPath, double alpha)
+        public bool InterpolateImages(System.Drawing.Image imageA, System.Drawing.Image imageB, string destinationPath, double alpha)
         {
             var result = ImageInterpolation.Interpolate(imageA, imageB, destinationPath, alpha);
             if (result.Item1)            
-                WriteToLog($"{Path.GetFileName(destinationPath)}", Color.LightGreen);      
-            else            
-                WriteToLog($"{Path.GetFileName(destinationPath)}: failed to interpolate.\n{result.Item2}", Color.Red);        
+                WriteToLog($"{Path.GetFileName(destinationPath)}", Color.LightGreen);
+            else
+            {
+                WriteToLog($"{Path.GetFileName(destinationPath)}: failed to interpolate.\n{result.Item2}", Color.Red);
+                return false;
+            }
+            return true;
         }
         #endregion
 
         private IEU previewIEU;
 
-        async public Task<System.Drawing.Bitmap> CreatePreview(System.Drawing.Bitmap original, string modelPath)
+        async public Task<Bitmap> CreatePreview(Bitmap original, string modelPath, string extension = "PNG")
         {
             string previewDirPath = $"{EsrganPath}{DirectorySeparator}IEU_preview";
             string previewResultsDirPath = previewDirPath + $"{DirectorySeparator}results";
@@ -2161,10 +2207,8 @@ namespace ImageEnhancingUtility.Core
 
             FileInfo previewOriginal = new FileInfo(previewInputDirPath + $"{DirectorySeparator}preview.png");
             FileInfo preview = new FileInfo(previewDirPath + $"{DirectorySeparator}preview.png");
-                        
-            //original.Save(previewOriginal.FullName, ImageFormat.Jpeg);
-
-            var i2 = new System.Drawing.Bitmap(original);
+                   
+            var i2 = new Bitmap(original);
             i2.Save(previewOriginal.FullName, ImageFormat.Png);
 
             if (previewIEU == null)
@@ -2194,20 +2238,102 @@ namespace ImageEnhancingUtility.Core
                 File.WriteAllText(previewDirPath + $"{DirectorySeparator}log.txt", previewIEU.Logs);
                 return null;
             }
-            CreateModelTree();
-            await previewIEU.Merge();
+            CreateModelTree();           
+            await previewIEU.Merge();           
 
-            System.Drawing.Bitmap result;
+            Bitmap result;
             using (var fs = new FileStream(preview.FullName, FileMode.Open))
             {
-                using (System.Drawing.Bitmap test = new System.Drawing.Bitmap(fs))
+                using (Bitmap test = new Bitmap(fs))
                 {
-                    result = test.Clone() as System.Drawing.Bitmap;
+                    result = test.Clone() as Bitmap;
                 }
             }
             return result;
         }
-}
+
+        async public Task<bool> SavePreview(string imagePath, string modelPath, bool saveAsPng = false)
+        {
+            string previewDirPath = $"{EsrganPath}{DirectorySeparator}IEU_preview";
+            string previewResultsDirPath = previewDirPath + $"{DirectorySeparator}results";
+            string previewLrDirPath = previewDirPath + $"{DirectorySeparator}LR";
+            string previewInputDirPath = previewDirPath + $"{DirectorySeparator}input";
+
+            List<DirectoryInfo> previewFolders = new List<DirectoryInfo>() {
+                new DirectoryInfo(previewDirPath),
+                new DirectoryInfo(previewResultsDirPath),
+                new DirectoryInfo(previewLrDirPath),
+                new DirectoryInfo(previewInputDirPath) };
+
+            foreach (var folder in previewFolders)
+            {
+                if (!folder.Exists)
+                    folder.Create();
+                else
+                    folder.GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(x => x.Delete());
+            }
+
+            FileInfo previewOriginal = new FileInfo(previewInputDirPath + $"{DirectorySeparator}preview.png");
+            FileInfo preview = new FileInfo(previewDirPath + $"{DirectorySeparator}preview.png");
+
+            var i2 = ImageOperations.LoadImageToBitmap(imagePath);
+            i2.Save(previewOriginal.FullName, ImageFormat.Png);
+
+            if (previewIEU == null)
+                previewIEU = new IEU(true);
+
+            previewIEU.EsrganPath = EsrganPath;
+            previewIEU.LrPath = previewLrDirPath;
+            previewIEU.InputDirectoryPath = previewInputDirPath;
+            previewIEU.ResultsPath = previewResultsDirPath;
+            previewIEU.OutputDirectoryPath = previewDirPath;
+            previewIEU.MaxTileResolution = MaxTileResolution;
+            previewIEU.OverlapSize = OverlapSize;
+            previewIEU.OutputDestinationMode = 0;
+            previewIEU.UseCPU = UseCPU;
+            previewIEU.UseBasicSR = UseBasicSR;
+            previewIEU.CurrentProfile = CurrentProfile.Clone();
+            previewIEU.CurrentProfile.OverwriteMode = 0;
+            previewIEU.DisableRuleSystem = true;
+            previewIEU.CreateMemoryImage = false;
+
+            await previewIEU.Split(new FileInfo[] { previewOriginal });
+            ModelInfo previewModelInfo = new ModelInfo(Path.GetFileNameWithoutExtension(modelPath), modelPath);
+            previewIEU.SelectedModelsItems = new List<ModelInfo>() { previewModelInfo };
+            bool success = await previewIEU.Upscale(true);
+            if (!success)
+            {
+                File.WriteAllText(previewDirPath + $"{DirectorySeparator}log.txt", previewIEU.Logs);               
+            }
+            CreateModelTree();
+            if (!saveAsPng)
+            {
+                previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
+                previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.selectedOutputFormat;
+            }
+            await previewIEU.Merge();
+
+            ImageFormatInfo outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase)).First(); ;
+            if (!saveAsPng)
+            {               
+                if (CurrentProfile.UseOriginalImageFormat)
+                    outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(Path.GetExtension(imagePath).Remove(0,1), StringComparison.InvariantCultureIgnoreCase)).First(); //hack, may be bad
+                else
+                    outputFormat = CurrentProfile.selectedOutputFormat;
+                preview = new FileInfo(previewDirPath + $"{DirectorySeparator}preview{outputFormat.Extension}");
+            }
+            if (!File.Exists(preview.FullName))
+                return false;
+            string modelName = Path.GetFileNameWithoutExtension(modelPath);
+            string dir = Path.GetDirectoryName(imagePath);
+            string fileName = Path.GetFileNameWithoutExtension(imagePath);            
+            string destination = $"{ dir }\\{ fileName}_{modelName}{outputFormat.Extension}";
+
+            File.Copy(preview.FullName, destination);
+
+            return true;
+        }
+    }
 }
 
 

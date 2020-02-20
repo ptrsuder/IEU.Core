@@ -7,6 +7,7 @@ using DdsFileTypePlus;
 using ImageMagick;
 using PaintDotNet;
 using Path = System.IO.Path;
+using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 
 namespace ImageEnhancingUtility.Core.Utility
@@ -26,12 +27,14 @@ namespace ImageEnhancingUtility.Core.Utility
             return result;
         }
 
-        public static MagickImage ConvertToMagickImage(Bitmap bitmap)
+        public static MagickImage ConvertToMagickImage(Bitmap bitmap, string format = "PNG")
         {
             MagickImage result;
+            ImageFormatConverter formatConv = new ImageFormatConverter();            
+            ImageFormat imageFormat = (ImageFormat)formatConv.ConvertFromString(format);
             using (MemoryStream memoryStream = new MemoryStream())
             {
-                bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+                bitmap.Save(memoryStream, imageFormat);
                 memoryStream.Position = 0;
                 result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
             }

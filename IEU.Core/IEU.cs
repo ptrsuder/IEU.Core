@@ -38,7 +38,7 @@ namespace ImageEnhancingUtility.Core
     [ProtoContract]
     public class IEU : ReactiveObject
     {
-        public readonly string AppVersion = "0.11.04";
+        public readonly string AppVersion = "0.12.00-dev-beta.3";
         public readonly string GitHubRepoName = "IEU.Core";
 
         #region FIELDS/PROPERTIES              

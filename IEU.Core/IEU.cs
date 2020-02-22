@@ -887,6 +887,7 @@ namespace ImageEnhancingUtility.Core
                     }
                 }
             }
+            inputImage.Dispose();
             WriteToLog($"{file.Name} DONE", Color.LightGreen);
         }
 
@@ -1401,6 +1402,7 @@ namespace ImageEnhancingUtility.Core
 
                 if (!WriteToFileVipsNative(imageResult, outputFormat, destinationPath))
                     return;
+                imageResult.Dispose();
                 IncrementDoneCounter();
                 ReportProgress();
                 WriteToLog($"<{file.Name}> DONE", Color.LightGreen);
@@ -1441,7 +1443,7 @@ namespace ImageEnhancingUtility.Core
                 WriteToFileDds(finalImage, destinationPath, HotProfile);
             else
                 finalImage.Write(destinationPath);
-            
+            imageResult.Dispose();
             finalImage.Dispose();
             IncrementDoneCounter();
             ReportProgress();

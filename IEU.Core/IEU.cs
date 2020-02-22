@@ -823,34 +823,51 @@ namespace ImageEnhancingUtility.Core
 
             int tileWidth = imageWidth / tiles[0];
             int tileHeight = imageHeight / tiles[1];
+            bool addColumn = false, addRow = false;
+            int rows = tiles[1], columns = tiles[0];
             if (HotProfile.PreciseTileResolution)
             {
                 tileWidth = MaxTileResolutionWidth;
                 tileHeight = MaxTileResolutionHeight;
+                if (imageWidth % tileWidth >= 16)
+                {
+                    addColumn = true;
+                    columns++;
+                }               
+                if (imageHeight % tileHeight >= 16)
+                {
+                    addRow = true;
+                    rows++;
+                }
             }
             int rightOverlap, bottomOverlap;
 
-            for (int i = 0; i < tiles[1]; i++)
+            Directory.CreateDirectory($"{LrPath}{DirectorySeparator}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}");
+
+            for (int row = 0; row < rows; row++)
             {
-                for (int j = 0; j < tiles[0]; j++)
+                for (int col = 0; col < columns; col++)
                 {
-                    if (i < tiles[1] - 1)
+                    if (row < rows - 1)
                         bottomOverlap = 1;
                     else
                         bottomOverlap = 0;
-                    if (j < tiles[0] - 1)
+                    if (col < columns - 1)
                         rightOverlap = 1;
                     else
                         rightOverlap = 0;
 
-                    int tileIndex = i * tiles[0] + j;
+                    int tileIndex = row * columns + col;
                     int xOffset = rightOverlap * OverlapSize;
                     int yOffset = bottomOverlap * OverlapSize;
-                    int tile_X1 = j * tileWidth;
-                    int tile_Y1 = i * tileHeight;
+                    int tile_X1 = col * tileWidth;
+                    int tile_Y1 = row * tileHeight;
 
-                    Directory.CreateDirectory($"{LrPath}{DirectorySeparator}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}");
-
+                    if (addColumn && col == columns - 1)                   
+                        tile_X1 = imageWidth - tileWidth;    
+                    if (addRow && row == rows - 1)                   
+                       tile_Y1 = imageHeight - tileHeight;                       
+                    
                     if (imageHasAlpha && !HotProfile.IgnoreAlpha) //crop alpha
                     {
                         MagickImage outputImageAlpha = (MagickImage)inputImageAlpha.Clone();
@@ -884,8 +901,9 @@ namespace ImageEnhancingUtility.Core
                         outputImage.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset, tileHeight + yOffset));
                         MagickFormat format = MagickFormat.Png24;
                         outputImage.Write($"{LrPath}{DirectorySeparator}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}{DirectorySeparator}{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex.ToString("D2")}.png", format);
-                    }
+                    }                   
                 }
+                
             }
             inputImage.Dispose();
             WriteToLog($"{file.Name} DONE", Color.LightGreen);

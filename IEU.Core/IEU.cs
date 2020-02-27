@@ -2316,6 +2316,8 @@ namespace ImageEnhancingUtility.Core
             previewIEU.CurrentProfile.OverwriteMode = 0;
             previewIEU.DisableRuleSystem = true;
             previewIEU.CreateMemoryImage = false;
+            previewIEU.UseCondaEnv = UseCondaEnv;
+            previewIEU.CondaEnv = CondaEnv;
 
             await previewIEU.Split(new FileInfo[] { previewOriginal });
             ModelInfo previewModelInfo = new ModelInfo(Path.GetFileNameWithoutExtension(modelPath), modelPath);

@@ -1672,7 +1672,7 @@ namespace ImageEnhancingUtility.Core
             if (CreateMemoryImage)
             {
                 Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
-                image.WriteToFile($"{LrPath}{DirectorySeparator}([000])000)_memory_helper_(ieu_is_the_best)-tile-00.png");
+                image.WriteToFile($"{LrPath}{DirectorySeparator}([000])000)_memory_helper_(ieu_is_the_best)_tile-00.png");
             }
 
             Process process;

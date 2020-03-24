@@ -38,7 +38,7 @@ for path in files_i_care_about:
     img_LR = img.unsqueeze(0)
     img_LR = img_LR.to(device)
 
-    output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
+    output = model(img_LR).data.squeeze(0).float().cpu().clamp_(0, 1).numpy()
     output = np.transpose(output[None, :, :], (1, 2, 0))
     output = (output * 255.0).round()
     cv2.imwrite('{1:s}\{0:s}.png'.format(base, output_folder), output)

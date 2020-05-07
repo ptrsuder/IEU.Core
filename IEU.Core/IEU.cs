@@ -932,16 +932,12 @@ namespace ImageEnhancingUtility.Core
                         string outPath = $"{LrPath}{DirectorySeparator}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex.ToString("D2")}.png";
                         if (!InMemoryMode)
                             outputImage.Write(outPath, format);
-                        else
-                        {
+                        else                        
                             lrImages.Add(outPath, outputImage.ToBase64());
-                        }
+                        
                     }                   
                 }                
-            }
-            //if (InMemoryMode && !IsSub)            
-            //    WriteImageToStream(lrImages);
-           
+            }           
             inputImage.Dispose();
             WriteToLog($"{file.Name} SPLIT DONE", Color.LightGreen);
         }
@@ -1012,7 +1008,8 @@ namespace ImageEnhancingUtility.Core
 
             DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
             DirectoryInfo lrDirectory = new DirectoryInfo(LrPath);
-            FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption);
+            FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption)
+               .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.Remove(0, 1).ToUpperInvariant())).ToArray();
             if (inputDirectoryFiles.Count() == 0)
             {
                 WriteToLog("No files in input folder!", Color.Red);
@@ -1558,8 +1555,11 @@ namespace ImageEnhancingUtility.Core
             {
                 inputImageAlpha = (MagickImage)inputImage.Separate(Channels.Alpha).First();
                 bool isSolidWhite = inputImageAlpha.TotalColors == 1 && inputImageAlpha.Histogram().ContainsKey(new MagickColor("#FFFFFF"));
-                if (isSolidWhite)                
-                    inputImage.HasAlpha = false;               
+                if (isSolidWhite)
+                {
+                    inputImage.HasAlpha = false;
+                    imageHasAlpha = false;
+                }
             }
 
             int expandSize = SeamlessExpandSize;
@@ -1701,9 +1701,10 @@ namespace ImageEnhancingUtility.Core
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
             if (OutputDestinationMode == 3)
-                searchOption = SearchOption.AllDirectories;           
-           
-            FileInfo[] inputFiles = di.GetFiles("*", searchOption);            
+                searchOption = SearchOption.AllDirectories;
+
+            FileInfo[] inputFiles = di.GetFiles("*", searchOption)
+               .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.Remove(0, 1).ToUpperInvariant())).ToArray();
 
             WriteToLog("Counting files...");
             await GetTotalFileNumber(inputFiles);
@@ -2143,7 +2144,7 @@ namespace ImageEnhancingUtility.Core
                 //WriteToStream.Post(json);
                 writer.WriteLine(json);
             }
-            if (fileQueue.Count == 0)
+            if (fileQueue.Count == 0 && !IsSub)
                 WriteToStream.Complete();
             if (fileQueue!=null)
                 UpdateQueue();
@@ -2441,10 +2442,9 @@ namespace ImageEnhancingUtility.Core
                 writer = process.StandardInput;
             }
             if(IsSub)
-            {
-                WriteImageToStream(lrDict[lrDict.Keys.FirstOrDefault()]);
+            {                
+                WriteImageToStream(lrDict[lrDict.Keys.FirstOrDefault()]);               
             }
-
             return tcs.Task;
         }
 
@@ -2549,8 +2549,9 @@ namespace ImageEnhancingUtility.Core
                     if (hrTiles.Count == lrTiles.Count)
                     {
                         if (lrDict.Count == 1 && hrDict.Count == 1 && fileQueue.Count == 0 )
-                        {                            
-                            WriteToStream.Completion.Wait();
+                        {           
+                            if(!IsSub)
+                                WriteToStream.Completion.Wait();
                             //Task.WaitAll(streamTasks.ToArray());
                             writer.Close();
                         }
@@ -2611,7 +2612,7 @@ namespace ImageEnhancingUtility.Core
         ActionBlock<Dictionary<string, string>> WriteToStream;
         TransformBlock<FileInfo, Dictionary<string, string>> SplitImage;
 
-        async public Task SplitUpscaleMergeInMemory()
+        void SetPipeline()
         {
             WriteToStream = new ActionBlock<Dictionary<string, string>>(images =>
             {
@@ -2630,6 +2631,12 @@ namespace ImageEnhancingUtility.Core
                 MaxDegreeOfParallelism = maxSplit
             });
             SplitImage.LinkTo(WriteToStream, new DataflowLinkOptions { PropagateCompletion = true });
+
+        }
+
+        async public Task SplitUpscaleMergeInMemory()
+        {
+            SetPipeline();
 
             checkedModels = SelectedModelsItems;
             if (checkedModels.Count == 0)
@@ -2778,9 +2785,19 @@ namespace ImageEnhancingUtility.Core
             previewIEU.CreateMemoryImage = false;
             previewIEU.UseCondaEnv = UseCondaEnv;
             previewIEU.CondaEnv = CondaEnv;
+            previewIEU.InMemoryMode = InMemoryMode;
+            previewIEU.EnableBlend = EnableBlend;           
         }
 
-        async public Task<bool> Preview_(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false)
+        async public Task<bool> Preview(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false)
+        {           
+            if (!InMemoryMode)
+                return await PreviewNormal(imagePath, image, modelPath, saveAsPng, copyToOriginal);
+            else
+                return await PreviewInMemory(imagePath, image, modelPath, saveAsPng, copyToOriginal);
+        }
+
+        async public Task<bool> PreviewNormal(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false)
         {
             PreviewDirPath = $"{EsrganPath}{DirectorySeparator}IEU_preview";
             string previewResultsDirPath = PreviewDirPath + $"{DirectorySeparator}results";
@@ -2860,7 +2877,7 @@ namespace ImageEnhancingUtility.Core
             return true;
         }
 
-        async public Task<bool> Preview(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false)
+        async public Task<bool> PreviewInMemory(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false)
         {
             PreviewDirPath = $"{EsrganPath}{DirectorySeparator}IEU_preview";
             string previewResultsDirPath = PreviewDirPath + $"{DirectorySeparator}results";
@@ -2908,10 +2925,13 @@ namespace ImageEnhancingUtility.Core
             previewIEU.Split(previewOriginal);
             ModelInfo previewModelInfo = new ModelInfo(Path.GetFileNameWithoutExtension(modelPath), modelPath);
             previewIEU.SelectedModelsItems = new List<ModelInfo>() { previewModelInfo };
+            SetPipeline();
             bool success = await previewIEU.Upscale(true);
             if (!success)            
                 File.WriteAllText(PreviewDirPath + $"{DirectorySeparator}log.txt", previewIEU.Logs);
-            
+           
+
+
             CreateModelTree();
             if (!saveAsPng)
             {

@@ -29,6 +29,7 @@ namespace ImageEnhancingUtility.Core
             MagickImage imageA, imageB;
             try
             {
+                //TODO: pass image format somehow
                 imageA = ImageOperations.ConvertToMagickImage(a as Bitmap);
                 imageB = ImageOperations.ConvertToMagickImage(b as Bitmap);
                

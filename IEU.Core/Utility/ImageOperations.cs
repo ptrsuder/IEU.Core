@@ -8,7 +8,10 @@ using ImageMagick;
 using PaintDotNet;
 using Path = System.IO.Path;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
-
+using NetVips;
+using Image = System.Drawing.Image;
+using System.Drawing.Imaging;
+using System.Drawing.Drawing2D;
 
 namespace ImageEnhancingUtility.Core.Utility
 {
@@ -68,6 +71,17 @@ namespace ImageEnhancingUtility.Core.Utility
             return test;
         }
 
+        public static NetVips.Image ConvertToVips(MagickImage image)
+        {
+            byte[] imageBuffer = image.ToByteArray(MagickFormat.Png00);        
+            return NetVips.Image.NewFromBuffer(imageBuffer);           
+        }
+
+        public static NetVips.Image ConvertToVips(string base64String)
+        {
+            byte[] imageBuffer = Convert.FromBase64String(base64String);
+            return NetVips.Image.NewFromBuffer(imageBuffer);
+        }
         public static MagickImage LoadImage(FileInfo file)
         {
             MagickImage image;
@@ -92,11 +106,14 @@ namespace ImageEnhancingUtility.Core.Utility
 
             if (simpleFormats.Contains(extension))
             {
-                using (FileStream stream = new FileStream(fullname, FileMode.Open))
+                using (MemoryStream memory = new MemoryStream())
                 {
-                    var img = Image.FromStream(stream);
-                    image = (Image)img.Clone();
+                    using (FileStream fs = new FileStream(fullname, FileMode.Open, FileAccess.ReadWrite))
+                    {
+                        image = Image.FromStream(fs);                       
+                    }
                 }
+               // image = Image.FromFile(fullname);                
             }
             else
             {
@@ -106,6 +123,24 @@ namespace ImageEnhancingUtility.Core.Utility
             return image;
         }
 
+        public static Bitmap Base64ToBitmap(string base64String)
+        {
+            Bitmap bmpReturn = null;
+
+            byte[] byteBuffer = Convert.FromBase64String(base64String);
+            MemoryStream memoryStream = new MemoryStream(byteBuffer);
+
+            memoryStream.Position = 0;
+
+            bmpReturn = (Bitmap)Bitmap.FromStream(memoryStream);
+
+            memoryStream.Close();
+            memoryStream = null;
+            byteBuffer = null;
+
+            return bmpReturn;
+        }
+
         public static MagickImage ResizeImage(MagickImage image, double resizeFactor, FilterType filterType)
         {
             MagickImage newImage = image.Clone() as MagickImage;
@@ -113,7 +148,7 @@ namespace ImageEnhancingUtility.Core.Utility
             //image.Interpolate = interpolateMethod;
             newImage.FilterType = filterType;
             //image.Sharpen();
-            //image.Scale(new Percentage(resizeFactor));        
+            //image.Scale(new Percentage(resizeFactor));  
             newImage.Resize((int)(resizeFactor * image.Width), (int)(resizeFactor * image.Height));
             return newImage;
         }
@@ -167,6 +202,43 @@ namespace ImageEnhancingUtility.Core.Utility
             int[] newDimensions = Helper.GetGoodDimensions(image.Width, image.Height, x, y);
             result.Extent(newDimensions[0], newDimensions[1]);
             return result;
+        }
+
+        public static void MatrixBlend(string image1path, string image2path, byte alpha)
+        {
+            // for the matrix the range is 0.0 - 1.0
+            float alphaNorm = (float)alpha / 255.0F;
+            using (Bitmap image1 = (Bitmap)Bitmap.FromFile(image1path))
+            {
+                using (Bitmap image2 = (Bitmap)Bitmap.FromFile(image2path))
+                {
+                    // just change the alpha
+                    ColorMatrix matrix = new ColorMatrix(new float[][]{
+                new float[] {1F, 0, 0, 0, 0},
+                new float[] {0, 1F, 0, 0, 0},
+                new float[] {0, 0, 1F, 0, 0},
+                new float[] {0, 0, 0, alphaNorm, 0},
+                new float[] {0, 0, 0, 0, 1F}});
+
+                    ImageAttributes imageAttributes = new ImageAttributes();
+                    imageAttributes.SetColorMatrix(matrix);
+
+                    using (Graphics g = Graphics.FromImage(image1))
+                    {
+                        g.CompositingMode = CompositingMode.SourceOver;
+                        g.CompositingQuality = CompositingQuality.HighQuality;
+
+                        g.DrawImage(image2,
+                            new Rectangle(0, 0, image1.Width, image1.Height),
+                            0,
+                            0,
+                            image2.Width,
+                            image2.Height,
+                            GraphicsUnit.Pixel,
+                            imageAttributes);
+                    }
+                }
+            }
         }
     }
 }

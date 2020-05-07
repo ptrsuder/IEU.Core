@@ -15,6 +15,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IEU.NUnitTests", "IEU.NUnit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IETU.Winforms", "IETU.Winforms\IETU.Winforms.csproj", "{2F3A3DA9-3C6E-404D-A513-896F532F5351}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaApplication1", "AvaloniaApplication1\AvaloniaApplication1.csproj", "{1F8C512A-6368-4A49-964B-8AAA6664AC88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaApplication2", "AvaloniaApplication2\AvaloniaApplication2.csproj", "{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +75,22 @@ Global
 		{2F3A3DA9-3C6E-404D-A513-896F532F5351}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2F3A3DA9-3C6E-404D-A513-896F532F5351}.Release|x64.ActiveCfg = Release|Any CPU
 		{2F3A3DA9-3C6E-404D-A513-896F532F5351}.Release|x64.Build.0 = Release|Any CPU
+		{1F8C512A-6368-4A49-964B-8AAA6664AC88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F8C512A-6368-4A49-964B-8AAA6664AC88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F8C512A-6368-4A49-964B-8AAA6664AC88}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1F8C512A-6368-4A49-964B-8AAA6664AC88}.Debug|x64.Build.0 = Debug|Any CPU
+		{1F8C512A-6368-4A49-964B-8AAA6664AC88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F8C512A-6368-4A49-964B-8AAA6664AC88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F8C512A-6368-4A49-964B-8AAA6664AC88}.Release|x64.ActiveCfg = Release|Any CPU
+		{1F8C512A-6368-4A49-964B-8AAA6664AC88}.Release|x64.Build.0 = Release|Any CPU
+		{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}.Debug|x64.Build.0 = Debug|Any CPU
+		{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}.Release|x64.ActiveCfg = Release|Any CPU
+		{FEFC9311-CEC1-4FBD-ADDB-5A8AC3DED534}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

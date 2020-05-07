@@ -165,22 +165,18 @@ namespace ImageEnhancingUtility.Core
                 bool matchPattern = false;
                 foreach (string pattern in patternsFilenameContains)
                     matchPattern = matchPattern || filename.Contains(pattern);
-
                 filenameFilter = filenameFilter && matchPattern;
+                if (!filenameFilter) return false;
             }
             if (FilenameNotContainsEnabled)
             {
-                bool matchPattern = false;
+                bool matchPattern = true;
                 foreach (string pattern in patternsFilenameNotContains)
-                    matchPattern = matchPattern || !filename.Contains(pattern);
-
-                filenameFilter = filenameFilter && matchPattern;
+                    matchPattern = matchPattern && !filename.Contains(pattern);
+                if (!matchPattern) return false;
             }
-            if (!filenameFilter) return false;
-
 
             string folderName = file.DirectoryName;
-            bool folderNameFilter = true;
 
             if (!FolderNameCaseSensitive)
             {
@@ -192,21 +188,20 @@ namespace ImageEnhancingUtility.Core
             }
             if (FolderNameContainsEnabled)
             {
+                bool folderNameFilter = true;
                 bool matchPattern = false;
                 foreach (string pattern in patternsFoldernameContains)
                     matchPattern = matchPattern || folderName.Contains(pattern);
-
                 folderNameFilter = folderNameFilter && matchPattern;
+                if (!folderNameFilter) return false;
             }
             if (FolderNameNotContainsEnabled)
             {
-                bool matchPattern = false;
+                bool matchPattern = true;
                 foreach (string pattern in patternsFoldernameNotContains)
-                    matchPattern = matchPattern || !folderName.Contains(pattern);
-
-                folderNameFilter = folderNameFilter && matchPattern;
+                    matchPattern = matchPattern && !folderName.Contains(pattern);
+                if (!matchPattern) return false;
             }
-            if (!folderNameFilter) return false;
 
             if (SelectedExtensionsList?.Count > 0 &&
                 !SelectedExtensionsList.Contains(file.Extension.ToUpper()))
@@ -214,7 +209,31 @@ namespace ImageEnhancingUtility.Core
 
             if (Alpha != 0 || ImageResolutionEnabled) //need to load Magick image
             {
-                try
+                int imgWidth, imgHeight;
+
+                if (file.Extension.ToLower() == ".dds")
+                {
+                    using (Surface image = DdsFile.Load(file.FullName))
+                    {
+                        if (Alpha != 0)
+                        {
+                            switch (Alpha) // switch alpha filter type
+                            {
+                                case 1:
+                                    alphaFilter = DdsFile.HasTransparency(image);
+                                    break;
+                                case 2:
+                                    alphaFilter = !DdsFile.HasTransparency(image);
+                                    break;
+                            }
+                            if (!alphaFilter) return false;
+                        }
+                        imgWidth = image.Width;
+                        imgHeight = image.Height;
+                    }
+
+                }
+                else
                 {
                     using (MagickImage image = new MagickImage(file.FullName))
                     {
@@ -232,47 +251,18 @@ namespace ImageEnhancingUtility.Core
 
                             if (!alphaFilter) return false;
                         }
-
-                        if (ImageResolutionEnabled)
-                        {
-                            if (!ImageResolutionOr) // OR
-                                sizeFilter = image.Width <= ImageResolutionMaxWidth || image.Height <= ImageResolutionMaxHeight;
-                            else // AND
-                                sizeFilter = image.Width <= ImageResolutionMaxWidth && image.Height <= ImageResolutionMaxHeight;
-                            if (!sizeFilter) return false;
-                        }
+                        imgWidth = image.Width;
+                        imgHeight = image.Height;
                     }
                 }
-                catch
-                {
-                    if (file.Extension.ToLower() == ".dds")
-                    {
-                        using (Surface image = DdsFile.Load(file.FullName))
-                        {
-                            if (Alpha != 0)
-                            {
-                                switch (Alpha) // switch alpha filter type
-                                {
-                                    case 1:
-                                        alphaFilter = DdsFile.HasTransparency(image);
-                                        break;
-                                    case 2:
-                                        alphaFilter = !DdsFile.HasTransparency(image);
-                                        break;
-                                }
-                                if (!alphaFilter) return false;
-                            }
 
-                            if (!ImageResolutionEnabled)
-                            {
-                                if (!ImageResolutionOr) // OR
-                                    sizeFilter = image.Width <= ImageResolutionMaxWidth || image.Height <= ImageResolutionMaxHeight;
-                                else // AND
-                                    sizeFilter = image.Width <= ImageResolutionMaxWidth && image.Height <= ImageResolutionMaxHeight;
-                                if (!sizeFilter) return false;
-                            }
-                        }
-                    }
+                if (ImageResolutionEnabled)
+                {
+                    if (!ImageResolutionOr) // OR
+                        sizeFilter = imgWidth <= ImageResolutionMaxWidth || imgHeight <= ImageResolutionMaxHeight;
+                    else // AND
+                        sizeFilter = imgWidth <= ImageResolutionMaxWidth && imgHeight <= ImageResolutionMaxHeight;
+                    if (!sizeFilter) return false;
                 }
             }
             return true;

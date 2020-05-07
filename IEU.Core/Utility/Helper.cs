@@ -133,9 +133,9 @@ namespace ImageEnhancingUtility
             //width = 4096; height = 4096; maxTileResolution = 512 * 256;
             int[] tiles_A = coverRectangleWithTiles(width, height, maxTileResolution);
             int[] tiles_B = GetTilesSize_(width, height, maxTileResolution);
-
+            int maxError = 50;
             int tilesHeight = 1, tilesWidth = 1;
-            while ((height / tilesHeight) * (width / tilesWidth) > maxTileResolution)
+            while ((height / tilesHeight) * (width / tilesWidth) - maxError > maxTileResolution)
             {
                 int oldTilesHeight = tilesHeight, oldTilesWidth = tilesWidth;
                 if (height / tilesHeight >= width / tilesWidth)

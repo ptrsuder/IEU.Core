@@ -340,3 +340,5 @@ IEU.Avalonia/
 IEU.Winforms/
 IETU.Winforms/
 IEU.NUnitTests/Test_*
+AvaloniaApplication1/*
+AvaloniaApplication2/*

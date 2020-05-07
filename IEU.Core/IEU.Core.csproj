@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net461;netcoreapp2.1</TargetFrameworks>
+    <TargetFramework>net461</TargetFramework>
     <AssemblyName>ImageEnhancingUtility.Core</AssemblyName>
     <RootNamespace>ImageEnhancingUtility.Core</RootNamespace>
   </PropertyGroup>
@@ -27,6 +27,8 @@
     <None Remove="Scripts\BasicSR\upscaleDefault.py" />
     <None Remove="Scripts\BasicSR\upscaleFolderForImage.py" />
     <None Remove="Scripts\BasicSR\upscaleFolderStructure.py" />
+    <None Remove="Scripts\ESRGAN\upscale.py" />
+    <None Remove="Scripts\ESRGAN\upscaleFromMemory.py" />
     <None Remove="upscaleDefault.py" />
     <None Remove="upscaleFolderForImage.py" />
     <None Remove="upscaleFolderForModel.py" />
@@ -39,6 +41,8 @@
     <EmbeddedResource Include="Scripts\BasicSR\upscaleDefault.py" />
     <EmbeddedResource Include="Scripts\BasicSR\upscaleFolderForImage.py" />
     <EmbeddedResource Include="Scripts\BasicSR\upscaleFolderStructure.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\upscale.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\upscaleFromMemory.py" />
     <EmbeddedResource Include="Scripts\interpModels.py" />
     <EmbeddedResource Include="Scripts\pthReader.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleDefault.py" />
@@ -51,11 +55,12 @@
   <ItemGroup>
     <PackageReference Include="DdsFileTypePlusHack" Version="1.1.0-beta1" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.13.1" />
-    <PackageReference Include="NetVips" Version="1.1.0-rc3" />
+    <PackageReference Include="NetVips" Version="1.1.0" />
     <PackageReference Include="NetVips.Native.win-x64" Version="8.8.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="protobuf-net" Version="2.4.0" />
     <PackageReference Include="ReactiveUI" Version="9.0.1" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="5.0.0-preview.3.20214.6" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">

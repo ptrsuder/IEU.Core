@@ -251,12 +251,12 @@ namespace ImageEnhancingUtility.Core
         {
             get => _alphaFilterType;
             set => this.RaiseAndSetIfChanged(ref _alphaFilterType, value);
-        }  
+        }     
 
 
-        [ProtoMember(28)]
+    [ProtoMember(28)]
         public ImageFormatInfo pngFormat = new ImageFormatInfo(".png")
-        { CompressionFactor = 0 };
+        { CompressionFactor = 3 };
         [ProtoMember(29)]
         public ImageFormatInfo tiffFormat = new ImageFormatInfo(".tiff")
         { CompressionMethod = Dictionaries.TiffCompressionModes[TiffCompression.None], QualityFactor = 100 };

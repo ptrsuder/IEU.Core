@@ -20,9 +20,6 @@ mode = sys.argv[6]
 
 passAsString = sys.argv[7]
 
-test_img_folder = 'S:\\ESRGAN-master\\IEU_preview\\LR'
-output_folder = 'S:\\ESRGAN-master\\IEU_preview\\results'
-
 state_dict = torch.load(model_path)
 
 if 'conv_first.weight' in state_dict:

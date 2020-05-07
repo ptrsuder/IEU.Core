@@ -792,7 +792,6 @@ namespace ImageEnhancingUtility.Core
         }
 
         int maxConcurrency = 99;
-        int maxImagesToWrite = 5;
 
         #region SPLIT    
         
@@ -2090,7 +2089,7 @@ namespace ImageEnhancingUtility.Core
             string archName = "ESRGAN";
             if (UseBasicSR) archName = "BasicSR";
 
-            string script = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.upscaleDefault.py");        
+            string script = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.upscale.py");        
             if (GreyscaleModel)
                 script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleGrayscale.py");
             if (InMemoryMode)

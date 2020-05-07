@@ -25,19 +25,6 @@ outMode = sys.argv[6]
 
 passAsString = sys.argv[7]
 
-#input = sys.stdin.readline()
-#print(input)
-#sys.stdout.flush()
-
-#print(sys.argv[8])
-#with open('S:\\ESRGAN-master\\IEU_preview\\input\\lr.json') as f:
-#    arr = json.load(f)
-#lr = ''.join(arr)
-#lrImages = json.load(lr)
-#lrImages = json.loads(unquote(input))
-#print(lrImages)
-#sys.stdout.flush()
-
 state_dict = torch.load(model_path)
 
 if 'conv_first.weight' in state_dict:

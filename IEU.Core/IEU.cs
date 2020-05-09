@@ -2916,7 +2916,7 @@ namespace ImageEnhancingUtility.Core
                 previewIEU = new IEU(true);
 
             SetPreviewIEU(ref previewIEU);
-
+            previewIEU.lrDict = new Dictionary<string, Dictionary<string, string>>();
             previewIEU.hrDict = new Dictionary<string, Dictionary<string, MagickImage>>();
             previewIEU.hrDict.Add(previewOriginal.FullName, new Dictionary<string, MagickImage>());
             previewIEU.fileQueue = new Queue<FileInfo>();

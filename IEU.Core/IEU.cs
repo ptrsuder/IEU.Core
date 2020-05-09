@@ -2531,14 +2531,18 @@ namespace ImageEnhancingUtility.Core
                 {
                     
                     Regex regex = new Regex("(.*):::(.*)");
-                    var path = regex.Match(outLine.Data).Groups[2].Value;
                     var img = regex.Match(outLine.Data).Groups[1].Value;
+                    var path = regex.Match(outLine.Data).Groups[2].Value;     
                     string base64img = img.Remove(0, 2);
                     base64img = base64img.Remove(base64img.Length - 1, 1);
                     regex = new Regex("(.*)_tile-[0-9]+(.*)");
                     MagickImage magickImage = MagickImage.FromBase64(base64img) as MagickImage;
-                    var origPath = regex.Match(path).Groups[1].Value.Replace(ResultsPath, InputDirectoryPath) + regex.Match(path).Groups[2].Value;                    
-                    
+
+                    var origPath = regex.Match(path).Groups[1].Value.Replace(ResultsPath, InputDirectoryPath);
+                    var inputFile = Directory.GetFiles(InputDirectoryPath, $"*{Path.GetFileNameWithoutExtension(origPath)}*");
+                    var extension = Path.GetExtension(inputFile.FirstOrDefault());
+                    origPath = origPath + extension;
+
                     var hrTiles = hrDict[origPath];
                     hrTiles.Add(path, new MagickImage(magickImage));
                     var lrTiles = lrDict[origPath];
@@ -2928,8 +2932,6 @@ namespace ImageEnhancingUtility.Core
             bool success = await previewIEU.Upscale(true);
             if (!success)            
                 File.WriteAllText(PreviewDirPath + $"{DirectorySeparator}log.txt", previewIEU.Logs);
-           
-
 
             CreateModelTree();
             if (!saveAsPng)

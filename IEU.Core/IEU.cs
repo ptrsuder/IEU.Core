@@ -2052,8 +2052,7 @@ namespace ImageEnhancingUtility.Core
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
-            process.EnableRaisingEvents = true;
-            //writer = process.StandardInput;
+            process.EnableRaisingEvents = true;          
 
             if(async)
             {
@@ -2439,11 +2438,10 @@ namespace ImageEnhancingUtility.Core
             if(InMemoryMode)
             {
                 writer = process.StandardInput;
+                if (IsSub)
+                    WriteImageToStream(lrDict[lrDict.Keys.FirstOrDefault()]);
             }
-            if(IsSub)
-            {                
-                WriteImageToStream(lrDict[lrDict.Keys.FirstOrDefault()]);               
-            }
+            
             return tcs.Task;
         }
 
@@ -2939,7 +2937,7 @@ namespace ImageEnhancingUtility.Core
                 previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
                 previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.selectedOutputFormat;
             }
-            await previewIEU.Merge();
+            previewIEU.Merge(previewOriginal.FullName);
 
             ImageFormatInfo outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase)).First();
             if (!saveAsPng)

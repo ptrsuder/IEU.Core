@@ -85,37 +85,31 @@ for path, subdirs, files in os.walk(test_img_folder):
         img = torch.from_numpy(np.transpose(img, (2, 0, 1))).float()
         img_LR = img.unsqueeze(0)
         img_LR = img_LR.to(device)
-
         output = model(img_LR).data.squeeze(0).float().cpu().clamp_(0, 1).numpy()
         if output.shape[0] == 3:
             output = output[[2, 1, 0], :, :]
         elif output.shape[0] == 4:
             output = output[[2, 1, 0, 3], :, :]
-
         output = np.transpose(output, (1, 2, 0))
         output = (output * 255.0).round()
-        if passAsString == True:
+        if passAsString == True:            
             buffer = cv2.imencode(".png", output)[1]
             data = base64.b64encode(buffer)
             print(data)
             continue
-        #jpg_original = base64.b64decode(jpg_as_text)
-        #pg_as_np = np.frombuffer(jpg_original, dtype=np.uint8);
-        #image_buffer = cv2.imdecode(jpg_as_np, flags=1)
-        #sys.stdout.flush()
-        if mode == 1 or mode == 2:
+        if mode == '1' or mode == '2':
             baseinput = os.path.splitext(os.path.basename(name))[0]
             baseinput = re.search('(.*)(_tile-[0-9]+)', baseinput, re.IGNORECASE).group(1)
             modelname = os.path.splitext(os.path.basename(model_path))[0]
-        if mode == 1:
+        if mode == '1':
             os.makedirs('{1:s}/Images/{0:s}/'.format(baseinput, output_folder), exist_ok=True)
             cv2.imwrite('{3:s}/Images/{0:s}/[{2:s}]_{1:s}.png'.format(baseinput, base, modelname, output_folder), output)
             print(idx, base)
-        if mode == 2:
+        if mode == '2':
             os.makedirs('{1:s}/Models/{0:s}/'.format(modelname, output_folder), exist_ok=True)
             cv2.imwrite('{2:s}/Models/{0:s}/{1:s}.png'.format(modelname, base, output_folder), output)
             print(idx, base)
-        if mode == 0 or mode == 3:
+        if mode == '0' or mode == '3':
             newpath = path.replace(test_img_folder,'');
             os.makedirs('{1:s}/{0:s}/'.format(newpath, output_folder), exist_ok=True)
             cv2.imwrite('{1:s}/{0:s}'.format(outputpath, output_folder), output)

@@ -65,7 +65,7 @@ for path, subdirs, files in os.walk(test_img_folder):
         inputpath = os.path.join(path, name)
         outputpath = os.path.join(path, name).replace(test_img_folder,'')       
         # read image
-        img = cv2.imread(inputpath, cv2.IMREAD_UNCHANGED)
+        img = cv2.imdecode(np.fromfile(inputpath, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
         img = img * 1. / np.iinfo(img.dtype).max
 
         if img.ndim == 2:
@@ -97,24 +97,29 @@ for path, subdirs, files in os.walk(test_img_folder):
             data = base64.b64encode(buffer)
             print(data)
             continue
+
+        newpath = base
+        printpath = ''
         if mode == '1' or mode == '2':
             baseinput = os.path.splitext(os.path.basename(name))[0]
             baseinput = re.search('(.*)(_tile-[0-9]+)', baseinput, re.IGNORECASE).group(1)
             modelname = os.path.splitext(os.path.basename(model_path))[0]
         if mode == '1':
             os.makedirs('{1:s}/Images/{0:s}/'.format(baseinput, output_folder), exist_ok=True)
-            cv2.imwrite('{3:s}/Images/{0:s}/[{2:s}]_{1:s}.png'.format(baseinput, base, modelname, output_folder), output)
-            print(idx, base)
+            newpath = '{3:s}/Images/{0:s}/[{2:s}]_{1:s}.png'.format(baseinput, base, modelname, output_folder)
         if mode == '2':
             os.makedirs('{1:s}/Models/{0:s}/'.format(modelname, output_folder), exist_ok=True)
-            cv2.imwrite('{2:s}/Models/{0:s}/{1:s}.png'.format(modelname, base, output_folder), output)
-            print(idx, base)
+            newpath = '{2:s}/Models/{0:s}/{1:s}.png'.format(modelname, base, output_folder) 
         if mode == '0' or mode == '3':
             newpath = path.replace(test_img_folder,'');
             os.makedirs('{1:s}/{0:s}/'.format(newpath, output_folder), exist_ok=True)
-            cv2.imwrite('{1:s}/{0:s}'.format(outputpath, output_folder), output)
-            print(idx, outputpath)
+            newpath = '{1:s}/{0:s}'.format(outputpath, output_folder)
+            printpath = outputpath    
+                    
+        cv2.imencode(newpath, output)[1].tofile(newpath)     
+        print(idx, printpath)
         sys.stdout.flush()
+
     if mode==0:
         break
     

@@ -82,6 +82,7 @@ namespace ImageEnhancingUtility.Core.Utility
             byte[] imageBuffer = Convert.FromBase64String(base64String);
             return NetVips.Image.NewFromBuffer(imageBuffer);
         }
+
         public static MagickImage LoadImage(FileInfo file)
         {
             MagickImage image;
@@ -203,42 +204,6 @@ namespace ImageEnhancingUtility.Core.Utility
             result.Extent(newDimensions[0], newDimensions[1]);
             return result;
         }
-
-        public static void MatrixBlend(string image1path, string image2path, byte alpha)
-        {
-            // for the matrix the range is 0.0 - 1.0
-            float alphaNorm = (float)alpha / 255.0F;
-            using (Bitmap image1 = (Bitmap)Bitmap.FromFile(image1path))
-            {
-                using (Bitmap image2 = (Bitmap)Bitmap.FromFile(image2path))
-                {
-                    // just change the alpha
-                    ColorMatrix matrix = new ColorMatrix(new float[][]{
-                new float[] {1F, 0, 0, 0, 0},
-                new float[] {0, 1F, 0, 0, 0},
-                new float[] {0, 0, 1F, 0, 0},
-                new float[] {0, 0, 0, alphaNorm, 0},
-                new float[] {0, 0, 0, 0, 1F}});
-
-                    ImageAttributes imageAttributes = new ImageAttributes();
-                    imageAttributes.SetColorMatrix(matrix);
-
-                    using (Graphics g = Graphics.FromImage(image1))
-                    {
-                        g.CompositingMode = CompositingMode.SourceOver;
-                        g.CompositingQuality = CompositingQuality.HighQuality;
-
-                        g.DrawImage(image2,
-                            new Rectangle(0, 0, image1.Width, image1.Height),
-                            0,
-                            0,
-                            image2.Width,
-                            image2.Height,
-                            GraphicsUnit.Pixel,
-                            imageAttributes);
-                    }
-                }
-            }
-        }
     }
 }
+

@@ -80,8 +80,7 @@ while True:
         # read image
         img_original = base64.b64decode(lrImages[path])
         img_np = np.frombuffer(img_original, dtype=np.uint8);
-        img = cv2.imdecode(img_np, flags=1)
-        img_test = cv2.imread(inputpath, cv2.IMREAD_UNCHANGED)
+        img = cv2.imdecode(img_np, flags=1)        
         img = img * 1. / np.iinfo(img.dtype).max
 
         if img.ndim == 2:
@@ -119,16 +118,16 @@ while True:
         #image_buffer = cv2.imdecode(jpg_as_np, flags=1)
         #sys.stdout.flush()        
         if outMode == '1' or outMode == '2':
-            baseinput = os.path.splitext(os.path.basename(name))[0]
+            baseinput = os.path.splitext(os.path.basename(path))[0]
             baseinput = re.search('(.*)(_tile-[0-9]+)', baseinput, re.IGNORECASE).group(1)
             modelname = os.path.splitext(os.path.basename(model_path))[0]
         if outMode == '1':
-            outpath = '{3:s}\Images/{0:s}\[{2:s}]_{1:s}.png'.format(baseinput, base, modelname, output_folder)                    
+            outpath = '{3:s}\Images\{0:s}\[{2:s}]_{1:s}.png'.format(baseinput, base, modelname, output_folder)                    
         if outMode == '2':
             outpath = '{2:s}\Models\{0:s}\{1:s}.png'.format(modelname, base, output_folder)           
         if outMode == '0' or outMode == '3':            
             outpath = '{1}\{0}'.format(outputpath, output_folder)
-        print('{0}:::{1}'.format(data, outpath))
+        print('{0}:::{1}:::{2}'.format(data, outpath, path))
         sys.stdout.flush()
         #if mode==0:
         #    break

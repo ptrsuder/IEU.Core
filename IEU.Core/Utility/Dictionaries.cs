@@ -60,7 +60,9 @@ namespace ImageEnhancingUtility
             { (int)FilterType.Box, "Box" },
             { (int)FilterType.Catrom, "Catrom" },
             { (int)FilterType.Point, "Point" },
-            { (int)FilterType.Lanczos, "Lanczos" }
+            { (int)FilterType.Lanczos, "Lanczos" },
+            { (int)FilterType.Mitchell, "Mitchell" },
+            { (int)FilterType.Cubic, "Cubic" }
         };
 
     }

@@ -55,7 +55,7 @@ model = model.to(device)
 
 print('Model path {:s}. \nProcessing...'.format(model_path))
 sys.stdout.flush()
-alphanum = lambda item: (int(item.partition(' ')[0]) if item[0].isdigit() else float('inf'), item)
+alphanum = lambda item: (int(re.findall('\d+', item)[0]) if item[0].isdigit() else float('inf'), item)
 idx = 0
 test_img_folder = test_img_folder.replace('*','')
 for path, subdirs, files in sorted(os.walk(test_img_folder), key=alphanum):

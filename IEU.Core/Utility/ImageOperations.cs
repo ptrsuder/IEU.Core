@@ -8,10 +8,7 @@ using ImageMagick;
 using PaintDotNet;
 using Path = System.IO.Path;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
-using NetVips;
 using Image = System.Drawing.Image;
-using System.Drawing.Imaging;
-using System.Drawing.Drawing2D;
 
 namespace ImageEnhancingUtility.Core.Utility
 {

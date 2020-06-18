@@ -20,6 +20,9 @@ namespace ImageEnhancingUtility.Core
         [ProtoMember(4)]
         public int UpscaleFactor
         { get; set; }
+                
+        public int Priority
+        { get; set; } = 0;
 
         public ModelInfo(string name, string path)
         {

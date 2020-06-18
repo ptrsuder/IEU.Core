@@ -27,6 +27,9 @@
     <None Remove="Scripts\BasicSR\upscaleDefault.py" />
     <None Remove="Scripts\BasicSR\upscaleFolderForImage.py" />
     <None Remove="Scripts\BasicSR\upscaleFolderStructure.py" />
+    <None Remove="Scripts\esrganDebug.py" />
+    <None Remove="Scripts\ESRGAN\architecture.py" />
+    <None Remove="Scripts\ESRGAN\block.py" />
     <None Remove="Scripts\ESRGAN\upscale.py" />
     <None Remove="Scripts\ESRGAN\upscaleFromMemory.py" />
     <None Remove="upscaleDefault.py" />
@@ -41,6 +44,9 @@
     <EmbeddedResource Include="Scripts\BasicSR\upscaleDefault.py" />
     <EmbeddedResource Include="Scripts\BasicSR\upscaleFolderForImage.py" />
     <EmbeddedResource Include="Scripts\BasicSR\upscaleFolderStructure.py" />
+    <EmbeddedResource Include="Scripts\esrganDebug.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\architecture.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\block.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscale.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleFromMemory.py" />
     <EmbeddedResource Include="Scripts\interpModels.py" />

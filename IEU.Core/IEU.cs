@@ -64,6 +64,15 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _debugMode, value);
         }
 
+        bool _useModelChain = false;
+        [ProtoMember(32)]
+        public bool UseModelChain
+        {
+            get => _useModelChain;
+            set => this.RaiseAndSetIfChanged(ref _useModelChain, value);
+        }
+        
+
         Dictionary<string, Dictionary<string, string>> lrDict = new Dictionary<string, Dictionary<string, string>>();
         public Dictionary<string, Dictionary<string, MagickImage>> hrDict = new Dictionary<string, Dictionary<string, MagickImage>>();
 
@@ -577,6 +586,15 @@ namespace ImageEnhancingUtility.Core
                 newList.Add(new ModelInfo(fi.Name, fi.FullName));
             ModelsItems.Clear();
             ModelsItems.AddRange(newList);
+        }
+
+        public void ChangeModelPriority(ModelInfo model, int newPriority)
+        {
+            ModelInfo temp = checkedModels[newPriority];
+            checkedModels[newPriority] = model;
+            checkedModels[model.Priority] = temp;
+            temp.Priority = model.Priority;
+            model.Priority = newPriority;
         }
 
         #region RULESET
@@ -1942,8 +1960,11 @@ namespace ImageEnhancingUtility.Core
             ResetDoneCounter();
             ResetTotalCounter();
 
+            int tempOutMode = OutputDestinationMode;
+            if (UseModelChain) tempOutMode = 0;
+
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
-            if (OutputDestinationMode == 3)
+            if (tempOutMode == 3)
                 searchOption = SearchOption.AllDirectories;
 
             FileInfo[] inputFiles = di.GetFiles("*", searchOption)
@@ -1987,13 +2008,13 @@ namespace ImageEnhancingUtility.Core
                     return;
                 }
 
-                if (OutputDestinationMode == 0)
+                if (tempOutMode == 0)
                 {
                     MergeTask(pathImage, DirectorySeparator + Path.GetFileNameWithoutExtension(file.Name), profile);
                     return;
                 }
 
-                if (OutputDestinationMode == 1)
+                if (tempOutMode == 1)
                 {
                     DirectoryInfo imagesFolder;
 
@@ -2028,7 +2049,7 @@ namespace ImageEnhancingUtility.Core
                     }
                     return;
                 }
-                if (OutputDestinationMode == 2)
+                if (tempOutMode == 2)
                 {
                     DirectoryInfo modelsFolder = new DirectoryInfo(ResultsPath + $"{DirectorySeparator}Models{DirectorySeparator}");
                     if (!modelsFolder.Exists)
@@ -2047,7 +2068,7 @@ namespace ImageEnhancingUtility.Core
                     }
                     return;
                 }
-                if (OutputDestinationMode == 3)
+                if (tempOutMode == 3)
                 {                                                   
                     MergeTask(
                         pathImage,
@@ -2062,9 +2083,9 @@ namespace ImageEnhancingUtility.Core
             WriteToLog("Finished!", Color.LightGreen);
 
             string pathToMergedFiles = OutputDirectoryPath;
-            if (OutputDestinationMode == 1)
+            if (tempOutMode == 1)
                 pathToMergedFiles += $"{DirectorySeparator}Images";
-            if (OutputDestinationMode == 2)
+            if (tempOutMode == 2)
                 pathToMergedFiles += $"{DirectorySeparator}Models";
         }
 
@@ -2274,7 +2295,7 @@ namespace ImageEnhancingUtility.Core
 
         #endregion
 
-        #region UPSCALE
+        #region UPSCALE               
 
         async public Task<bool> Upscale(bool NoWindow = false, Profile HotProfile = null, bool async = true)
         {
@@ -2289,11 +2310,32 @@ namespace ImageEnhancingUtility.Core
                 checkedModels = new List<ModelInfo>() { HotProfile.Model };
             else
                 checkedModels = SelectedModelsItems;
+                      
 
             if (checkedModels.Count == 0)
             {
                 WriteToLog("No models selected!");
                 return false;
+            }
+
+            int originalMode = HotProfile.OverwriteMode;
+            int destMode = OutputDestinationMode;
+
+            if (UseModelChain && checkedModels.Count > 1)
+            {
+                string upscaleSizePattern = "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)";
+                int latestSize = 1;
+                foreach (var model in checkedModels)
+                {
+                    var regResult = Regex.Match(model.Name.ToLower(), upscaleSizePattern);
+                    int size = int.Parse(regResult.Value.Replace("x", "").Replace("_", ""));
+                    if (size > 1 && latestSize > 1)
+                    {
+                        WriteToLog($"Can't use {model.Name} after another {latestSize}x model.");
+                        return false;
+                    }
+                    latestSize = size;
+                }                        
             }
 
             DirectoryInfo directory = new DirectoryInfo(ResultsPath);
@@ -2353,6 +2395,8 @@ namespace ImageEnhancingUtility.Core
             string archName = "ESRGAN";
             if (UseBasicSR) archName = "BasicSR";
 
+            string block = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.block.py");
+            string architecture = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.architecture.py");
             string script = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.upscale.py");        
             if (GreyscaleModel)
                 script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleGrayscale.py");
@@ -2361,6 +2405,12 @@ namespace ImageEnhancingUtility.Core
 
             string scriptPath = EsrganPath + $"{DirectorySeparator}IEU_test.py";
             if (UseBasicSR) scriptPath = EsrganPath + $"{DirectorySeparator}codes{DirectorySeparator}IEU_test.py";
+            else
+            {
+                File.WriteAllText(EsrganPath + $"{DirectorySeparator}block.py", block);
+                File.WriteAllText(EsrganPath + $"{DirectorySeparator}architecture.py", architecture);
+            }
+            
             File.WriteAllText(scriptPath, script);
         }
 
@@ -2446,9 +2496,13 @@ namespace ImageEnhancingUtility.Core
             string torchDevice = UseCPU ? "cpu" : "cuda";
             int upscaleMultiplayer = 0;
             string resultsPath = ResultsPath;
+
+            int tempOutMode = OutputDestinationMode;            
+
             if (HotProfile.OverwriteMode == 1)
                 resultsPath = LrPath;
 
+            int modelIndex = 0;
             foreach (ModelInfo checkedModel in checkedModels)
             {
                 var regResult = Regex.Match(checkedModel.Name.ToLower(), upscaleSizePattern);
@@ -2465,9 +2519,19 @@ namespace ImageEnhancingUtility.Core
                     noValidModel = false;
                 }
 
+                if (UseModelChain)
+                {
+                    tempOutMode = 0;                    
+                    resultsPath = LrPath;
+                    if (modelIndex == checkedModels.Count - 1)
+                        resultsPath = ResultsPath;                    
+                }
+
                 process.StartInfo.Arguments +=
                 $" & python IEU_test.py \"{checkedModel.FullName}\" {upscaleMultiplayer} {torchDevice}" +
-                $" \"{LrPath + $"{DirectorySeparator}*"}\" \"{resultsPath}\" {OutputDestinationMode} {InMemoryMode}";         
+                $" \"{LrPath + $"{DirectorySeparator}*"}\" \"{resultsPath}\" {tempOutMode} {InMemoryMode}";
+
+                modelIndex++;
             }
 
             if (HotProfile.UseDifferentModelForAlpha)
@@ -2852,6 +2916,17 @@ namespace ImageEnhancingUtility.Core
 
         #endregion
 
+        public void GetCheckedModels()
+        {
+            checkedModels = SelectedModelsItems;
+            for(int i = 0; i < checkedModels.Count; i++)
+            {
+                checkedModels[i].Priority = i;
+            }
+            if (checkedModels.Count == 0)            
+                WriteToLog("No models selected!");    
+        }
+
         async public Task SplitUpscaleMerge()
         {
             if (!InMemoryMode)
@@ -3024,9 +3099,10 @@ namespace ImageEnhancingUtility.Core
             }
             return true;
         }
-        
+
         #endregion
 
+        #region PREVIEW
         private IEU previewIEU;
 
         public string PreviewDirPath = "";
@@ -3229,7 +3305,7 @@ namespace ImageEnhancingUtility.Core
             }
             return true;
         }
-
+        #endregion
     }
 }
 

@@ -10,6 +10,7 @@ using Path = System.IO.Path;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 using Image = System.Drawing.Image;
 
+
 namespace ImageEnhancingUtility.Core.Utility
 {
     public static class ImageOperations
@@ -39,6 +40,21 @@ namespace ImageEnhancingUtility.Core.Utility
                 result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
             }
             return result;
+        }
+
+        public static byte[] ImageToByte2(Image img)
+        {
+            using (var stream = new MemoryStream())
+            {
+                img.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                return stream.ToArray();
+            }
+        }
+
+        public static byte[] ImageToByte(Image img)
+        {
+            ImageConverter converter = new ImageConverter();
+            return (byte[])converter.ConvertTo(img, typeof(byte[]));
         }
 
         public static Surface ConvertToSurface(MagickImage image)
@@ -143,8 +159,8 @@ namespace ImageEnhancingUtility.Core.Utility
         {
             MagickImage newImage = image.Clone() as MagickImage;
             //image.VirtualPixelMethod = VirtualPixelMethod.
-            //image.Interpolate = interpolateMethod;
-            newImage.FilterType = filterType;
+            //image.Interpolate = interpolateMethod;        
+            newImage.FilterType = filterType;            
             //image.Sharpen();
             //image.Scale(new Percentage(resizeFactor));  
             newImage.Resize((int)(resizeFactor * image.Width), (int)(resizeFactor * image.Height));

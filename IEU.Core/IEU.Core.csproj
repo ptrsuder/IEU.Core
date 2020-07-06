@@ -60,9 +60,10 @@
     <PackageReference Include="NetVips" Version="1.1.0" />
     <PackageReference Include="NetVips.Native.win-x64" Version="8.8.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="protobuf-net" Version="2.4.0" />
-    <PackageReference Include="ReactiveUI" Version="9.0.1" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="5.0.0-preview.3.20214.6" />
+    <PackageReference Include="protobuf-net" Version="3.0.0-alpha.155" />
+    <PackageReference Include="ReactiveUI" Version="10.3.6" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="5.0.0-preview.6.20305.6" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
@@ -114,5 +115,11 @@
     <Reference Include="System.Xml">
       <HintPath>System.Xml</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <PackageReference Include="System.Windows.Extensions">
+      <Version>4.7.0</Version>
+    </PackageReference>
   </ItemGroup> 
 </Project>

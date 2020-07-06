@@ -54,7 +54,7 @@ namespace ImageEnhancingUtility.Core
             get => hrDict;
         }
 
-        public readonly string AppVersion = "0.12.00-dev-beta.4";
+        public readonly string AppVersion = "0.12.00";
         public readonly string GitHubRepoName = "IEU.Core";
 
         #region FIELDS/PROPERTIES              

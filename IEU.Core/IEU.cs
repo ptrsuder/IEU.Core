@@ -1496,8 +1496,8 @@ namespace ImageEnhancingUtility.Core
             expandedImage.HasAlpha = true;
             expandedImage.Composite(alphaMask, CompositeOperator.CopyAlpha);
 
-            buffer = ImageOperations.ImageToByte(new Bitmap(resultW, resultH));
-            MagickImage result = new MagickImage(buffer);
+            //buffer = ImageOperations.ImageToByte2(new Bitmap(resultW, resultH));
+            MagickImage result = new MagickImage(MagickColor.FromRgb(0,0,0), resultW, resultH);            
 
             result.Composite(imageNextTile, tileG);
             result.Composite(expandedImage, rowG, CompositeOperator.Over);

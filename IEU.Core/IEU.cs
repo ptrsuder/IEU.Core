@@ -116,7 +116,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         #region FOLDER_PATHS
-        private string _esrganPath;
+        private string _esrganPath = "";
         [ProtoMember(4)]
         public string EsrganPath
         {
@@ -143,7 +143,8 @@ namespace ImageEnhancingUtility.Core
                 }
             }
         }
-        private string _modelsPath;
+        
+        private string _modelsPath = "";
         [ProtoMember(5)]
         public string ModelsPath
         {
@@ -159,28 +160,28 @@ namespace ImageEnhancingUtility.Core
                 }
             }
         }
-        private string _imgPath;
+        private string _imgPath = "";
         [ProtoMember(6)]
         public string InputDirectoryPath
         {
             get => _imgPath;
             set => this.RaiseAndSetIfChanged(ref _imgPath, value);
         }
-        private string _resultsMergedPath;
+        private string _resultsMergedPath = "";
         [ProtoMember(7)]
         public string OutputDirectoryPath
         {
             get => _resultsMergedPath;
             set => this.RaiseAndSetIfChanged(ref _resultsMergedPath, value);
         }
-        private string _lrPath;
+        private string _lrPath = "";
         [ProtoMember(8)]
         public string LrPath
         {
             get => _lrPath;
             set => this.RaiseAndSetIfChanged(ref _lrPath, value);
         }
-        private string _resultsPath;
+        private string _resultsPath = "";
         [ProtoMember(9)]
         public string ResultsPath
         {
@@ -300,7 +301,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _useBasicSR, value);
         }
 
-        string _lastModelForAlphaPath;
+        string _lastModelForAlphaPath = "";
         [ProtoMember(18)]
         public string LastModelForAlphaPath
         {
@@ -503,13 +504,7 @@ namespace ImageEnhancingUtility.Core
         public SortedDictionary<int, Rule> Ruleset = new SortedDictionary<int, Rule>(new RulePriority());
         public Rule GlobalRule;
 
-        public string SaveProfileName = "NewProfile";
-        Profile _selectedProfile;
-        public Profile SelectedProfile
-        {
-            get => _selectedProfile;
-            set => _selectedProfile = value;
-        }
+        public string SaveProfileName = "NewProfile"; 
         #endregion
 
         #endregion
@@ -1714,8 +1709,15 @@ namespace ImageEnhancingUtility.Core
                             }
                             else
                             {
-                                imageAlphaNextTile = new MagickImage($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png");
-                                tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+                                var newAlphaTilePath = $"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png";
+
+                                if (InMemoryMode)
+                                    imageAlphaNextTile = hrTiles[newAlphaTilePath];
+                                else
+                                {
+                                    imageAlphaNextTile = new MagickImage(newAlphaTilePath);
+                                    tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex.ToString("D2")}{resultSuffix}.png"));
+                                }                                                          
 
                                 if (j == 0)
                                 {

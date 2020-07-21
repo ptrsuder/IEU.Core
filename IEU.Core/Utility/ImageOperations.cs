@@ -70,8 +70,7 @@ namespace ImageEnhancingUtility.Core.Utility
         }
 
         public static Bitmap ConvertToBitmap(MagickImage image)
-        {
-            Bitmap processedBitmap;
+        {           
             Bitmap test;
             using (MemoryStream memoryStream = new MemoryStream())
             {
@@ -120,14 +119,9 @@ namespace ImageEnhancingUtility.Core.Utility
 
             if (simpleFormats.Contains(extension))
             {
-                using (MemoryStream memory = new MemoryStream())
-                {
-                    using (FileStream fs = new FileStream(fullname, FileMode.Open, FileAccess.ReadWrite))
-                    {
-                        image = Image.FromStream(fs);                       
-                    }
-                }
-               // image = Image.FromFile(fullname);                
+                using (MemoryStream memory = new MemoryStream())                
+                    using (FileStream fs = new FileStream(fullname, FileMode.Open, FileAccess.ReadWrite))                    
+                        image = Image.FromStream(fs);                                                                
             }
             else
             {
@@ -138,20 +132,12 @@ namespace ImageEnhancingUtility.Core.Utility
         }
 
         public static Bitmap Base64ToBitmap(string base64String)
-        {
-            Bitmap bmpReturn = null;
-
+        {          
             byte[] byteBuffer = Convert.FromBase64String(base64String);
             MemoryStream memoryStream = new MemoryStream(byteBuffer);
-
             memoryStream.Position = 0;
-
-            bmpReturn = (Bitmap)Bitmap.FromStream(memoryStream);
-
+            Bitmap bmpReturn = (Bitmap)Image.FromStream(memoryStream);
             memoryStream.Close();
-            memoryStream = null;
-            byteBuffer = null;
-
             return bmpReturn;
         }
 

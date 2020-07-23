@@ -821,6 +821,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         [Category("Exposed")]
+        [ProtoMember(52)]
         public int MaxConcurrency { get; set; } = 99;
 
 #region SPLIT    
@@ -3096,9 +3097,11 @@ namespace ImageEnhancingUtility.Core
         #endregion
 
         [Category("Exposed")]
-        public int magicNumberFor4x { get; set; } = 125;
+        [ProtoMember(48)]
+        public int magicNumberFor4x { get; set; } = 105;
         [Category("Exposed")]
-        public int magicNumberFor1x { get; set; } = 190;
+        [ProtoMember(49)]
+        public int magicNumberFor1x { get; set; } = 200;
 
 #region GPU
 
@@ -3228,6 +3231,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         [Category("Exposed")]
+        [ProtoMember(51)]
         public int InMemoryMaxSplit { get; set; } = 2;
         Queue<FileInfo> fileQueue;
 

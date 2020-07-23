@@ -66,6 +66,9 @@ namespace ImageEnhancingUtility.Core
         [Category("Exposed")] 
         public int SeamlessExpandSize { get; set; } = 16;
 
+        [Category("Exposed")]
+        public bool HidePythonProcess { get; set; } = true;
+
         readonly bool IsSub = false;
 
         public static readonly string[] NoiseReductionTypes = new string[] {
@@ -399,12 +402,12 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _autoSetTileSizeEnable, value);
         }
 
-        bool _useOldVipskMerge = false;
+        bool _useOldVipsMerge = false;
         [ProtoMember(47, IsRequired = true)]
         public bool UseOldVipsMerge
         {
-            get => _useOldVipskMerge;
-            set => this.RaiseAndSetIfChanged(ref _useOldVipskMerge, value);
+            get => _useOldVipsMerge;
+            set => this.RaiseAndSetIfChanged(ref _useOldVipsMerge, value);
         }
 
         #endregion
@@ -1061,7 +1064,7 @@ namespace ImageEnhancingUtility.Core
             GC.Collect();
         }
 
-        async public Task Split(FileInfo[] inputFiles = null, bool useQueu = false)
+        async public Task Split(FileInfo[] inputFiles = null)
         {
             if (AutoSetTileSizeEnable)
                 await AutoSetTileSize();             
@@ -2440,7 +2443,7 @@ namespace ImageEnhancingUtility.Core
 
         CancellationTokenSource MonitorVramTokenSource;
 
-        async public Task<bool> Upscale(bool NoWindow = false, Profile HotProfile = null, bool async = true)
+        async public Task<bool> Upscale(bool NoWindow = true, Profile HotProfile = null, bool async = true)
         {
             if (HotProfile == null)
                 HotProfile = GlobalProfile;
@@ -2566,25 +2569,47 @@ namespace ImageEnhancingUtility.Core
 
 #region PYTHON PROCESS STUFF
 
-        async Task<bool> DetectModelUpscaleFactor(ModelInfo checkedModel)
+        async Task<int> DetectModelUpscaleFactor(ModelInfo checkedModel)
         {
-            int processExitCodePthReader = -666;
-            WriteToLog($"Detecting {checkedModel.Name} upscale size...");
-
-            using (Process pthReaderProcess = PthReader(checkedModel.FullName))
-                processExitCodePthReader = await RunProcessAsync(pthReaderProcess);
-
-            if (processExitCodePthReader != 0)
+            string upscaleSizePattern = "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)";
+            string upscaleSizePatternAlt = "(?:[1|2|4|8|16]x)|(?:x[1|2|4|8|16])|(?:[1|2|4|8|16]x)|(?:x[1|2|4|8|16])";
+            var regResult = Regex.Match(checkedModel.Name.ToLower(), upscaleSizePattern);
+            var regResultAlt = Regex.Match(checkedModel.Name.ToLower(), upscaleSizePatternAlt);
+            int upscaleMultiplayer = -1;
+            if (regResult.Success && regResult.Groups.Count == 1)
             {
-                WriteToLog($"Failed to detect {checkedModel.Name} upscale size!", Color.Red);
-                return false;
+                upscaleMultiplayer = int.Parse(regResult.Value.Replace("x", "").Replace("_", ""));
             }
-            WriteToLog($"{checkedModel.Name} upscale size is {hotModelUpscaleSize}", Color.LightGreen);
-            checkedModel.UpscaleFactor = hotModelUpscaleSize;
-            Helper.RenameModelFile(checkedModel, checkedModel.UpscaleFactor);
-            WriteToLog($"Changed model filename to {checkedModel.Name}", Color.LightBlue);
-            CreateModelTree();
-            return true;
+            else if (regResultAlt.Success && regResultAlt.Groups.Count == 1)
+            {
+                upscaleMultiplayer = int.Parse(regResultAlt.Value.Replace("x", ""));
+                var newName = checkedModel.Name.Replace(regResultAlt.Value, $"{upscaleMultiplayer}x_");
+                var newFullname = checkedModel.FullName.Replace(checkedModel.Name, newName);
+                File.Move(checkedModel.FullName, newFullname);
+                checkedModel.FullName = newFullname;
+                checkedModel.Name = newName;
+                WriteToLog($"Changed model filename to {checkedModel.Name}", Color.LightBlue);
+            }
+            else
+            {
+                int processExitCodePthReader = -666;
+                WriteToLog($"Detecting {checkedModel.Name} upscale size...");
+
+                using (Process pthReaderProcess = PthReader(checkedModel.FullName))
+                    processExitCodePthReader = await RunProcessAsync(pthReaderProcess);
+
+                if (processExitCodePthReader != 0)
+                {
+                    WriteToLog($"Failed to detect {checkedModel.Name} upscale size!", Color.Red);
+                    return upscaleMultiplayer;
+                }
+                WriteToLog($"{checkedModel.Name} upscale size is {hotModelUpscaleSize}", Color.LightGreen);
+                checkedModel.UpscaleFactor = hotModelUpscaleSize;
+                Helper.RenameModelFile(checkedModel, checkedModel.UpscaleFactor);
+                WriteToLog($"Changed model filename to {checkedModel.Name}", Color.LightBlue);
+                CreateModelTree();
+            }
+            return upscaleMultiplayer;
         }
 
         StreamWriter writer;       
@@ -2619,8 +2644,6 @@ namespace ImageEnhancingUtility.Core
 
             Process process = new Process();
 
-            string upscaleSizePattern = "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)";
-
             process.StartInfo.Arguments = $"{EsrganPath}";
             process.StartInfo.Arguments += GetCondaEnv();
             bool noValidModel = true;
@@ -2644,19 +2667,9 @@ namespace ImageEnhancingUtility.Core
             else
                 foreach (ModelInfo checkedModel in checkedModels)
                 {
-                    var regResult = Regex.Match(checkedModel.Name.ToLower(), upscaleSizePattern);
-                    if (regResult.Success && regResult.Groups.Count == 1)
-                    {
-                        upscaleMultiplayer = int.Parse(regResult.Value.Replace("x", "").Replace("_", ""));
-                        noValidModel = false;
-                    }
-                    else
-                    {
-                        if (!await DetectModelUpscaleFactor(checkedModel))
-                            continue;
-                        upscaleMultiplayer = checkedModel.UpscaleFactor;
-                        noValidModel = false;
-                    }
+                    if ((upscaleMultiplayer = await DetectModelUpscaleFactor(checkedModel)) == 0)
+                        continue;
+                    noValidModel = false;
 
                     if (UseModelChain)
                     {
@@ -2677,20 +2690,12 @@ namespace ImageEnhancingUtility.Core
             {   //detect upsacle factor for alpha model
                 bool validModelAlpha = false;
                 int upscaleMultiplayerAlpha = 0;
-                var regResultAlpha = Regex.Match(HotProfile.ModelForAlpha.Name.ToLower(), upscaleSizePattern);
-                if (regResultAlpha.Success && regResultAlpha.Groups.Count == 1)
+
+                if ((upscaleMultiplayerAlpha = await DetectModelUpscaleFactor(HotProfile.ModelForAlpha)) == 0)
                 {
-                    upscaleMultiplayerAlpha = int.Parse(regResultAlpha.Value.Replace("x", "").Replace("_", ""));
                     validModelAlpha = true;
                 }
-                else
-                {
-                    if (await DetectModelUpscaleFactor(HotProfile.ModelForAlpha))
-                    {
-                        upscaleMultiplayerAlpha = HotProfile.ModelForAlpha.UpscaleFactor;
-                        validModelAlpha = true;
-                    }
-                }
+
                 if (upscaleMultiplayer != upscaleMultiplayerAlpha)
                 {
                     WriteToLog("Upscale size for rgb model and alpha model must be the same");
@@ -2711,7 +2716,7 @@ namespace ImageEnhancingUtility.Core
 
             process.ErrorDataReceived += SortOutputHandler;
             process.OutputDataReceived += SortOutputHandler;
-            process.StartInfo.CreateNoWindow = NoWindow;                    
+            process.StartInfo.CreateNoWindow = NoWindow;                 
 
             if (!Directory.Exists(LrPath))
             {
@@ -2742,8 +2747,7 @@ namespace ImageEnhancingUtility.Core
                 return null;
             }
 
-            Process process = new Process();
-            string upscaleSizePattern = "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)";
+            Process process = new Process();     
 
             process.StartInfo.Arguments = $"{EsrganPath}";
             process.StartInfo.Arguments += GetCondaEnv();
@@ -2757,19 +2761,9 @@ namespace ImageEnhancingUtility.Core
             {
                 TestConfig config = new TestConfig(checkedModel.FullName);
 
-                var regResult = Regex.Match(checkedModel.Name.ToLower(), upscaleSizePattern);
-                if (regResult.Success && regResult.Groups.Count == 1)
-                {
-                    upscaleMultiplayer = int.Parse(regResult.Value.Replace("x", "").Replace("_", ""));
-                    noValidModel = false;
-                }
-                else
-                {
-                    if (!await DetectModelUpscaleFactor(checkedModel))
-                        continue;
-                    upscaleMultiplayer = checkedModel.UpscaleFactor;
-                    noValidModel = false;
-                }
+                if ((upscaleMultiplayer = await DetectModelUpscaleFactor(checkedModel)) == 0)
+                    continue;
+                noValidModel = false;
 
                 config.Scale = upscaleMultiplayer;
                 if (UseCPU)
@@ -2787,20 +2781,12 @@ namespace ImageEnhancingUtility.Core
                 //detect upsacle factor for alpha model                
                 bool validModelAlpha = false;
                 int upscaleMultiplayerAlpha = 0;
-                var regResultAlpha = Regex.Match(HotProfile.ModelForAlpha.Name.ToLower(), upscaleSizePattern);
-                if (regResultAlpha.Success && regResultAlpha.Groups.Count == 1)
+
+                if ((upscaleMultiplayerAlpha = await DetectModelUpscaleFactor(HotProfile.ModelForAlpha)) == 0)
                 {
-                    upscaleMultiplayerAlpha = int.Parse(regResultAlpha.Value.Replace("x", "").Replace("_", ""));
                     validModelAlpha = true;
                 }
-                else
-                {
-                    if (await DetectModelUpscaleFactor(HotProfile.ModelForAlpha))
-                    {
-                        upscaleMultiplayerAlpha = HotProfile.ModelForAlpha.UpscaleFactor;
-                        validModelAlpha = true;
-                    }
-                }
+
                 if (upscaleMultiplayer != upscaleMultiplayerAlpha)
                 {
                     WriteToLog("Upscale size for rgb model and alpha model must be the same");
@@ -3130,9 +3116,8 @@ namespace ImageEnhancingUtility.Core
                     }
                     else
                     {
-                        if (!await DetectModelUpscaleFactor(checkedModel))
-                            continue;
-                        upscaleMultiplayer = checkedModel.UpscaleFactor;
+                        if ((upscaleMultiplayer = await DetectModelUpscaleFactor(checkedModel)) == 0)
+                            continue;                        
                     }
                     if (modelScale < upscaleMultiplayer) modelScale = upscaleMultiplayer;
                 }
@@ -3149,7 +3134,7 @@ namespace ImageEnhancingUtility.Core
 
             MaxTileResolution = newmax;
             WriteToLog($"Setting max tile size to {MaxTileResolutionWidth}x{MaxTileResolutionHeight}");
-        }       
+        } 
 
         void GetVRAM()
         {
@@ -3196,7 +3181,7 @@ namespace ImageEnhancingUtility.Core
         }
 
 #endregion
-
+       
         public void GetCheckedModels()
         {
             checkedModels = SelectedModelsItems;
@@ -3225,7 +3210,7 @@ namespace ImageEnhancingUtility.Core
                 return;
             }
             await Split();
-            bool upscaleSuccess = await Upscale();
+            bool upscaleSuccess = await Upscale(HidePythonProcess);
             if (upscaleSuccess)
                 await Merge();
         }
@@ -3288,7 +3273,7 @@ namespace ImageEnhancingUtility.Core
             fileQueue = CreateQueue(inputDirectoryFiles);
             fileQueuCount = fileQueue.Count;
 
-            await Upscale(async: false);
+            await Upscale(HidePythonProcess, async: false);
             lrDict = new Dictionary<string, Dictionary<string, string>>();
             hrDict = new Dictionary<string, Dictionary<string, MagickImage>>();
 
@@ -3431,7 +3416,6 @@ namespace ImageEnhancingUtility.Core
             previewIEU.CurrentProfile.OverwriteMode = 0;
             previewIEU.CurrentProfile.UseOriginalImageFormat = false;
             previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.pngFormat;
-            previewIEU.CurrentProfile.SplitRGB = CurrentProfile.SplitRGB;
             previewIEU.DisableRuleSystem = true;
             previewIEU.CreateMemoryImage = false;
             previewIEU.UseCondaEnv = UseCondaEnv;

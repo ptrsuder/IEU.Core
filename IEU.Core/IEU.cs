@@ -381,7 +381,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         private bool _vramMonitorEnable = true;
-        [ProtoMember(44)]
+        [ProtoMember(44, IsRequired = true)]
         public bool VramMonitorEnable
         {
             get => _vramMonitorEnable;

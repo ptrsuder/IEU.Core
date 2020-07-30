@@ -17,6 +17,17 @@ namespace ImageEnhancingUtility.Core
         public string ParentFolder
         { get; set; }
 
+        public string ComboBoxName
+        {
+            get
+            {
+                var name = Name;
+                if(ParentFolder != "")
+                    name = ParentFolder + " : " + Name;
+                return name;
+            }
+        }
+
         [ProtoMember(4)]
         public int UpscaleFactor
         { get; set; }

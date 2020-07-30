@@ -1068,8 +1068,7 @@ namespace ImageEnhancingUtility.Core
         {
             if (AutoSetTileSizeEnable)
                 await AutoSetTileSize();             
-
-            var test = Name;
+                        
             if (!IsSub)
                 SaveSettings();
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
@@ -2366,8 +2365,7 @@ namespace ImageEnhancingUtility.Core
             });
 
             if (InMemoryMode)
-            {
-                //if(OutputDestinationMode == 0 || OutputDestinationMode == 3)
+            {                
                 lrDict.Remove(path);
                 hrDict.Remove(path);
             }
@@ -2521,7 +2519,7 @@ namespace ImageEnhancingUtility.Core
             }
             else
             {
-                RunProcessAsync_(process);
+                RunProcessAsyncInMemory(process);
                 WriteToLog("ESRGAN start running in background!", Color.LightGreen);
             }
             if (GetCondaEnv() != "")
@@ -2899,7 +2897,7 @@ namespace ImageEnhancingUtility.Core
             return tcs.Task;
         }
 
-        public void RunProcessAsync_(Process process)
+        public void RunProcessAsyncInMemory(Process process)
         {
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardInput = true;
@@ -3001,10 +2999,21 @@ namespace ImageEnhancingUtility.Core
                     //origPath = origPath + extension;
                     var match = regex.Match(origPath);
                     origPath = match.Groups[1].Value.Replace(LrPath, InputDirectoryPath) + match.Groups[4].Value;
+                    if (origPath.Contains("([000])000)_memory_helper_(ieu_is_the_best)"))
+                    {
+                        File.Delete(origPath);
+                        lrDict.Remove(origPath);
+                        return;
+                    }    
                     if (!hrDict.ContainsKey(origPath))
                         hrDict.Add(origPath, new Dictionary<string, MagickImage>());
                     var hrTiles = hrDict[origPath];
                     hrTiles.Add(path.Replace(Path.GetExtension(path), ".png"), new MagickImage(magickImage));
+                    if (!lrDict.ContainsKey(origPath))
+                    {
+                        WriteToLog($"Key for {origPath} is missing from LR dictionary!", Color.Red);
+                        return;
+                    }
                     var lrTiles = lrDict[origPath];
                     WriteToLog(path, Color.LightGreen);
                                         
@@ -3195,6 +3204,17 @@ namespace ImageEnhancingUtility.Core
 
         async public Task SplitUpscaleMerge()
         {
+            if (CurrentProfile.UseModel == true)
+                checkedModels = new List<ModelInfo>() { CurrentProfile.Model };
+            else
+                checkedModels = SelectedModelsItems;
+
+            if (checkedModels.Count == 0)
+            {
+                WriteToLog("No models selected!");
+                return;
+            }
+
             if (!InMemoryMode)
                 await SplitUpscaleMergeNormal();
             else
@@ -3202,13 +3222,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         async public Task SplitUpscaleMergeNormal()
-        {
-            checkedModels = SelectedModelsItems;
-            if (checkedModels.Count == 0)
-            {
-                WriteToLog("No models selected!");
-                return;
-            }
+        {           
             await Split();
             bool upscaleSuccess = await Upscale(HidePythonProcess);
             if (upscaleSuccess)
@@ -3246,16 +3260,10 @@ namespace ImageEnhancingUtility.Core
         }
 
         int fileQueuCount = 0;
+
         async public Task SplitUpscaleMergeInMemory()
         {
             SetPipeline();
-
-            checkedModels = SelectedModelsItems;
-            if (checkedModels.Count == 0)
-            {
-                WriteToLog("No models selected!");
-                return;
-            }
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
             if (OutputDestinationMode == 3)
@@ -3297,8 +3305,8 @@ namespace ImageEnhancingUtility.Core
             Queue<FileInfo> fileQueue = new Queue<FileInfo>();
             if (CreateMemoryImage)
             {
-                var path = $"{InputDirectoryPath}{DirectorySeparator}([000])000)_memory_helper_(ieu_is_the_best)_tile-00.png";
-                Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
+                var path = $"{InputDirectoryPath}{DirectorySeparator}([000])000)_memory_helper_(ieu_is_the_best).png";
+                Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);                
                 image.WriteToFile(path);
                 fileQueue.Enqueue(new FileInfo(path));
             }           

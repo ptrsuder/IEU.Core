@@ -2499,7 +2499,7 @@ namespace ImageEnhancingUtility.Core
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.EnableRaisingEvents = true;
-
+                        
             MonitorVramStart();
 
             if (async)
@@ -3432,7 +3432,8 @@ namespace ImageEnhancingUtility.Core
             previewIEU.UseOldVipsMerge = UseOldVipsMerge;
             previewIEU.EnableBlend = EnableBlend;
             previewIEU.UseImageMagickMerge = UseImageMagickMerge;
-            previewIEU.AutoSetTileSizeEnable = AutoSetTileSizeEnable;        
+            previewIEU.AutoSetTileSizeEnable = AutoSetTileSizeEnable;
+            previewIEU.VramMonitorEnable = false;            
         }
 
         async public Task<bool> Preview(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false)

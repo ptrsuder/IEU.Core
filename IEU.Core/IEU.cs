@@ -61,7 +61,20 @@ namespace ImageEnhancingUtility.Core
         public readonly string AppVersion = "0.12.00";
         public readonly string GitHubRepoName = "IEU.Core";
 
-#region FIELDS/PROPERTIES       
+        bool _noNvidia = false;
+        public bool NoNvidia
+        {
+            get => _noNvidia;
+            set
+            {
+                AutoSetTileSizeEnable = false;
+                VramMonitorEnable = false;
+                this.RaiseAndSetIfChanged(ref _noNvidia, value);
+            }
+        }
+
+
+        #region FIELDS/PROPERTIES       
 
         [Category("Exposed")] 
         public int SeamlessExpandSize { get; set; } = 16;
@@ -546,10 +559,10 @@ namespace ImageEnhancingUtility.Core
 
             try
             {
-                GetVRAM();
+                GetVRAM();                
             }
             catch
-            {
+            {                           
                 WriteToLog("Failed to get Nvidia GPU info.");
             }                  
 

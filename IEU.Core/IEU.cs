@@ -2010,7 +2010,7 @@ namespace ImageEnhancingUtility.Core
                     if (!WriteToFileVipsNative(imageResult, outputFormat, destinationPath))
                         return;
                     imageResult.Dispose();
-                    pathImage.Item2.Dispose();
+                    //pathImage.Item2.Dispose();
                     IncrementDoneCounter();
                     //ReportProgress();
                     WriteToLog($"<{file.Name}> MERGE DONE", Color.LightGreen);

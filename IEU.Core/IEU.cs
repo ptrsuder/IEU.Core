@@ -2067,7 +2067,7 @@ namespace ImageEnhancingUtility.Core
                 finalImage.Write(destinationPath);
             imageResult?.Dispose();
             finalImage.Dispose();
-            pathImage.Item2.Dispose();
+            //pathImage.Item2.Dispose();
             IncrementDoneCounter();
             ReportProgress();
             WriteToLog($"{file.Name} DONE", Color.LightGreen);

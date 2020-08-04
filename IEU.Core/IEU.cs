@@ -1310,6 +1310,7 @@ namespace ImageEnhancingUtility.Core
                 {
                     double mod = diff / 2;
                     detectedSize = (int)Math.Round(mod, 0);
+                    WriteToLogDebug($"Detected Upscale Size: {detectedSize}");
                     tiles = Helper.GetTilesSize(image.Width / detectedSize, image.Height / detectedSize, MaxTileResolution);
                 }
             }
@@ -1477,7 +1478,7 @@ namespace ImageEnhancingUtility.Core
             Image result = Image.Black(resultW, resultH);
             result = result.Composite2(imageNextTile, "over", -dx, -dy);
             result = result.Composite2(expandedImage, "over", 0, 0);
-            imageRow = result.Flatten();
+            imageRow = result.Flatten();           
         }
 
         Image CreateMask(int w, int h, int overlap, string direction)
@@ -1855,8 +1856,10 @@ namespace ImageEnhancingUtility.Core
         internal void MergeTask(Tuple<string, MagickImage> pathImage, string basePath, Profile HotProfile, string outputFilename = "")
         {
             FileInfo file = new FileInfo(pathImage.Item1);
+            WriteToLogDebug($"Image path: {pathImage.Item1}");
+            WriteToLogDebug($"Base path: {basePath}");
 
-#region IMAGE READ
+            #region IMAGE READ
             string basePathAlpha = basePath;
             string resultSuffix = "";
 
@@ -1945,6 +1948,8 @@ namespace ImageEnhancingUtility.Core
             if (outputFormat == null)
                 outputFormat = new ImageFormatInfo(file.Extension);
 
+            WriteToLogDebug($"Output format: {outputFormat.Extension}");
+
             string destinationPath = OutputDirectoryPath + basePath + outputFormat;
 
             if (outputFilename != "")
@@ -1953,9 +1958,9 @@ namespace ImageEnhancingUtility.Core
             if (OutputDestinationMode == 3)
                 destinationPath = $"{OutputDirectoryPath}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}{DirectorySeparator}" +
                     $"{Path.GetFileNameWithoutExtension(file.Name)}{outputFormat}";
-            WriteToLogDebug($"Destination path: {destinationPath}");
 
-            WriteToLogDebug($"Using merge with gradient blend: {UseImageMagickMerge}");
+            WriteToLogDebug($"Destination path: {destinationPath}");
+            
             int upscaleModificator = 1;
             double upMod = 1;
             int mergedWidth = 0, mergedHeight = 0;

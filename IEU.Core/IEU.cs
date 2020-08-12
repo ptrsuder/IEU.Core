@@ -37,6 +37,7 @@ using NvAPIWrapper.GPU;
 //new filter: (doesn't)have result
 //write log file
 //identical filenames with different extension
+//problem when you process same image but result tiles number is smaller (delete results for this image?)
 [assembly: InternalsVisibleTo("ImageEnhancingUtility.Tests")]
 namespace ImageEnhancingUtility.Core
 {
@@ -425,7 +426,7 @@ namespace ImageEnhancingUtility.Core
 
         #endregion
 
-        #region MAINTAB_PROGRESS
+#region MAINTAB_PROGRESS
         private string logs;
         [Browsable(false)]
         public string Logs
@@ -1196,6 +1197,7 @@ namespace ImageEnhancingUtility.Core
 
         int[] GetTileResolution(Tuple<string, MagickImage> pathImage, string basePath, out int[] tiles, string resultSuffix, ref int tileWidth, ref int tileHeight, Profile HotProfile)
         {
+            WriteToLogDebug($"GetTileResolution: start");
             MagickImageInfo lastResultTileInfo, lastLrTileInfo;
             FileInfo file = new FileInfo(pathImage.Item1);
             MagickImage image = pathImage.Item2;
@@ -1213,6 +1215,8 @@ namespace ImageEnhancingUtility.Core
             else
                 tiles = new int[] { 1, 1 };
 
+            WriteToLogDebug($"tiles: {tiles[0]} x {tiles[1]}");
+
             int detectedSize = 1;
             try
             {
@@ -1228,13 +1232,7 @@ namespace ImageEnhancingUtility.Core
                 if(HotProfile.SplitRGB)
                     baseName = $"{basePath}_R_tile";
                 foreach (var f in files.Where(x => x.ToLower().Contains(baseName.ToLower())))
-                {
-                    //var a = Path.GetFileNameWithoutExtension(f);
-                    //var b = Path.GetFileNameWithoutExtension(file.Name);
-                    //var tr = a == b + "_tile-00";
-                    //if (!tr)
-                    //    continue;
-                    //var match = Regex.Match(Path.GetFileNameWithoutExtension(f), $"({Path.GetFileNameWithoutExtension(file.Name)}_tile-)([0-9]*)");
+                {                   
                     var match = Regex.Match(Path.GetFileNameWithoutExtension(f), $"(.*_tile-)([0-9]*)");
                     string t = match.Groups[2].Value;
                     if (Int32.Parse(t) > lastTileIndex)
@@ -1245,11 +1243,14 @@ namespace ImageEnhancingUtility.Core
                     WriteToLog($"Couldn't find last HR tile index for {baseName}", Color.Red);
                     return new int[] { 0, 0, 0 };
                 }
+                
                 string pathToLastTile = $"{ResultsPath + baseName}-{lastTileIndex:D2}{resultSuffix}.png";
-                string pathToLastLrTile = $"{LrPath + baseName}-{lastTileIndex:D2}{resultSuffix}.png";
-                //pathImage.Item1.Replace(InputDirectoryPath, LrPath).Replace(file.Extension, "") + $"_tile-{lastTileIndex:D2}{file.Extension}";
-                //$"{LrPath + basePath}_tile-{lastTileIndex.ToString("D2")}{resultSuffix}.png";
-
+                string pathToLastLrTile = $"{LrPath + DirectorySeparator + Path.GetFileNameWithoutExtension(file.Name)}_tile-{lastTileIndex:D2}{resultSuffix}.png";
+                if(OutputDestinationMode == 3)
+                {
+                    pathToLastLrTile = $"{LrPath + baseName}-{lastTileIndex:D2}{resultSuffix}.png";
+                }
+               
                 if (HotProfile.SplitRGB && OutputDestinationMode == 1)
                 {
                     baseName = Path.GetFileNameWithoutExtension(file.Name);
@@ -1284,14 +1285,19 @@ namespace ImageEnhancingUtility.Core
                     lastResultTileInfo = new MagickImageInfo(pathToLastTile);
                     tileWidth = lastResultTileInfo.Width;
                     tileHeight = lastResultTileInfo.Height;
+                    WriteToLogDebug($"tile HR: {tileWidth} x {tileHeight}");
                     pathToLastLrTile = pathToLastLrTile.Replace(new FileInfo(pathToLastLrTile).Extension, ".png");
                     if (!File.Exists(pathToLastLrTile))
+                    {
+                        WriteToLog($"Couldn't find last LR tile: {pathToLastTile}", Color.Red);
                         lastLrTileInfo = new MagickImageInfo(pathToLastTile);
+                    }
                     else
                         lastLrTileInfo = new MagickImageInfo(pathToLastLrTile);
 
                     tileLrWidth = lastLrTileInfo.Width;
                     tileLrHeight = lastLrTileInfo.Height;
+                    WriteToLogDebug($"tile LR: {tileLrWidth} x {tileLrHeight}");
                 }
                 if(HotProfile.SeamlessTexture)
                 {
@@ -1304,15 +1310,35 @@ namespace ImageEnhancingUtility.Core
 
                 int lastTileIndexExpected = (tiles[1] - 1) * tiles[0] + tiles[0];
 
+                WriteToLogDebug($"lastTileIndexExpected: {lastTileIndexExpected}");
+
                 int tileWidthOld = image.Width / tiles[0];
                 int tileHeightOld = image.Height / tiles[1];
-                double diff = (double)(tileWidthOld * tileHeightOld * lastTileIndexExpected) / (tileLrWidth * tileLrHeight * (lastTileIndex + 1));
+
+                WriteToLogDebug($"tileOld: {tileWidthOld} x {tileHeightOld}");
+                int expectedSize = tileWidthOld * tileHeightOld * lastTileIndexExpected;
+                int actualSize = tileLrWidth * tileLrHeight * (lastTileIndex + 1);
+                double diff = 0;
+                bool bigger = false;
+                if (expectedSize < actualSize)
+                {
+                    diff = (double)(actualSize) / (expectedSize);
+                    bigger = true;
+                }
+                else
+                    diff = (double)(expectedSize) / (actualSize);
+
+
+                WriteToLogDebug($"diff: {diff}");
                 if ((int)Math.Round(diff, 0) != 1)
                 {
                     double mod = diff / 2;
                     detectedSize = (int)Math.Round(mod, 0);
                     WriteToLogDebug($"Detected Upscale Size: {detectedSize}");
-                    tiles = Helper.GetTilesSize(image.Width / detectedSize, image.Height / detectedSize, MaxTileResolution);
+                    if(bigger)
+                        tiles = Helper.GetTilesSize(image.Width * detectedSize, image.Height * detectedSize, MaxTileResolution);
+                    else
+                        tiles = Helper.GetTilesSize(image.Width / detectedSize, image.Height / detectedSize, MaxTileResolution);
                 }
             }
             catch (Exception ex)
@@ -1892,9 +1918,9 @@ namespace ImageEnhancingUtility.Core
                 WriteToLogDebug($"Image dimensions: {imageWidth}x{imageHeight}, alpha: {imageHasAlpha}");
                 WriteToLogDebug($"Tiles: {tiles[0]}x{tiles[1]}, {tileWidth}x{tileHeight}");
             }
-            catch
+            catch(Exception ex)
             {
-                WriteToLog($"Failed to read file {file.Name}!", Color.Red);
+                WriteToLog($"Failed to read file {file.Name}!", Color.Red);              
                 return;
             }
 

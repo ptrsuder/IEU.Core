@@ -872,7 +872,8 @@ namespace ImageEnhancingUtility.Core
                 }
             }
             ImagePreprocess(ref inputImage, HotProfile);
-            ImagePreprocess(ref inputImageAlpha, HotProfile);            
+            if(inputImageAlpha != null)
+                ImagePreprocess(ref inputImageAlpha, HotProfile);            
 
             imageWidth = inputImage.Width;
             imageHeight = inputImage.Height;

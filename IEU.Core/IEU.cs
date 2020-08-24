@@ -1103,10 +1103,9 @@ namespace ImageEnhancingUtility.Core
 
             DirectoryInfo lrAlphaDirectory = new DirectoryInfo(LrPath + "_alpha");
             if(lrDirectory.Exists)
-            { 
-                lrDirectory.GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(x => x.Delete());
-            lrDirectory.GetDirectories("*", SearchOption.AllDirectories).ToList().ForEach(x => x.Delete());
-            WriteToLog($"'{LrPath}' is cleared", Color.LightBlue);
+            {
+                lrDirectory.Delete(true);
+                WriteToLog($"'{LrPath}' is cleared", Color.LightBlue);
             }
             else
                 lrDirectory.Create();
@@ -1116,8 +1115,7 @@ namespace ImageEnhancingUtility.Core
                 lrAlphaDirectory.Create();
             else
             {
-                lrAlphaDirectory.GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(x => x.Delete());
-                lrAlphaDirectory.GetDirectories("*", SearchOption.AllDirectories).ToList().ForEach(x => x.Delete());
+                lrAlphaDirectory.Delete(true);               
                 WriteToLog($"'{LrPath + "_alpha"}' is cleared", Color.LightBlue);
             }         
 

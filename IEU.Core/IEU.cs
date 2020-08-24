@@ -3313,7 +3313,7 @@ namespace ImageEnhancingUtility.Core
                 searchOption = SearchOption.AllDirectories;
             DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
             FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption)
-                .Where( x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.Remove(0,1).ToUpperInvariant())).ToArray();
+                .Where( x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.ToUpperInvariant())).ToArray();
 
             if (inputDirectoryFiles.Count() == 0)
             {

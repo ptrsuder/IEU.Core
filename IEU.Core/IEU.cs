@@ -265,7 +265,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _overwriteModes, value);
         }
 
-        bool _createMemoryImage = true;
+        bool _createMemoryImage = false;
         [ProtoMember(14, IsRequired = true)]
         public bool CreateMemoryImage
         {
@@ -394,7 +394,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _resultSuffix, value);
         }
 
-        private bool _vramMonitorEnable = true;
+        private bool _vramMonitorEnable = false;
         [ProtoMember(44, IsRequired = true)]
         public bool VramMonitorEnable
         {

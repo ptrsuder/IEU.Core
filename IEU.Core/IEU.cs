@@ -3137,7 +3137,7 @@ namespace ImageEnhancingUtility.Core
 
         [Category("Exposed")]
         [ProtoMember(48)]
-        public int magicNumberFor4x { get; set; } = 105;
+        public int magicNumberFor4x { get; set; } = 100;
         [Category("Exposed")]
         [ProtoMember(49)]
         public int magicNumberFor1x { get; set; } = 200;

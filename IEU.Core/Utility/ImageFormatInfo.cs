@@ -10,7 +10,7 @@ namespace ImageEnhancingUtility.Core
     {
         static List<string> VipsNativeFormats = new List<string>() { ".png", ".tiff", ".webp" };
         static List<string> ForeigntFormats = new List<string>() { ".tga", ".dds", ".jpg", ".bmp" };
-        public static string[] ImageExtensions = new string[] {"PNG","JPG","JPEG","WEBP","BMP","TGA","DDS","TIF","TIFF"};
+        public static string[] ImageExtensions = new string[] {".PNG",".JPG",".JPEG",".WEBP",".BMP",".TGA",".DDS",".TIF",".TIFF"};
 
         private string _extension;
         [ProtoMember(1)]
@@ -20,7 +20,7 @@ namespace ImageEnhancingUtility.Core
             set
             {
                 _extension = value;
-                DisplayName = _extension.ToUpper().Remove(0, 1);
+                DisplayName = _extension.ToUpper().Replace(".", "");
                 VipsNative = VipsNativeFormats.Contains(_extension);
             }
         }       

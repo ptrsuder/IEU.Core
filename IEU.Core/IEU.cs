@@ -1094,7 +1094,7 @@ namespace ImageEnhancingUtility.Core
             DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
             DirectoryInfo lrDirectory = new DirectoryInfo(LrPath);
             FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption)
-               .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.Remove(0, 1).ToUpperInvariant())).ToArray();
+               .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.ToUpperInvariant())).ToArray();
             if (inputDirectoryFiles.Count() == 0)
             {
                 WriteToLog("No files in input folder!", Color.Red);
@@ -1133,7 +1133,7 @@ namespace ImageEnhancingUtility.Core
 
             await Task.Run(() => Parallel.ForEach(inputFiles, parallelOptions: new ParallelOptions() { MaxDegreeOfParallelism = MaxConcurrency }, file =>
             {
-                if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper().Remove(0, 1)))
+                if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper()))
                     return;
                 bool fileSkipped = true;
                 List<Rule> rules = new List<Rule>(Ruleset.Values);
@@ -1165,7 +1165,7 @@ namespace ImageEnhancingUtility.Core
         {
             WriteToLog($"{file.Name} SPLIT START");
 
-            if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper().Remove(0, 1)))
+            if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper()))
                 return;
             bool fileSkipped = true;
             List<Rule> rules = new List<Rule>(Ruleset.Values);
@@ -1737,8 +1737,7 @@ namespace ImageEnhancingUtility.Core
             }
             bool alphaIsUpscaledWithFilter = imageAlphaResult != null && imageAlphaResult.Width == imageResult.Width && imageAlphaResult.Height == imageResult.Height;
             if ((imageHasAlpha && !HotProfile.IgnoreAlpha && !alphaReadError) || alphaIsUpscaledWithFilter)
-            {
-                //WriteToLogDebug("Detected alpha upscaled with filter");
+            {                
                 imageResult = imageResult.Bandjoin(imageAlphaResult);
                 imageResult = imageResult.Copy(interpretation: "srgb").Cast("uchar");
                 imageAlphaResult.Dispose();
@@ -2126,7 +2125,7 @@ namespace ImageEnhancingUtility.Core
                 searchOption = SearchOption.AllDirectories;
 
             FileInfo[] inputFiles = di.GetFiles("*", searchOption)
-               .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.Remove(0, 1).ToUpperInvariant())).ToArray();
+               .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.ToUpperInvariant())).ToArray();
 
             WriteToLog("Counting files...");
             await GetTotalFileNumber(inputFiles);
@@ -2135,7 +2134,7 @@ namespace ImageEnhancingUtility.Core
             await Task.Run(() => Parallel.ForEach(inputFiles, parallelOptions: new ParallelOptions() { MaxDegreeOfParallelism = MaxConcurrency }, file =>
             //foreach(var file in inputFiles)
             {
-                if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper().Remove(0, 1)))
+                if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper()))
                     return;
 
                 MagickImage inputImage = ImageOperations.LoadImage(file);
@@ -2261,7 +2260,7 @@ namespace ImageEnhancingUtility.Core
 
             WriteToLog($"{file.Name} MERGE START");
 
-            if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper().Remove(0, 1)))
+            if (!file.Exists || !ImageFormatInfo.ImageExtensions.Contains(file.Extension.ToUpper()))
                 return;
 
             MagickImage inputImage = ImageOperations.LoadImage(file);
@@ -3099,7 +3098,7 @@ namespace ImageEnhancingUtility.Core
                                 searchOption = SearchOption.AllDirectories;
                             DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
                             FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption)
-                                .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.Remove(0, 1).ToUpperInvariant())).ToArray();
+                                .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.ToUpperInvariant())).ToArray();
 
                             fileQueue = CreateQueue(inputDirectoryFiles);
                             fileQueuCount = fileQueue.Count;                           

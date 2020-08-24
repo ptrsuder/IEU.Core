@@ -59,7 +59,7 @@ namespace ImageEnhancingUtility.Core
             get => hrDict;
         }
 
-        public readonly string AppVersion = "0.12.00";
+        public readonly string AppVersion = "0.12.15";
         public readonly string GitHubRepoName = "IEU.Core";
 
         bool _noNvidia = false;

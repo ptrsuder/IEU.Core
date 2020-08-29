@@ -873,7 +873,7 @@ namespace ImageEnhancingUtility.Core
                 }
             }
             ImagePreprocess(ref inputImage, HotProfile);
-            if(inputImageAlpha != null)
+            if(inputImageAlpha != null && imageHasAlpha == true)
                 ImagePreprocess(ref inputImageAlpha, HotProfile);            
 
             imageWidth = inputImage.Width;
@@ -1062,6 +1062,7 @@ namespace ImageEnhancingUtility.Core
                     if (HotProfile.IgnoreSingleColorAlphas && isSolidWhite)
                     {
                         inputImageAlpha.Dispose();
+                        inputImageAlpha = null;
                         imageHasAlpha = false;
                     }
                     else

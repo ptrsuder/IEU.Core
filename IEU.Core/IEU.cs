@@ -2581,24 +2581,38 @@ namespace ImageEnhancingUtility.Core
         {
             string archName = "ESRGAN";
             if (UseBasicSR) archName = "BasicSR";
-
+            string scriptsDir = $"{Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)}{DirectorySeparator}Scripts{DirectorySeparator}ESRGAN";
             string block = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.block.py");
+            string blockPath = $"{DirectorySeparator}block.py";
             string architecture = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.architecture.py");
-            string script = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.upscale.py");
-            if (GreyscaleModel)
-                script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleGrayscale.py");
-            if (InMemoryMode)
-                script = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleFromMemory.py");
+            string archPath = $"{DirectorySeparator}architecture.py";
+            string upscale = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.upscale.py");
+            string upscaleFromMemory = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleFromMemory.py");
 
-            string scriptPath = EsrganPath + $"{DirectorySeparator}IEU_test.py";
+            string scriptPath = $"{DirectorySeparator}IEU_test.py";
+            string upscalePath = $"{DirectorySeparator}upscale.py";
+            string upscaleFromMemoryPath = $"{DirectorySeparator}upscaleFromMemory.py";
+
+            Directory.CreateDirectory(scriptsDir);
+            if (!File.Exists(scriptsDir + blockPath))            
+                File.WriteAllText(scriptsDir + blockPath, block);
+            if (!File.Exists(scriptsDir + archPath))
+                File.WriteAllText(scriptsDir + archPath, architecture);          
+            if (!File.Exists(scriptsDir + upscalePath))
+                File.WriteAllText(scriptsDir + upscalePath, upscale);
+            if (!File.Exists(scriptsDir + upscaleFromMemoryPath))
+                File.WriteAllText(scriptsDir + upscaleFromMemoryPath, upscaleFromMemory);
+
             if (UseBasicSR) scriptPath = EsrganPath + $"{DirectorySeparator}codes{DirectorySeparator}IEU_test.py";
             else
             {
-                File.WriteAllText(EsrganPath + $"{DirectorySeparator}block.py", block);
-                File.WriteAllText(EsrganPath + $"{DirectorySeparator}architecture.py", architecture);
+                File.Copy(scriptsDir + blockPath, EsrganPath + blockPath, true);
+                File.Copy(scriptsDir + archPath, EsrganPath + archPath, true);
             }
-
-            File.WriteAllText(scriptPath, script);
+            if (InMemoryMode)
+                File.Copy(scriptsDir + upscaleFromMemoryPath, EsrganPath + scriptPath, true);
+            else
+                File.Copy(scriptsDir + upscalePath, EsrganPath + scriptPath, true);
         }
 
         string GetCondaEnv()

@@ -3181,6 +3181,8 @@ namespace ImageEnhancingUtility.Core
             int magicNumber = magicNumberFor4x;
             if(modelScale == 1)
                 magicNumber = magicNumberFor1x;
+            if (modelScale == 8)
+                magicNumber = magicNumberFor4x / 2;
             var newmax = (int) vcurMemory * magicNumber;
 
             MaxTileResolutionWidth = MaxTileResolutionHeight= (int)Math.Sqrt(newmax);    

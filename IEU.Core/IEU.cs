@@ -59,7 +59,7 @@ namespace ImageEnhancingUtility.Core
             get => hrDict;
         }
 
-        public readonly string AppVersion = "0.12.15";
+        public readonly string AppVersion = "0.12.18";
         public readonly string GitHubRepoName = "IEU.Core";
 
         bool _noNvidia = false;
@@ -1327,7 +1327,6 @@ namespace ImageEnhancingUtility.Core
                 else
                     diff = (double)(expectedSize) / (actualSize);
 
-
                 WriteToLogDebug($"diff: {diff}");
                 if ((int)Math.Round(diff, 0) != 1)
                 {
@@ -1491,20 +1490,49 @@ namespace ImageEnhancingUtility.Core
             {
                 overlap = imageRow.Height + dy;
                 resultH += imageNextTile.Height - overlap;
-            }           
+            }
 
-            Image maskVips = CreateMask(imageRow.Width, imageRow.Height, overlap / 2, direction);
+            Image maskVips; //= CreateMask(imageRow.Width, imageRow.Height, overlap / 2, direction);           
+
+            Bitmap mask;
+            Rectangle brushSize, gradientRectangle;
+            LinearGradientMode brushDirection;                
+            if (direction == Enums.Direction.Horizontal)
+            {               
+                brushSize = new Rectangle(-dx + 1, -dy, overlap, imageRow.Height);
+                brushDirection = LinearGradientMode.Horizontal;
+                gradientRectangle = new Rectangle(-dx  + 1, -dy, overlap, imageNextTile.Height);                
+            }
+            else
+            {              
+                brushSize = new Rectangle(-dx, -dy + 1, imageRow.Width, overlap);
+                brushDirection = LinearGradientMode.Vertical;
+                gradientRectangle = new Rectangle(-dx, -dy + 1, imageRow.Width, overlap);         
+            }
+            mask = new Bitmap(imageRow.Width, imageRow.Height);
+          
+            using (Graphics graphics = Graphics.FromImage(mask))
+            using (LinearGradientBrush brush = new LinearGradientBrush(brushSize, Color.White, Color.Black, brushDirection))
+            {
+                graphics.FillRectangle(Brushes.White, 0, 0, imageRow.Width, imageRow.Height);
+                graphics.FillRectangle(brush, gradientRectangle);
+            }            
+            var buffer = ImageOperations.ImageToByte(mask);
+
+            maskVips = Image.NewFromBuffer(buffer).ExtractBand(0);     
+            
 
             Image expandedImage;
             if(Copy)
                 expandedImage = imageRow.Bandjoin(new Image[] { maskVips }).Copy();
             else
                 expandedImage = imageRow.Bandjoin(new Image[] { maskVips }).CopyMemory();
-
+            
             Image result = Image.Black(resultW, resultH);
-            result = result.Composite2(imageNextTile, "over", -dx, -dy);
-            result = result.Composite2(expandedImage, "over", 0, 0);
-            imageRow = result.Flatten();           
+            result = result.Insert(imageNextTile, -dx, -dy);
+            //result = result.Composite(imageNextTile, "over", -dx, -dy);            
+            result = result.Composite(expandedImage, "over", 0, 0);            
+            imageRow = result.Flatten();            
         }
 
         Image CreateMask(int w, int h, int overlap, string direction)
@@ -1516,7 +1544,7 @@ namespace ImageEnhancingUtility.Core
                 mask = white.Insert(black, w - overlap, 0);
             else
                 mask = white.Insert(black, 0, h - overlap);
-            mask = mask.Gaussblur(4, precision: "integer");          
+            mask = mask.Gaussblur(4.6, precision: "float");           
             return mask;
         }
 
@@ -2034,7 +2062,7 @@ namespace ImageEnhancingUtility.Core
                     return;
                 if (outputFormat.VipsNative &&
                     (!HotProfile.ThresholdEnabled || (HotProfile.ThresholdBlackValue == 0 && HotProfile.ThresholdWhiteValue == 100)) &&
-                      HotProfile.ResizeImageAfterScaleFactor == 1.0) //no need to convert to MagickImage, save fast with vips
+                      HotProfile.ResizeImageAfterScaleFactor == 1.0) //no need to convert to MagickImage, save faster with vips
                 {
                     WriteToLogDebug($"Saving with vips");
 
@@ -3646,7 +3674,7 @@ namespace ImageEnhancingUtility.Core
             CreateModelTree();
             if (!saveAsPng)
             {
-                previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
+                //previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
                 previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.selectedOutputFormat;
             }
             await previewIEU.Merge(previewOriginal.FullName);
@@ -3654,13 +3682,13 @@ namespace ImageEnhancingUtility.Core
             ImageFormatInfo outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase)).First();
             if (!saveAsPng)
             {
-                if (CurrentProfile.UseOriginalImageFormat)
-                    outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(Path.GetExtension(imagePath), StringComparison.InvariantCultureIgnoreCase)).First();
-                else
-                    outputFormat = CurrentProfile.selectedOutputFormat;
+                //if (CurrentProfile.UseOriginalImageFormat)
+                //    outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(Path.GetExtension(imagePath), StringComparison.InvariantCultureIgnoreCase)).First();
+                //else
+                outputFormat = CurrentProfile.selectedOutputFormat;
                 preview = new FileInfo(PreviewDirPath + $"{DirectorySeparator}preview{outputFormat.Extension}");
             }
-            if (!File.Exists(preview.FullName))
+            if (!File.Exists(Path.ChangeExtension(preview.FullName, ".png")))
                 return false;
 
             if (copyToOriginal)
@@ -3668,7 +3696,7 @@ namespace ImageEnhancingUtility.Core
                 string modelName = Path.GetFileNameWithoutExtension(modelPath);
                 string dir = Path.GetDirectoryName(imagePath);
                 string fileName = Path.GetFileNameWithoutExtension(imagePath);
-                string destination = $"{ dir }{DirectorySeparator}{ fileName}_{modelName}{outputFormat.Extension}";
+                string destination = $"{ dir }{DirectorySeparator}{ fileName}_{modelName}{outputFormat.Extension}";                           
                 File.Copy(preview.FullName, destination);
             }
             return true;

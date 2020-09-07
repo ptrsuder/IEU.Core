@@ -1473,12 +1473,15 @@ namespace ImageEnhancingUtility.Core
 
         void JoinTiles(ref Image imageRow, Image imageNextTile, string direction, int dx, int dy)
         {
+            WriteToLogDebug("Merging with old vips method");
             int mblendSize = EnableBlend ? OverlapSize : 0;
+            WriteToLogDebug($"mblend: {EnableBlend}");
             imageRow = imageRow.Merge(imageNextTile, direction, dx, dy, mblendSize);
         }
 
         void JoinTilesNew(ref Image imageRow, Image imageNextTile, bool Copy, string direction, int dx, int dy)
-        {    
+        {
+            WriteToLogDebug("Merging with new vips method");
             int overlap, resultW = imageRow.Width, resultH = imageRow.Height;
 
             if (direction == Enums.Direction.Horizontal)

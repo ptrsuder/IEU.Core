@@ -360,8 +360,14 @@ namespace ImageEnhancingUtility.Core
             get => _ddsBC7CompressionMode;
             set => this.RaiseAndSetIfChanged(ref _ddsBC7CompressionMode, value);
         }
+
+        bool _ddsGenerateMipmaps = true;
         [ProtoMember(34, IsRequired = true)]
-        public bool ddsGenerateMipmaps = true;
+        public bool DdsGenerateMipmaps
+        {
+            get => _ddsGenerateMipmaps;
+            set => this.RaiseAndSetIfChanged(ref _ddsGenerateMipmaps, value);
+        }
 
         bool _useModel = false;
         [ProtoMember(35)]
@@ -369,14 +375,22 @@ namespace ImageEnhancingUtility.Core
         {
             get => _useModel;
             set => this.RaiseAndSetIfChanged(ref _useModel, value);
-        }
-            
+        }      
+
         ModelInfo _model;
         [ProtoMember(36)]
         public ModelInfo Model
         {
             get => _model;
             set => this.RaiseAndSetIfChanged(ref _model, value);
+        }
+
+        bool _ddsIsCubemap = false;
+        [ProtoMember(42, IsRequired = true)]
+        public bool DdsIsCubemap
+        {
+            get => _ddsIsCubemap;
+            set => this.RaiseAndSetIfChanged(ref _ddsIsCubemap, value);
         }
 
         #endregion

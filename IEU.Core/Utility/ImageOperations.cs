@@ -23,7 +23,19 @@ namespace ImageEnhancingUtility.Core.Utility
             {
                 bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
                 memoryStream.Position = 0;
-                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
+                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png });
+            }
+            return result;
+        }
+
+        public static MagickImage ConvertToMagickImage(NetVips.Image image)
+        {
+            MagickImage result;            
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                image.WriteToStream(memoryStream, ".png");
+                memoryStream.Position = 0;
+                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png });
             }
             return result;
         }
@@ -37,7 +49,7 @@ namespace ImageEnhancingUtility.Core.Utility
             {
                 bitmap.Save(memoryStream, imageFormat);
                 memoryStream.Position = 0;
-                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
+                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png });
             }
             return result;
         }
@@ -75,7 +87,7 @@ namespace ImageEnhancingUtility.Core.Utility
             Bitmap test;
             using (MemoryStream memoryStream = new MemoryStream())
             {
-                image.Write(memoryStream, MagickFormat.Png32);
+                image.Write(memoryStream, MagickFormat.Png);
                 memoryStream.Position = 0;
                 Image temp = Image.FromStream(memoryStream);
                 test = (Bitmap)temp.Clone();
@@ -86,8 +98,8 @@ namespace ImageEnhancingUtility.Core.Utility
 
         public static NetVips.Image ConvertToVips(MagickImage image)
         {
-            byte[] imageBuffer = image.ToByteArray(MagickFormat.Png00);        
-            return NetVips.Image.NewFromBuffer(imageBuffer);           
+            byte[] imageBuffer = image.ToByteArray(MagickFormat.Png);        
+            return NetVips.Image.PngloadBuffer(imageBuffer);           
         }
 
         public static NetVips.Image ConvertToVips(string base64String)
@@ -108,14 +120,14 @@ namespace ImageEnhancingUtility.Core.Utility
             else
                 image = new MagickImage(file.FullName);
             return image;
-        }
+        }        
 
         public static Image LoadImageToBitmap(string fullname)
         {
             string extension = Path.GetExtension(fullname).ToUpper();
             if (!Filter.ExtensionsList.Contains(extension))
                 return null;
-            Image image = null;
+            Image image = null;          
             string[] simpleFormats = new string[] { "*.BMP", ".DIB", ".RLE", ".GIF", ".JPG", ".PNG", ".JPEG" };
 
             if (simpleFormats.Contains(extension))
@@ -210,12 +222,37 @@ namespace ImageEnhancingUtility.Core.Utility
             return expandedImage;
         }
 
-        public static MagickImage PadImage(MagickImage image, int x, int y)
+        public static MagickImage PadImage(MagickImage image, int x, int y, Gravity gravity = Gravity.Northwest)
         {
-            MagickImage result = (MagickImage)image.Clone();
-            int[] newDimensions = Helper.GetGoodDimensions(image.Width, image.Height, x, y);
-            result.Extent(newDimensions[0], newDimensions[1]);
+            if (image.Width == x && image.Height == y)
+                return image;  
+
+            MagickImage result = (MagickImage)image.Clone();            
+            result.VirtualPixelMethod = VirtualPixelMethod.Edge;
+            result.Distort(DistortMethod.Resize, x, y);
+            //result.Write("S:\\ESRGAN-master\\IEU_preview\\distort.png");
+            result.Composite(image, gravity, CompositeOperator.Atop);
+            //result.Write(@"S:\\ESRGAN-master\\IEU_preview\\composite.png");
+            //result.Extent(newDimensions[0], newDimensions[1]);
             return result;
+        }
+
+        public static MagickImage PadImageCenter(MagickImage image, int x, int y)
+        {
+            if (image.Width == x && image.Height == y)
+                return image;
+
+            MagickImage resultW = (MagickImage)image.Clone();
+            resultW.VirtualPixelMethod = VirtualPixelMethod.Edge;
+            resultW.Distort(DistortMethod.Resize, x, image.Height);
+            MagickImage resultH = (MagickImage)image.Clone();
+            resultH.VirtualPixelMethod = VirtualPixelMethod.Edge;
+            resultH.Distort(DistortMethod.Resize, image.Width, y);
+            resultW.Composite(resultH, Gravity.Center, CompositeOperator.Atop);
+            resultW.Composite(image, Gravity.Center, CompositeOperator.Atop);
+            //result.Write(@"S:\\ESRGAN-master\\IEU_preview\\composite.png");
+            //result.Extent(newDimensions[0], newDimensions[1]);
+            return resultW;
         }
     }
 }

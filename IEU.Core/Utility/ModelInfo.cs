@@ -17,10 +17,21 @@ namespace ImageEnhancingUtility.Core
         public string ParentFolder
         { get; set; }
 
+        public string ComboBoxName
+        {
+            get
+            {
+                var name = Name;
+                if (ParentFolder != "")
+                    name = ParentFolder + " : " + Name;
+                return name;
+            }
+        }
+
         [ProtoMember(4)]
         public int UpscaleFactor
         { get; set; }
-                
+
         public int Priority
         { get; set; } = 0;
 
@@ -38,6 +49,6 @@ namespace ImageEnhancingUtility.Core
             ParentFolder = folder;
         }
 
-        public ModelInfo() {}
+        public ModelInfo() { }
     }
 }

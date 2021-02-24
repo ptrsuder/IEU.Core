@@ -781,7 +781,7 @@ namespace ImageEnhancingUtility.Core
             var values = new ImageValues();
             values.Path = file.FullName;
             values.Dimensions = new int[] { inputImage.Width, inputImage.Height };
-            values.UseAlpha = imageHasAlpha;
+            values.UseAlpha = imageHasAlpha && !HotProfile.IgnoreAlpha;
 
             FileInfo fileAlpha = new FileInfo(file.DirectoryName + DirSeparator + Path.GetFileNameWithoutExtension(file.Name) + "_alpha.png");
             string lrPathAlpha = LrPath + "_alpha";
@@ -832,7 +832,7 @@ namespace ImageEnhancingUtility.Core
                 values.PaddingSize = PaddingSize;
             }
 
-            if (imageHasAlpha && !HotProfile.IgnoreAlpha)
+            if (values.UseAlpha)
                 inputImageAlpha = (MagickImage)inputImage.Separate(Channels.Alpha).First();
 
             inputImage.HasAlpha = false;
@@ -844,7 +844,7 @@ namespace ImageEnhancingUtility.Core
                 values.FinalDimensions = new int[] { inputImage.Width + 2 * seamlessPadding, inputImage.Height + 2 * seamlessPadding };
             }
 
-            if (imageHasAlpha && !HotProfile.IgnoreAlpha)
+            if (values.UseAlpha)
             {
                 if (HotProfile.UseFilterForAlpha)
                     imageHasAlpha = false;
@@ -1770,7 +1770,7 @@ namespace ImageEnhancingUtility.Core
                         return null;
                     }
 
-                    if (values.UseAlpha && !HotProfile.IgnoreAlpha && !alphaReadError && !HotProfile.UseFilterForAlpha)
+                    if (values.UseAlpha && !alphaReadError && !HotProfile.UseFilterForAlpha)
                     {
                         try
                         {
@@ -1839,7 +1839,7 @@ namespace ImageEnhancingUtility.Core
                 if (i == 0)
                 {
                     imageResult = imageRow;
-                    if (values.UseAlpha && !HotProfile.IgnoreAlpha && !alphaReadError)
+                    if (values.UseAlpha && !alphaReadError && !HotProfile.UseFilterForAlpha)
                         imageAlphaResult = imageAlphaRow;
                 }
                 else
@@ -1853,7 +1853,7 @@ namespace ImageEnhancingUtility.Core
                     if (HotProfile.BalanceRgb)
                         UseGlobalbalance(ref imageResult, ref cancelRgbGlobalbalance, file.Name);
 
-                    if (values.UseAlpha && !HotProfile.IgnoreAlpha && !alphaReadError)
+                    if (values.UseAlpha && !alphaReadError && !HotProfile.UseFilterForAlpha)
                     {
                         if (UseOldVipsMerge)
                             JoinTiles(ref imageAlphaResult, imageAlphaRow, Enums.Direction.Vertical, 0, -tileHeight * i);
@@ -1867,7 +1867,7 @@ namespace ImageEnhancingUtility.Core
                 GC.Collect();
             }
 
-            if (values.UseAlpha && !HotProfile.IgnoreAlpha && HotProfile.UseFilterForAlpha)
+            if (values.UseAlpha && HotProfile.UseFilterForAlpha)
             {
                 MagickImage image = new MagickImage(pathImage.Item2);
                 MagickImage inputImageAlpha = (MagickImage)image.Separate(Channels.Alpha).First();
@@ -1883,7 +1883,7 @@ namespace ImageEnhancingUtility.Core
             }
 
             //bool alphaIsUpscaledWithFilter = imageAlphaResult != null && imageAlphaResult.Width == imageResult.Width && imageAlphaResult.Height == imageResult.Height;
-            if ((values.UseAlpha && !HotProfile.IgnoreAlpha && !alphaReadError) || HotProfile.UseFilterForAlpha)
+            if ((values.UseAlpha && !alphaReadError) || HotProfile.UseFilterForAlpha)
             {
                 imageResult = imageResult.Bandjoin(imageAlphaResult.ExtractBand(0));
                 imageResult = imageResult.Copy(interpretation: "srgb").Cast("uchar");

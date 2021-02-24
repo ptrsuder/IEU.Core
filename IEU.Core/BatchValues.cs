@@ -15,6 +15,8 @@ namespace ImageEnhancingUtility.Core
         public int Padding;
         public bool Seamless;
         public string ResultSuffix;
+        public bool UseModelChain;
+        public List<ModelInfo> ModelChain = new List<ModelInfo>();
 
         //alpha settings
         public Dictionary<string, ImageValues> images = new Dictionary<string, ImageValues>();

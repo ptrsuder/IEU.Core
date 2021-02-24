@@ -1038,7 +1038,13 @@ namespace ImageEnhancingUtility.Core
 
             string basePath = "";  
 
-            foreach (var model in checkedModels)
+            if(UseModelChain)
+            {
+                basePath = DirSeparator + Path.GetFileNameWithoutExtension(file.Name);   
+                values.results.Add(new UpscaleResult(basePath, checkedModels.Last()));
+            }
+            else
+                foreach (var model in checkedModels)
             {
                 if (OutputDestinationMode == 0)
                     basePath = DirSeparator + Path.GetFileNameWithoutExtension(file.Name);
@@ -1166,6 +1172,8 @@ namespace ImageEnhancingUtility.Core
                 OverwriteMode = OverwriteMode,
                 OverlapSize = OverlapSize,
                 Padding = PaddingSize,
+                UseModelChain = UseModelChain,
+                ModelChain = checkedModels
                 //Seamless = 
             };            
 
@@ -2091,8 +2099,8 @@ namespace ImageEnhancingUtility.Core
             SetTotalCounter(totalFiles);
 
             Logger.Write("Merging tiles...");
-            //await Task.Run(() => Parallel.ForEach(inputFiles, parallelOptions: new ParallelOptions() { MaxDegreeOfParallelism = MaxConcurrency }, file =>
-            foreach(var file in inputFiles)
+            await Task.Run(() => Parallel.ForEach(inputFiles, parallelOptions: new ParallelOptions() { MaxDegreeOfParallelism = MaxConcurrency }, file =>
+            //foreach(var file in inputFiles)
             {
                 var values = batchValues.images[file.FullName];
 
@@ -2133,18 +2141,8 @@ namespace ImageEnhancingUtility.Core
                         values,
                         result,
                         profile);
-
-                //if (tempOutMode == 3)
-                //{
-                //    MergeTask(
-                //        pathImage,
-                //        values,
-                //        file.FullName.Replace(InputDirectoryPath, "").Replace(file.Name, Path.GetFileNameWithoutExtension(file.Name)),
-                //        profile);
-                //    return;
-                //}
-            };
-            //));
+            }
+            ));
 
             GC.Collect();
             Logger.Write("Finished!", Color.LightGreen);

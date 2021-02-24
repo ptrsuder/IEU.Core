@@ -1,15 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
 using DdsFileTypePlus;
+using Newtonsoft.Json;
 using ProtoBuf;
 using ReactiveUI;
 
 namespace ImageEnhancingUtility.Core
 {
     [ProtoContract]
+    [JsonObject(MemberSerialization.OptOut)]
     public class Profile: ReactiveObject
     {
-        [ProtoMember(1)]
+        [ProtoMember(1)]        
         public string Name { get; set; }
         [ProtoMember(2)]
         public string Description;   
@@ -72,35 +75,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _deleteResults, value);
         }
 
-        private bool _preciseTileResolution = false;
-        [ProtoMember(12)]
-        public bool PreciseTileResolution
-        {
-            get => _preciseTileResolution;
-            set
-            {
-                OverlapSize = 0;
-                this.RaiseAndSetIfChanged(ref _preciseTileResolution, value);
-            }
-        }
-
-        private int _overlapSize = 16;
-        [ProtoMember(13)]
-        public int OverlapSize
-        {
-            get => _overlapSize;
-            set => this.RaiseAndSetIfChanged(ref _overlapSize, value);
-        }
-               
-
-        private int _overwriteMode = 0;
-        [ProtoMember(15)]
-        public int OverwriteMode
-        {
-            get => _overwriteMode;
-            set => this.RaiseAndSetIfChanged(ref _overwriteMode, value);
-        }
-
+                      
         private int _noiseReductionType = 0;
         [ProtoMember(16)]
         public int NoiseReductionType
@@ -254,7 +229,7 @@ namespace ImageEnhancingUtility.Core
         }     
 
 
-    [ProtoMember(28)]
+        [ProtoMember(28)]
         public ImageFormatInfo pngFormat = new ImageFormatInfo(".png")
         { CompressionFactor = 3 };
         [ProtoMember(29)]

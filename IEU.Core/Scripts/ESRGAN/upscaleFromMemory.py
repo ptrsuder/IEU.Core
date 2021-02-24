@@ -77,7 +77,7 @@ for model_path in model_paths:
         try:
             lrImages = json.loads(unquote(line))
         except:
-            print('INVALID LINE: {:s}'.format(line))
+            #print('INVALID LINE: {:s}'.format(line))
             #sys.stdout.flush()
             break
         for path in lrImages:        

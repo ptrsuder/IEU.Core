@@ -1722,7 +1722,7 @@ namespace ImageEnhancingUtility.Core
             Image imageResult = null, imageAlphaResult = null;
             FileInfo file = new FileInfo(pathImage.Item1);
             Image imageAlphaRow = null;
-            int tileWidth = values.TileW, tileHeight = values.TileH;
+            int tileWidth = values.TileW * upMod, tileHeight = values.TileH * upMod;
 
             string basePathAlpha = result.BasePath;
             if (OutputDestinationMode == 1) // grab alpha tiles from different folder

@@ -1244,12 +1244,12 @@ namespace ImageEnhancingUtility.Core
 
         void WriteBatchValues(BatchValues batchValues)
         {
-            File.WriteAllText(@"S:\ESRGAN-master\CurrentSession.json", JsonConvert.SerializeObject(batchValues));
+            File.WriteAllText(@"CurrentSession.json", JsonConvert.SerializeObject(batchValues));
         }
 
         BatchValues ReadBatchValues()
         {           
-            var batch = JsonConvert.DeserializeObject<BatchValues>(File.ReadAllText(@"S:\ESRGAN-master\CurrentSession.json"));
+            var batch = JsonConvert.DeserializeObject<BatchValues>(File.ReadAllText(@"CurrentSession.json"));
             OutputDestinationMode = batch.OutputMode;
             OverwriteMode = batch.OverwriteMode;
             MaxTileResolutionWidth = batch.MaxTileW;

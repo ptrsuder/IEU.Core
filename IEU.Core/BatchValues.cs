@@ -41,7 +41,7 @@ namespace ImageEnhancingUtility.Core
         public int TilesCount { get => Columns * Rows; }
 
         public bool UseAlpha;
-        public bool AlphaSolidWhite;
+        public bool AlphaSolidColor;
 
         public Profile profile1;
 

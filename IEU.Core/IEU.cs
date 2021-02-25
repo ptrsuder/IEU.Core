@@ -850,10 +850,15 @@ namespace ImageEnhancingUtility.Core
                     imageHasAlpha = false;
                 else
                 {
-                    bool isSolidWhite = inputImageAlpha.TotalColors == 1 && inputImageAlpha.Histogram().ContainsKey(new MagickColor("#FFFFFF"));
-                    values.AlphaSolidWhite = isSolidWhite;
+                    bool isSolidColor = inputImageAlpha.TotalColors == 1;
+                    //if (isSolidColor)
+                    //{
+                    //    var hist = inputImageAlpha.Histogram();
+                    //    isSolidColor = hist.ContainsKey(new MagickColor("#FFFFFF")) || hist.ContainsKey(new MagickColor("#000000"));
+                    //}
+                    values.AlphaSolidColor = isSolidColor;
 
-                    if (HotProfile.IgnoreSingleColorAlphas && isSolidWhite)
+                    if (HotProfile.IgnoreSingleColorAlphas && isSolidColor)
                     {
                         inputImageAlpha.Dispose();
                         inputImageAlpha = null;
@@ -1820,11 +1825,7 @@ namespace ImageEnhancingUtility.Core
                         continue;
                     }
                     else
-                    {
-                        //if(j != tiles[0] - 1)
-                        //    imageNextTile = imageNextTile.Crop(PaddingSize * 4, 0, imageNextTile.Width - PaddingSize * 4 * 2, imageNextTile.Height);
-                        //else
-                        //    imageNextTile = imageNextTile.Crop(PaddingSize * 4, 0, imageNextTile.Width - PaddingSize * 4, imageNextTile.Height);
+                    {                       
                         if (UseOldVipsMerge)
                             JoinTiles(ref imageRow, imageNextTile, Enums.Direction.Horizontal, -tileWidth * j, 0);
                         else
@@ -1914,7 +1915,7 @@ namespace ImageEnhancingUtility.Core
 
             MagickImage inputImage = pathImage.Item2;
             if (inputImage.HasAlpha && !HotProfile.IgnoreAlpha && HotProfile.IgnoreSingleColorAlphas)            
-                if (values.AlphaSolidWhite)                
+                if (values.AlphaSolidColor)                
                     inputImage.HasAlpha = false; 
 
             int expandSize = SeamlessExpandSize;

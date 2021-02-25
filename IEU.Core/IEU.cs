@@ -3399,6 +3399,7 @@ namespace ImageEnhancingUtility.Core
             if (!success)
             {
                 File.WriteAllText(PreviewDirPath + $"{DirSeparator}log.txt", previewIEU.Logger.Logs);
+                return false;
             }
             CreateModelTree();
             if (!saveAsPng)

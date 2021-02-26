@@ -1041,12 +1041,20 @@ namespace ImageEnhancingUtility.Core
                     File.Delete(f);
             }
 
-            string basePath = "";  
+            string basePath = "";
 
-            if(UseModelChain)
+            if (checkedModels == null || checkedModels.Count == 0)            
+                if (HotProfile.UseModel && HotProfile.Model != null)
+                    checkedModels = new List<ModelInfo>() { HotProfile.Model };     
+
+            if (UseModelChain)
             {
-                basePath = DirSeparator + Path.GetFileNameWithoutExtension(file.Name);   
-                values.results.Add(new UpscaleResult(basePath, checkedModels.Last()));
+                basePath = DirSeparator + Path.GetFileNameWithoutExtension(file.Name);
+                ModelInfo biggestModel = checkedModels[0];
+                foreach (var model in checkedModels)                
+                    if (model.UpscaleFactor > biggestModel.UpscaleFactor)
+                        biggestModel = model;                
+                values.results.Add(new UpscaleResult(basePath, biggestModel));
             }
             else
                 foreach (var model in checkedModels)
@@ -1118,8 +1126,8 @@ namespace ImageEnhancingUtility.Core
                 await AutoSetTileSize();
 
             if (!IsSub)            
-                SaveSettings();                           
-
+                SaveSettings();   
+           
             checkedModels = SelectedModelsItems;
             foreach (var model in checkedModels)
                 model.UpscaleFactor = await DetectModelUpscaleFactor(model);

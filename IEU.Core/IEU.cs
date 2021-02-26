@@ -1996,6 +1996,7 @@ namespace ImageEnhancingUtility.Core
                     return;
                 if (outputFormat.VipsNative &&
                     (!HotProfile.ThresholdEnabled || (HotProfile.ThresholdBlackValue == 0 && HotProfile.ThresholdWhiteValue == 100)) &&
+                    (!HotProfile.ThresholdAlphaEnabled || (HotProfile.ThresholdBlackValue == 0 && HotProfile.ThresholdWhiteValue == 100)) &&
                       HotProfile.ResizeImageAfterScaleFactor == 1.0) //no need to convert to MagickImage, save faster with vips
                 {
                     Logger.WriteDebug($"Saving with vips");

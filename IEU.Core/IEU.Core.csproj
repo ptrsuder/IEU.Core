@@ -51,7 +51,6 @@
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleFromMemory.py" />
     <EmbeddedResource Include="Scripts\interpModels.py" />
     <EmbeddedResource Include="Scripts\pthReader.py" />
-    <EmbeddedResource Include="Scripts\ESRGAN\upscaleGrayscale.py" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1605,10 +1605,10 @@ namespace ImageEnhancingUtility.Core
 
         [Category("Exposed")]
         [ProtoMember(48)]
-        public int magicNumberFor4x { get; set; } = 100;
+        public int magicNumberFor4x { get; set; } = 95;
         [Category("Exposed")]
         [ProtoMember(49)]
-        public int magicNumberFor1x { get; set; } = 200;
+        public int magicNumberFor1x { get; set; } = 195;
 
         GpuMonitor gpuMonitor;
 
@@ -1648,8 +1648,7 @@ namespace ImageEnhancingUtility.Core
             Logger.Write($"Setting max tile size to {MaxTileResolutionWidth}x{MaxTileResolutionHeight}");
         }
 
-        #endregion
-                
+        #endregion                
         async public Task SplitUpscaleMerge()
         {
             if (CurrentProfile.UseModel == true)

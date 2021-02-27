@@ -424,7 +424,7 @@ namespace ImageEnhancingUtility.Core
             get => _vramMonitorFrequency;
             set => this.RaiseAndSetIfChanged(ref _vramMonitorFrequency, value);
         }
-        private bool _autoSetTileSizeEnable = true;
+        private bool _autoSetTileSizeEnable = false;
         [ProtoMember(46, IsRequired = true)]
         public bool AutoSetTileSizeEnable
         {

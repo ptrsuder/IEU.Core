@@ -45,14 +45,14 @@ namespace ImageEnhancingUtility.Core
 
         public Profile profile1;
 
-        public List<UpscaleResult> results = new List<UpscaleResult>();
-        //preprocess
-        //postprocess
+        public bool Rgba = false;
+
+        public List<UpscaleResult> results = new List<UpscaleResult>();      
     }
 
     public class UpscaleResult
     {
-        public string BasePath; //folder path?
+        public string BasePath; 
         public ModelInfo Model;   
 
         public UpscaleResult(string basePath, ModelInfo model)

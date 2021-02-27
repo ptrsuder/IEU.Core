@@ -30,7 +30,7 @@ namespace ImageEnhancingUtility.Core
 
         [ProtoMember(4)]
         public int UpscaleFactor
-        { get; set; } = 0;
+        { get; set; } = 0;        
 
         public int Priority
         { get; set; } = 0;

@@ -844,7 +844,7 @@ namespace ImageEnhancingUtility.Core
             if (!IsSub)
                 SaveSettings();
 
-            if (HotProfile.UseModel && HotProfile.Model != null)
+            if (HotProfile.UseModel && HotProfile.Model != null && !IsSub)
                 checkedModels = new List<ModelInfo>() { HotProfile.Model };
             else
                 checkedModels = SelectedModelsItems;

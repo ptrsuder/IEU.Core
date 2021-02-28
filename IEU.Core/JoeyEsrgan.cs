@@ -38,7 +38,7 @@ namespace ImageEnhancingUtility.Core
         public bool Reverse { get; set; } = false;
         public bool SkipExisting { get; set; } = false;
 
-        public SeamlessMod SeamlessMod { get; set; } = SeamlessMod.Tile;
+        public SeamlessMod SeamlessMod { get; set; } = SeamlessMod.None;
 
         Dictionary<SeamlessMod, string> seamlessModArguments = new Dictionary<SeamlessMod, string>
         { 

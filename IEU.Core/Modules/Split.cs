@@ -127,15 +127,17 @@ namespace ImageEnhancingUtility.Core
                 rules = new List<Rule> { new Rule("Simple rule", CurrentProfile, CurrentFilter) };
 
             checkedModels = SelectedModelsItems;
-            foreach (var model in checkedModels)
-            {
+            foreach (var model in checkedModels)          
                 model.UpscaleFactor = await DetectModelUpscaleFactor(model);
-            }
+           
 
             foreach (var rule in rules)
             {
                 if (rule.Filter.ApplyFilter(file))
                 {
+                    var profile = rule.Profile;
+                    if(profile.Model.UpscaleFactor == 0)                    
+                        profile.Model.UpscaleFactor = await DetectModelUpscaleFactor(profile.Model);                    
                     await Task.Run(() => SplitTask(file, rule.Profile));
                     fileSkipped = false;
                     break;
@@ -419,7 +421,7 @@ namespace ImageEnhancingUtility.Core
             string basePath = "";
 
             if (checkedModels == null || checkedModels.Count == 0)
-                if (HotProfile.UseModel && HotProfile.Model != null)
+                if (HotProfile.UseModel && HotProfile.Model != null && !IsSub)
                     checkedModels = new List<ModelInfo>() { HotProfile.Model };
 
             if (UseModelChain)

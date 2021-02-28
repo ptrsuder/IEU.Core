@@ -59,7 +59,7 @@ for model_path in model_paths:
         v.requires_grad = False
     model = model.to(device)
 
-    print('Model path {:s}. \nProcessing...'.format(model_path))
+    print('Model: {:s}.\n'.format(os.path.basename(model_path)))
     sys.stdout.flush()
 
     idx = 0

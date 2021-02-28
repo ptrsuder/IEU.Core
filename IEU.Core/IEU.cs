@@ -993,6 +993,7 @@ namespace ImageEnhancingUtility.Core
                 File.Move(checkedModel.FullName, newFullname);
                 checkedModel.FullName = newFullname;
                 checkedModel.Name = newName;
+                checkedModel.UpscaleFactor = upscaleMultiplayer;
                 Logger.Write($"Changed model filename to {checkedModel.Name}", Color.LightBlue);
             }
             else
@@ -1694,7 +1695,7 @@ namespace ImageEnhancingUtility.Core
                 OverlapSize = OverlapSize,
                 Padding = PaddingSize,
                 //Seamless = 
-            };
+            };            
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
             if (OutputDestinationMode == 3)

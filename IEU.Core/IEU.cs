@@ -2020,7 +2020,8 @@ namespace ImageEnhancingUtility.Core
                 outputFormat = CurrentProfile.selectedOutputFormat;
                 preview = new FileInfo(PreviewDirPath + $"{DirSeparator}preview{outputFormat.Extension}");
             }
-            if (!File.Exists(Path.ChangeExtension(preview.FullName, ".png")))
+            File.WriteAllText(PreviewDirPath + $"{DirSeparator}log.txt", previewIEU.Logger.Logs);
+            if (!preview.Exists)
                 return false;
 
             if (copyToOriginal)
@@ -2029,7 +2030,7 @@ namespace ImageEnhancingUtility.Core
                 string dir = Path.GetDirectoryName(imagePath);
                 string fileName = Path.GetFileNameWithoutExtension(imagePath);
                 string destination = $"{ dir }{DirSeparator}{ fileName}_{modelName}{outputFormat.Extension}";
-                File.Copy(preview.FullName, destination);
+                File.Copy(preview.FullName, destination, true);
             }
             return true;
         }

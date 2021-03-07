@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ProtoBuf;
 using ReactiveUI;
 
 namespace ImageEnhancingUtility.Core
@@ -16,9 +17,12 @@ namespace ImageEnhancingUtility.Core
         Replicate,
         AlphaPad
     }
-    
+
+    [ProtoContract]
     public class JoeyEsrgan : ReactiveObject
     {
+        public JoeyEsrgan() {}
+
         [Browsable(false)]
         public string ArgumentString
         {            
@@ -35,9 +39,12 @@ namespace ImageEnhancingUtility.Core
         public string Input = "input";
         public string Output = "output";
 
+        [ProtoMember(1)]
         public bool Reverse { get; set; } = false;
+        [ProtoMember(2)]
         public bool SkipExisting { get; set; } = false;
 
+        [ProtoMember(3)]
         public SeamlessMod SeamlessMod { get; set; } = SeamlessMod.None;
 
         Dictionary<SeamlessMod, string> seamlessModArguments = new Dictionary<SeamlessMod, string>
@@ -48,17 +55,23 @@ namespace ImageEnhancingUtility.Core
             { SeamlessMod.Replicate, "--seamless replicate" },
             { SeamlessMod.AlphaPad, "--seamless alpha_pad" }
         };
-
+              
         string seamlessModArgument { get => seamlessModArguments[SeamlessMod]; }
 
+        [ProtoMember(4)]
         public bool Mirror { get; set; } = false;
-
+        [ProtoMember(5)]
         public bool CPU { get; set; } = false;
 
+        [ProtoMember(6)]
         public bool BinaryAlpha { get; set; } = false;
+        [ProtoMember(7)]
         public double AlphaThreshold { get; set; } = 0.5;
+        [ProtoMember(8)]
         public double AlphaBoundaryOffset { get; set; } = 0.2;
+        [ProtoMember(9)]
         public int AlphaMode { get; set; } = 1;
+        [ProtoMember(10)]
         public bool CacheMaxSplitDepth { get; set; } = false;
 
         [Browsable(false)]

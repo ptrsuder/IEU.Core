@@ -85,9 +85,7 @@ namespace ImageEnhancingUtility.Core
                 VramMonitorEnable = false;
                 this.RaiseAndSetIfChanged(ref _noNvidia, value);
             }
-        }
-
-        public bool UseJoey = false;
+        }       
 
         #region FIELDS/PROPERTIES       
 
@@ -124,7 +122,6 @@ namespace ImageEnhancingUtility.Core
             }
         }
         public List<ModelInfo> checkedModels;
-
 
         #region FOLDER_PATHS
         private string _esrganPath = "";
@@ -446,6 +443,14 @@ namespace ImageEnhancingUtility.Core
         {
             get => _paddingSize;
             set => this.RaiseAndSetIfChanged(ref _paddingSize, value);
+        }
+
+        private bool _useJoey = false;
+        [ProtoMember(60)]
+        public bool UseJoey
+        {
+            get => _useJoey;
+            set => this.RaiseAndSetIfChanged(ref _useJoey, value);
         }
 
         private bool _rgbaModel = false;
@@ -1202,8 +1207,14 @@ namespace ImageEnhancingUtility.Core
             return process;
         }
 
+        JoeyEsrgan _joeyEsrgan = new JoeyEsrgan();
+        [ProtoMember(62)]
         [Browsable(false)]
-        public JoeyEsrgan JoeyEsrgan { get; set; } = new JoeyEsrgan();
+        public JoeyEsrgan JoeyEsrgan
+        {
+            get => _joeyEsrgan;
+            set => this.RaiseAndSetIfChanged(ref _joeyEsrgan, value);
+        }
 
         async Task<Process> JoeyESRGAN(bool NoWindow, Profile HotProfile)
         {

@@ -156,7 +156,7 @@ namespace ImageEnhancingUtility.Core
             var values = new ImageValues();
             values.Path = file.FullName;
             values.Dimensions = new int[] { inputImage.Width, inputImage.Height };
-            values.UseAlpha = imageHasAlpha && !HotProfile.IgnoreAlpha && !rgbaModel;
+            values.UseAlpha = imageHasAlpha && !HotProfile.IgnoreAlpha && !RgbaModel;
 
             FileInfo fileAlpha = new FileInfo(file.DirectoryName + DirSeparator + Path.GetFileNameWithoutExtension(file.Name) + "_alpha.png");
             string lrPathAlpha = LrPath + "_alpha";
@@ -210,7 +210,7 @@ namespace ImageEnhancingUtility.Core
             if (values.UseAlpha)
                 inputImageAlpha = (MagickImage)inputImage.Separate(Channels.Alpha).First();
 
-            if (!rgbaModel)
+            if (!RgbaModel)
                 inputImage.HasAlpha = false;
 
             int seamlessPadding = 0;
@@ -227,11 +227,13 @@ namespace ImageEnhancingUtility.Core
                 else
                 {
                     bool isSolidColor = inputImageAlpha.TotalColors == 1;
+                    
                     //if (isSolidColor)
                     //{
                     //    var hist = inputImageAlpha.Histogram();
                     //    isSolidColor = hist.ContainsKey(new MagickColor("#FFFFFF")) || hist.ContainsKey(new MagickColor("#000000"));
                     //}
+
                     values.AlphaSolidColor = isSolidColor;
 
                     if (HotProfile.IgnoreSingleColorAlphas && isSolidColor)
@@ -389,7 +391,7 @@ namespace ImageEnhancingUtility.Core
 
                         outputImage.Crop(cropRectangle);
                         MagickFormat format = MagickFormat.Png24;
-                        if (rgbaModel) format = MagickFormat.Png32;
+                        if (RgbaModel) format = MagickFormat.Png32;
                         var dirpath = Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "");
                         string outPath = $"{LrPath}{dirpath}{DirSeparator}{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex:D2}.png";
                         if (!InMemoryMode)
@@ -471,7 +473,7 @@ namespace ImageEnhancingUtility.Core
 
             Logger.Write($"{file.Name} SPLIT DONE", Color.LightGreen);
         }
-       
+        
         void SplitTask(FileInfo file, Profile HotProfile)
         {
             MagickImage image;

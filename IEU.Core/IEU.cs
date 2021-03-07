@@ -60,7 +60,7 @@ namespace ImageEnhancingUtility.Core
 
         public string Name = "";
 
-        public bool rgbaModel = false;
+       
 
         Dictionary<string, Dictionary<string, string>> lrDict = new Dictionary<string, Dictionary<string, string>>();
         [Category("Exposed")]
@@ -446,6 +446,14 @@ namespace ImageEnhancingUtility.Core
         {
             get => _paddingSize;
             set => this.RaiseAndSetIfChanged(ref _paddingSize, value);
+        }
+
+        private bool _rgbaModel = false;
+        [ProtoMember(61)]
+        public bool RgbaModel
+        {
+            get => _rgbaModel;
+            set => this.RaiseAndSetIfChanged(ref _rgbaModel, value);
         }
 
         #endregion

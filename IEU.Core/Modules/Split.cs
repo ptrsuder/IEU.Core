@@ -23,9 +23,7 @@ namespace ImageEnhancingUtility.Core
             if (!IsSub)
                 SaveSettings();
 
-            checkedModels = SelectedModelsItems;
-            foreach (var model in checkedModels)
-                model.UpscaleFactor = await DetectModelUpscaleFactor(model);
+            checkedModels = SelectedModelsItems;            
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
             if (OutputDestinationMode == 3)
@@ -126,18 +124,15 @@ namespace ImageEnhancingUtility.Core
             if (DisableRuleSystem)
                 rules = new List<Rule> { new Rule("Simple rule", CurrentProfile, CurrentFilter) };
 
-            checkedModels = SelectedModelsItems;
-            foreach (var model in checkedModels)          
-                model.UpscaleFactor = await DetectModelUpscaleFactor(model);
-           
+            checkedModels = SelectedModelsItems;             
 
             foreach (var rule in rules)
             {
                 if (rule.Filter.ApplyFilter(file))
                 {
                     var profile = rule.Profile;
-                    if(profile.Model.UpscaleFactor == 0)                    
-                        profile.Model.UpscaleFactor = await DetectModelUpscaleFactor(profile.Model);                    
+                    if (profile.Model.UpscaleFactor == 0)
+                        continue;                   
                     await Task.Run(() => SplitTask(file, rule.Profile));
                     fileSkipped = false;
                     break;

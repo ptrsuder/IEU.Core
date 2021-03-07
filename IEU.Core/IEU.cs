@@ -550,6 +550,7 @@ namespace ImageEnhancingUtility.Core
         public IEU(bool isSub = false)
         {
             IsSub = isSub;
+
             Task splitFunc(FileInfo[] x) => Split();
             SplitCommand = ReactiveCommand.CreateFromTask((Func<FileInfo[], Task>)splitFunc);
 
@@ -559,7 +560,7 @@ namespace ImageEnhancingUtility.Core
             MergeCommand = ReactiveCommand.CreateFromTask(Merge);
 
             Task<bool> runAllFunc() => SplitUpscaleMerge();
-            SplitUpscaleMergeCommand = ReactiveCommand.CreateFromTask((Func<Task<bool>>)runAllFunc);
+            SplitUpscaleMergeCommand = ReactiveCommand.CreateFromTask(runAllFunc);
 
             Logger.Write(RuntimeInformation.OSDescription);
             Logger.Write(RuntimeInformation.FrameworkDescription);
@@ -579,8 +580,8 @@ namespace ImageEnhancingUtility.Core
 
             GlobalProfile = Profiles.Items.FirstOrDefault();
             GlobalFilter = Filters.Items.FirstOrDefault();
-            CurrentProfile = GlobalProfile.Clone() as Profile;
-            CurrentFilter = GlobalFilter.Clone() as Filter;
+            CurrentProfile = GlobalProfile.Clone();
+            CurrentFilter = GlobalFilter.Clone();
             GlobalRule = new Rule("Global", GlobalProfile, GlobalFilter) { Priority = 0 };
             if (Ruleset.Count == 0)
                 Ruleset.Add(0, GlobalRule);
@@ -620,7 +621,7 @@ namespace ImageEnhancingUtility.Core
             fileStream.Close();
         }
 
-        public void CreateModelTree()
+        public async Task CreateModelTree()
         {
             List<ModelInfo> newList = new List<ModelInfo>();
             if (IsSub)
@@ -634,10 +635,19 @@ namespace ImageEnhancingUtility.Core
 
             foreach (DirectoryInfo d in di.GetDirectories("*", SearchOption.TopDirectoryOnly))
                 foreach (FileInfo fi in d.GetFiles("*.pth", SearchOption.TopDirectoryOnly))
-                    newList.Add(new ModelInfo(fi.Name, fi.FullName, d.Name));
+                {
+                    var mdl = new ModelInfo(fi.Name, fi.FullName, d.Name);
+                    mdl.UpscaleFactor = await DetectModelUpscaleFactor(mdl);
+                    newList.Add(mdl);
+                }
 
             foreach (FileInfo fi in di.GetFiles("*.pth", SearchOption.TopDirectoryOnly))
-                newList.Add(new ModelInfo(fi.Name, fi.FullName));
+            {
+                var mdl = new ModelInfo(fi.Name, fi.FullName);
+                mdl.UpscaleFactor = await DetectModelUpscaleFactor(mdl);
+                newList.Add(mdl);
+            }            
+
             ModelsItems.Clear();
             ModelsItems.AddRange(newList);
         }
@@ -1130,7 +1140,7 @@ namespace ImageEnhancingUtility.Core
             else
                 foreach (ModelInfo checkedModel in checkedModels)
                 {
-                    if ((upscaleMultiplayer = await DetectModelUpscaleFactor(checkedModel)) == 0)
+                    if (checkedModel.UpscaleFactor == 0)
                             continue;
                     noValidModel = false;
 
@@ -1154,10 +1164,8 @@ namespace ImageEnhancingUtility.Core
                 bool validModelAlpha = false;
                 int upscaleMultiplayerAlpha = 0;
 
-                if ((upscaleMultiplayerAlpha = await DetectModelUpscaleFactor(HotProfile.ModelForAlpha)) != 0)
-                {
-                    validModelAlpha = true;
-                }
+                if (HotProfile.ModelForAlpha.UpscaleFactor != 0)                
+                    validModelAlpha = true;                
 
                 if (upscaleMultiplayer != upscaleMultiplayerAlpha)
                 {
@@ -1334,7 +1342,7 @@ namespace ImageEnhancingUtility.Core
             {
                 TestConfig config = new TestConfig(checkedModel.FullName);
 
-                if ((upscaleMultiplayer = await DetectModelUpscaleFactor(checkedModel)) == 0)
+                if (checkedModel.UpscaleFactor == 0)
                     continue;
                 noValidModel = false;
 
@@ -1355,7 +1363,7 @@ namespace ImageEnhancingUtility.Core
                 bool validModelAlpha = false;
                 int upscaleMultiplayerAlpha = 0;
 
-                if ((upscaleMultiplayerAlpha = await DetectModelUpscaleFactor(HotProfile.ModelForAlpha)) == 0)
+                if (HotProfile.ModelForAlpha.UpscaleFactor == 0)
                 {
                     validModelAlpha = true;
                 }
@@ -1643,9 +1651,8 @@ namespace ImageEnhancingUtility.Core
             {                
                 foreach (ModelInfo checkedModel in checkedModels)
                 {
-                    if(checkedModel.UpscaleFactor == 0)
-                        if ((checkedModel.UpscaleFactor = await DetectModelUpscaleFactor(checkedModel)) == 0)
-                            continue;
+                    if(checkedModel.UpscaleFactor == 0)  
+                        continue;
                     if (modelScale < checkedModel.UpscaleFactor) modelScale = checkedModel.UpscaleFactor;
                 }
             }
@@ -2064,6 +2071,15 @@ namespace ImageEnhancingUtility.Core
         }
 
         #endregion
+
+        Process currentEsrganProcess;
+        public void Stop()
+        {
+            if (currentEsrganProcess == null || currentEsrganProcess.HasExited)
+                return;
+            //cancelled = true;
+            currentEsrganProcess.Kill();
+        }
 
         #region IMAGE INTERPOLATION
 

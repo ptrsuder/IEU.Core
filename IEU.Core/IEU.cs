@@ -1874,6 +1874,7 @@ namespace ImageEnhancingUtility.Core
             };
         }
 
+        public string PreviewLog { get => previewIEU.Logger.Logs; }
         async public Task<bool> Preview(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false, string copyDestination = "")
         {
             if (!InMemoryMode)
@@ -1918,8 +1919,7 @@ namespace ImageEnhancingUtility.Core
             i2.Save(previewOriginal.FullName, ImageFormat.Png);
             i2.Dispose();
 
-            if (previewIEU == null)
-                previewIEU = new IEU(true);
+            previewIEU = new IEU(true);
 
             SetPreviewIEU(ref previewIEU);
 
@@ -2009,8 +2009,7 @@ namespace ImageEnhancingUtility.Core
 
             i2.Save(previewOriginal.FullName, ImageFormat.Png);
             i2.Dispose();
-
-            //if (previewIEU == null)
+            
             previewIEU = new IEU(true);
 
             SetPreviewIEU(ref previewIEU);

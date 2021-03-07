@@ -102,7 +102,7 @@ namespace ImageEnhancingUtility.Core
             if (tempOutMode == 2)
                 pathToMergedFiles += $"{DirSeparator}Models";
         }
-        async Task Merge(string path)
+        async Task Merge(string path, UpscaleResult result)
         {
             if (!IsSub)
                 SaveSettings();
@@ -156,17 +156,14 @@ namespace ImageEnhancingUtility.Core
             {
                 if (InMemoryMode)
                 {
-                    var result = values.results[0];
-
                     MergeTask(pathImage, values, result, profile);
-
                 }
                 else
-                    foreach (var result in values.results)
+                    foreach (var res in values.results)
                         MergeTask(
                             pathImage,
                             values,
-                            result,
+                            res,
                             profile);
             });
 
@@ -593,7 +590,7 @@ namespace ImageEnhancingUtility.Core
                 //graphics.FillRectangle(Brushes.Black, imageRow.Width - 5, 0, 5, imageRow.Height);
                 //graphics.FillRectangle(Brushes.Black, -dx + offset + overlap / 2, 0, overlap / 2, imageRow.Height);
             }
-            mask.Save(@"S:\ESRGAN-master\IEU_preview\mask1.png");
+            //mask.Save(@"S:\ESRGAN-master\IEU_preview\mask1.png");
             var buffer = ImageOperations.ImageToByte(mask);
             maskVips = Image.NewFromBuffer(buffer).ExtractBand(0);
             //maskVips.WriteToFile(@"S:\ESRGAN-master\IEU_preview\mask1.png");

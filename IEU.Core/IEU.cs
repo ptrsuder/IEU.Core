@@ -535,25 +535,26 @@ namespace ImageEnhancingUtility.Core
 
         #endregion
 
-        public ReactiveCommand<Tuple<FileInfo[], Profile>, Unit> SplitCommand { get; }
+        public ReactiveCommand<FileInfo[], Unit> SplitCommand { get; }
         public ReactiveCommand<Tuple<bool, Profile>, bool> UpscaleCommand { get; }
         public ReactiveCommand<Unit, Unit> MergeCommand { get; }
-        public ReactiveCommand<Unit, Unit> SplitUpscaleMergeCommand { get; }
+        public ReactiveCommand<Unit, bool> SplitUpscaleMergeCommand { get; }
 
         #region CONSTRUCTOR       
        
         public IEU(bool isSub = false)
         {
             IsSub = isSub;
-            Task splitFunc(Tuple<FileInfo[], Profile> x) => Split();
-            SplitCommand = ReactiveCommand.CreateFromTask((Func<Tuple<FileInfo[], Profile>, Task>)splitFunc);
+            Task splitFunc(FileInfo[] x) => Split();
+            SplitCommand = ReactiveCommand.CreateFromTask((Func<FileInfo[], Task>)splitFunc);
 
             Task<bool> upscaleFunc(Tuple<bool, Profile> x) => Upscale(x != null && x.Item1, x?.Item2);
             UpscaleCommand = ReactiveCommand.CreateFromTask((Func<Tuple<bool, Profile>, Task<bool>>)upscaleFunc);
 
             MergeCommand = ReactiveCommand.CreateFromTask(Merge);
 
-            SplitUpscaleMergeCommand = ReactiveCommand.CreateFromTask(SplitUpscaleMerge);
+            Task<bool> runAllFunc() => SplitUpscaleMerge();
+            SplitUpscaleMergeCommand = ReactiveCommand.CreateFromTask((Func<Task<bool>>)runAllFunc);
 
             Logger.Write(RuntimeInformation.OSDescription);
             Logger.Write(RuntimeInformation.FrameworkDescription);
@@ -930,7 +931,7 @@ namespace ImageEnhancingUtility.Core
             else
             {
                 RunProcessAsyncInMemory(process);
-                Logger.Write("ESRGAN start running in background!", Color.LightGreen);
+                Logger.Write("ESRGAN starts running in background", Color.LightGreen);
             }
             if (Helper.GetCondaEnv(UseCondaEnv, CondaEnv) != "")
             {
@@ -1195,7 +1196,7 @@ namespace ImageEnhancingUtility.Core
                 if (HotProfile.UseDifferentModelForAlpha)
                     SetTotalCounter(FilesTotal + Directory.GetFiles(LrPath + "_alpha", "*", searchOption).Count());
                 ResetDoneCounter();
-            }
+            }            
 
             Logger.Write("Starting ESRGAN...");
             return process;
@@ -1541,8 +1542,11 @@ namespace ImageEnhancingUtility.Core
 
                     if (hrTiles.Count == lrTiles.Count) //all tiles for current image
                     {
-                        if (!IsSub)                        
-                            await Merge(origPath);                        
+                        if (!IsSub)
+                        {
+                            var res = batchValues.images[origPath].results.Where(x => Path.GetFileNameWithoutExtension(x.Model.Name) == modelName).First();
+                            await Merge(origPath, res);
+                        }
 
                         if (!compDict.ContainsKey(modelName))
                             compDict.Add(modelName, new List<string>());
@@ -1568,15 +1572,9 @@ namespace ImageEnhancingUtility.Core
                                 return;
                             }
 
-                            SetPipeline();
-
-                            SearchOption searchOption = SearchOption.TopDirectoryOnly;
-                            if (OutputDestinationMode == 3)
-                                searchOption = SearchOption.AllDirectories;
-                            DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
-                            FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption)
-                                .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.ToUpperInvariant())).ToArray();
-
+                            SetPipeline();                                                        
+                            
+                            FileInfo[] inputDirectoryFiles = batchValues.images.Keys.Select(x => new FileInfo(x)).ToArray();                            
                             fileQueue = CreateQueue(inputDirectoryFiles);
                             fileQueuCount = fileQueue.Count;
 
@@ -1658,7 +1656,8 @@ namespace ImageEnhancingUtility.Core
         }
 
         #endregion                
-        async public Task SplitUpscaleMerge()
+
+        async public Task<bool> SplitUpscaleMerge()
         {
             if (CurrentProfile.UseModel == true)
                 checkedModels = new List<ModelInfo>() { CurrentProfile.Model };
@@ -1668,19 +1667,24 @@ namespace ImageEnhancingUtility.Core
             if (checkedModels.Count == 0)
             {
                 Logger.Write("No models selected!");
-                return;
+                return false;
             }
 
             if (UseJoey)
             {
                 bool upscaleSuccess = await Upscale(HidePythonProcess);
-                return;
+                return true;
             }
 
-            if (!InMemoryMode)
-                await SplitUpscaleMergeNormal();
-            else
+            if (InMemoryMode)
                 await SplitUpscaleMergeInMemory();
+            
+            else
+            {
+                await SplitUpscaleMergeNormal();
+                return true;
+            }
+            return false;
         }              
         async public Task SplitUpscaleMergeNormal()
         {            
@@ -1701,8 +1705,7 @@ namespace ImageEnhancingUtility.Core
                 OutputMode = OutputDestinationMode,
                 OverwriteMode = OverwriteMode,
                 OverlapSize = OverlapSize,
-                Padding = PaddingSize,
-                //Seamless = 
+                Padding = PaddingSize              
             };            
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
@@ -1711,6 +1714,7 @@ namespace ImageEnhancingUtility.Core
             DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
             FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption)
                 .Where(x => ImageFormatInfo.ImageExtensions.Contains(x.Extension.ToUpperInvariant())).ToArray();
+            //FileInfo[] inputDirectoryFiles = batchValues.images.Keys.Select(x => new FileInfo(x)).ToArray();            
 
             if (inputDirectoryFiles.Count() == 0)
             {
@@ -1727,7 +1731,7 @@ namespace ImageEnhancingUtility.Core
 
             ResetTotalCounter();
             ResetDoneCounter();
-            SetTotalCounter(inputDirectoryFiles.Length);
+            SetTotalCounter(inputDirectoryFiles.Count() * checkedModels.Count);          
             ReportProgress();
 
             var firstFile = fileQueue.Dequeue();
@@ -1736,11 +1740,14 @@ namespace ImageEnhancingUtility.Core
             if (AutoSetTileSizeEnable)
                 await AutoSetTileSize();
 
+            mergeTasks = new List<Task>();   
+
             SplitImage.Post(firstFile);
-            await WriteToStream.Completion.ConfigureAwait(false);
+            await WriteToStream.Completion.ConfigureAwait(false);            
         }
 
         #region INMEMORY
+
         [Category("Exposed")][ProtoMember(51)]
         public int InMemoryMaxSplit { get; set; } = 2;
 
@@ -1775,18 +1782,12 @@ namespace ImageEnhancingUtility.Core
                 SplitImage.Post(newFile);
         }
 
-        ActionBlock<Dictionary<string, string>> WriteToStream;
+        List<Task> mergeTasks;
+
         TransformBlock<FileInfo, Dictionary<string, string>> SplitImage;
+        ActionBlock<Dictionary<string, string>> WriteToStream;        
         void SetPipeline()
         {
-            WriteToStream = new ActionBlock<Dictionary<string, string>>(async images =>
-            {
-                await WriteImageToStream(images);
-            }, new ExecutionDataflowBlockOptions
-            {
-                MaxDegreeOfParallelism = 1
-            });
-
             SplitImage = new TransformBlock<FileInfo, Dictionary<string, string>>(async file =>
             {
                 await Split(file);
@@ -1796,6 +1797,15 @@ namespace ImageEnhancingUtility.Core
             {
                 MaxDegreeOfParallelism = InMemoryMaxSplit
             });
+
+            WriteToStream = new ActionBlock<Dictionary<string, string>>(async images =>
+            {
+                await WriteImageToStream(images);
+            }, new ExecutionDataflowBlockOptions
+            {
+                MaxDegreeOfParallelism = 1
+            });
+            
             SplitImage.LinkTo(WriteToStream, new DataflowLinkOptions { PropagateCompletion = true });
 
         }
@@ -2017,7 +2027,7 @@ namespace ImageEnhancingUtility.Core
                 //previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
                 previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.selectedOutputFormat;
             }
-            await previewIEU.Merge(previewOriginal.FullName);
+            await previewIEU.Merge(previewOriginal.FullName, batchValues.images.Values.FirstOrDefault().results[0]);
 
             ImageFormatInfo outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase)).First();
             if (!saveAsPng)

@@ -37,7 +37,7 @@ namespace ImageEnhancingUtility.Core
     [ProtoContract]
     public partial class IEU : ReactiveObject
     {
-        public readonly string AppVersion = "0.13.00";
+        public readonly string AppVersion = "0.13.05";
         public readonly string GitHubRepoName = "IEU.Core";
 
         private int _overwriteMode = 0;       
@@ -163,8 +163,6 @@ namespace ImageEnhancingUtility.Core
                 {
                     this.RaiseAndSetIfChanged(ref _modelsPath, value);
                     CreateModelTree();
-                    if (ModelsItems != null && ModelsItems.Count > 0)
-                        LastModelForAlphaPath = ModelsItems.Items.ToArray()[0].FullName;
                 }
             }
         }
@@ -650,6 +648,9 @@ namespace ImageEnhancingUtility.Core
 
             ModelsItems.Clear();
             ModelsItems.AddRange(newList);
+
+            if (ModelsItems != null && ModelsItems.Count > 0)
+                LastModelForAlphaPath = ModelsItems.Items.ToArray()[0].FullName;
         }
         public void GetCheckedModels()
         {
@@ -1430,7 +1431,7 @@ namespace ImageEnhancingUtility.Core
             return process;
         }
 
-        public Task<int> RunProcessAsync(Process process)
+        public Task<int> RunProcessAsync(Process process, bool ignoreInMemory = false)
         {
             var tcs = new TaskCompletionSource<int>();
             if (process == null) // something goes wrong
@@ -1470,7 +1471,7 @@ namespace ImageEnhancingUtility.Core
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            if (InMemoryMode)
+            if (InMemoryMode && !ignoreInMemory)
             {
                 writer = process.StandardInput;
                 WriteModelsToStream();
@@ -1505,11 +1506,11 @@ namespace ImageEnhancingUtility.Core
                 process.StartInfo.Arguments += $" & python interpModels.py \"{a}\" \"{b}\" {alpha.ToString().Replace(",", ".")} \"{outputPath}\"";
                 process.ErrorDataReceived += EsrganOutputHandler;
                 process.OutputDataReceived += EsrganOutputHandler;
-                int code = await RunProcessAsync(process);
+                int code = await RunProcessAsync(process, true);
                 if (code == 0)
                 {
                     Logger.Write("Finished interpolating!");
-                    CreateModelTree();
+                    await CreateModelTree();
                 }
             }
             return true;
@@ -1866,7 +1867,7 @@ namespace ImageEnhancingUtility.Core
             previewIEU.AutoSetTileSizeEnable = AutoSetTileSizeEnable;
             previewIEU.VramMonitorEnable = false;
             previewIEU.DebugMode = DebugMode;
-            previewIEU.PaddingSize = PaddingSize;
+            previewIEU.PaddingSize = PaddingSize;           
 
             previewIEU.batchValues = new BatchValues()
             {
@@ -1876,21 +1877,22 @@ namespace ImageEnhancingUtility.Core
                 OutputMode = 0,
                 OverwriteMode = 0,
                 OverlapSize = OverlapSize,
-                Padding = PaddingSize,
-                //Seamless = 
+                Padding = PaddingSize                
             };
         }
 
         public string PreviewLog { get => previewIEU.Logger.Logs; }
-        async public Task<bool> Preview(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false, string copyDestination = "")
+        async public Task<bool> Preview(string imagePath, System.Drawing.Image image, ModelInfo previewModel, bool saveAsPng = false, bool copyToOriginal = false, string copyDestination = "")
         {
             if (!InMemoryMode)
-                return await PreviewNormal(imagePath, image, modelPath, saveAsPng, copyToOriginal, copyDestination);
+                return await PreviewNormal(imagePath, image, previewModel, saveAsPng, copyToOriginal, copyDestination);
             else
-                return await PreviewInMemory(imagePath, image, modelPath, saveAsPng, copyToOriginal);
+                return await PreviewInMemory(imagePath, image, previewModel, saveAsPng, copyToOriginal);
         }
 
-        async public Task<bool> PreviewNormal(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false, string copyDestination = "")
+        async public Task<bool> PreviewNormal
+            (string imagePath, System.Drawing.Image image, ModelInfo previewModel,
+            bool saveAsPng = false, bool copyToOriginal = false, string copyDestination = "")
         {
             PreviewDirPath = $"{EsrganPath}{DirSeparator}IEU_preview";
             string previewResultsDirPath = PreviewDirPath + $"{DirSeparator}results";
@@ -1928,11 +1930,9 @@ namespace ImageEnhancingUtility.Core
 
             previewIEU = new IEU(true);
 
-            SetPreviewIEU(ref previewIEU);
+            SetPreviewIEU(ref previewIEU);            
 
-            ModelInfo previewModelInfo = new ModelInfo(Path.GetFileNameWithoutExtension(modelPath), modelPath);
-
-            previewIEU.SelectedModelsItems = new List<ModelInfo>() { previewModelInfo };           
+            previewIEU.SelectedModelsItems = new List<ModelInfo>() { previewModel };           
 
             await previewIEU.Split(new FileInfo[] { previewOriginal });            
 
@@ -1943,7 +1943,7 @@ namespace ImageEnhancingUtility.Core
                 File.WriteAllText(PreviewDirPath + $"{DirSeparator}log.txt", previewIEU.Logger.Logs);
                 return false;
             }
-            CreateModelTree();
+           
             if (!saveAsPng)
             {
                 previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
@@ -1967,21 +1967,17 @@ namespace ImageEnhancingUtility.Core
 
             if (copyToOriginal)
             {
-                string modelName = Path.GetFileNameWithoutExtension(modelPath);
+                string modelName = Path.GetFileNameWithoutExtension(previewModel.Name);
                 string dir = Path.GetDirectoryName(imagePath);
                 string fileName = Path.GetFileNameWithoutExtension(imagePath);
                 if (copyDestination == "")
-                    copyDestination = $"{ dir }{DirSeparator}{fileName}_{modelName}{outputFormat.Extension}";
-                //else
-                //{
-                //    copyDestination = $"{ Path.GetDirectoryName(copyDestination) }{DirectorySeparator}{Path.GetFileNameWithoutExtension(copyDestination)}_{modelName}{outputFormat.Extension}";
-                //}
+                    copyDestination = $"{ dir }{DirSeparator}{fileName}_{modelName}{outputFormat.Extension}";               
                 File.Copy(preview.FullName, copyDestination, true);
             }
             return true;
         }
 
-        async public Task<bool> PreviewInMemory(string imagePath, System.Drawing.Image image, string modelPath, bool saveAsPng = false, bool copyToOriginal = false)
+        async public Task<bool> PreviewInMemory(string imagePath, System.Drawing.Image image, ModelInfo previewModel, bool saveAsPng = false, bool copyToOriginal = false)
         {
             PreviewDirPath = $"{EsrganPath}{DirSeparator}IEU_preview";
             string previewResultsDirPath = PreviewDirPath + $"{DirSeparator}results";
@@ -2027,9 +2023,8 @@ namespace ImageEnhancingUtility.Core
             };
             previewIEU.fileQueue = new Queue<FileInfo>();
             previewIEU.fileQueuCount = 1;
-
-            ModelInfo previewModelInfo = new ModelInfo(Path.GetFileNameWithoutExtension(modelPath), modelPath);
-            previewIEU.SelectedModelsItems = new List<ModelInfo>() { previewModelInfo };
+           
+            previewIEU.SelectedModelsItems = new List<ModelInfo>() { previewModel };
 
             await previewIEU.Split(previewOriginal);
             
@@ -2037,14 +2032,13 @@ namespace ImageEnhancingUtility.Core
             bool success = await previewIEU.Upscale(true);
             if (!success)
                 File.WriteAllText(PreviewDirPath + $"{DirSeparator}log.txt", previewIEU.Logger.Logs);
-
-            CreateModelTree();
+            
             if (!saveAsPng)
             {
                 //previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
                 previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.selectedOutputFormat;
             }
-            await previewIEU.Merge(previewOriginal.FullName, batchValues.images.Values.FirstOrDefault().results[0]);
+            await previewIEU.Merge(previewOriginal.FullName, previewIEU.batchValues.images.Values.FirstOrDefault().results[0]);
 
             ImageFormatInfo outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase)).First();
             if (!saveAsPng)
@@ -2061,7 +2055,7 @@ namespace ImageEnhancingUtility.Core
 
             if (copyToOriginal)
             {
-                string modelName = Path.GetFileNameWithoutExtension(modelPath);
+                string modelName = Path.GetFileNameWithoutExtension(previewModel.Name);
                 string dir = Path.GetDirectoryName(imagePath);
                 string fileName = Path.GetFileNameWithoutExtension(imagePath);
                 string destination = $"{ dir }{DirSeparator}{ fileName}_{modelName}{outputFormat.Extension}";

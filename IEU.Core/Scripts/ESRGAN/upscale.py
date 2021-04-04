@@ -136,9 +136,11 @@ for path, subdirs, files in sorted(os.walk(test_img_folder), key=alphanum):
         if mode == '1':
             os.makedirs('{1:s}/Images/{0:s}/'.format(baseinput, output_folder), exist_ok=True)
             newpath = '{3:s}/Images/{0:s}/[{2:s}]_{1:s}.png'.format(baseinput, base, modelname, output_folder)
+            printpath = base
         if mode == '2':
             os.makedirs('{1:s}/Models/{0:s}/'.format(modelname, output_folder), exist_ok=True)
-            newpath = '{2:s}/Models/{0:s}/{1:s}.png'.format(modelname, base, output_folder) 
+            newpath = '{2:s}/Models/{0:s}/{1:s}.png'.format(modelname, base, output_folder)
+            printpath = base 
         if mode == '0' or mode == '3':
             newpath = path.replace(test_img_folder,'');
             os.makedirs('{1:s}/{0:s}/'.format(newpath, output_folder), exist_ok=True)

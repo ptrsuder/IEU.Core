@@ -28,7 +28,7 @@ namespace ImageEnhancingUtility.Core
         {            
             get
             {
-                return $"\"{ModelsArgument}\" --input \"{Input}\" --output \"{Output}\" {(Reverse ? "--reverse" : "")} {(SkipExisting ? "--skip_existing" : "")}" +
+                return $"\"{ModelsArgument}\" --input \"{Input}\" --output \"{Output}\" {(fp16 ? "--fp16" : "")} {(Reverse ? "--reverse" : "")} {(SkipExisting ? "--skip_existing" : "")}" +
                     $" {seamlessModArgument} {(Mirror ? "--mirror" : "")} {(CPU?"--cpu":"")} {(CacheMaxSplitDepth? "--cache_max_split_depth":"")}"+
                     $" {(BinaryAlpha ? "--binary_alpha" : "")} --alpha_threshold {AlphaThreshold.ToString().Replace(",", ".")} --alpha_boundary_offset {AlphaBoundaryOffset.ToString().Replace(",", ".")} --alpha_mode {AlphaMode}";
             }
@@ -73,6 +73,8 @@ namespace ImageEnhancingUtility.Core
         public int AlphaMode { get; set; } = 1;
         [ProtoMember(10)]
         public bool CacheMaxSplitDepth { get; set; } = false;
+        [ProtoMember(11)]
+        public bool fp16 { get; set; } = false;
 
         [Browsable(false)]
         public new IObservable<IReactivePropertyChangedEventArgs<IReactiveObject>> Changed { get; }

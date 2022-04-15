@@ -368,6 +368,30 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _ddsIsCubemap, value);
         }
 
+        private int _paddingSize = 0;
+        [ProtoMember(53)]
+        public int PaddingSize
+        {
+            get => _paddingSize;
+            set => this.RaiseAndSetIfChanged(ref _paddingSize, value);
+        }
+
+        private bool _useJoey = false;
+        [ProtoMember(60)]
+        public bool UseJoey
+        {
+            get => _useJoey;
+            set => this.RaiseAndSetIfChanged(ref _useJoey, value);
+        }
+
+        private bool _rgbaModel = false;
+        [ProtoMember(61)]
+        public bool RgbaModel
+        {
+            get => _rgbaModel;
+            set => this.RaiseAndSetIfChanged(ref _rgbaModel, value);
+        }
+
         #endregion
 
         public Profile()

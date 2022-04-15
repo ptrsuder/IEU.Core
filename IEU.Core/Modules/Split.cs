@@ -77,7 +77,7 @@ namespace ImageEnhancingUtility.Core
                 OutputMode = OutputDestinationMode,
                 OverwriteMode = OverwriteMode,
                 OverlapSize = OverlapSize,
-                Padding = PaddingSize,
+                Padding = CurrentProfile.PaddingSize,
                 UseModelChain = UseModelChain,
                 ModelChain = checkedModels
                 //Seamless = 
@@ -110,8 +110,8 @@ namespace ImageEnhancingUtility.Core
             }));
 
             WriteBatchValues(batchValues);
-            if (!InMemoryMode)
-                Logger.Write("Finished!", Color.LightGreen);
+            //if (!InMemoryMode)
+            //    Logger.Write("Finished!", Color.LightGreen);
         }
         public async Task Split(FileInfo file)
         {
@@ -151,7 +151,7 @@ namespace ImageEnhancingUtility.Core
             var values = new ImageValues();
             values.Path = file.FullName;
             values.Dimensions = new int[] { inputImage.Width, inputImage.Height };
-            values.UseAlpha = imageHasAlpha && !HotProfile.IgnoreAlpha && !RgbaModel;
+            values.UseAlpha = imageHasAlpha && !HotProfile.IgnoreAlpha && !CurrentProfile.RgbaModel;
 
             FileInfo fileAlpha = new FileInfo(file.DirectoryName + DirSeparator + Path.GetFileNameWithoutExtension(file.Name) + "_alpha.png");
             string lrPathAlpha = LrPath + "_alpha";
@@ -192,20 +192,20 @@ namespace ImageEnhancingUtility.Core
             values.Columns = tiles[0];
             values.Rows = tiles[1];
 
-            if (PaddingSize > 0)
+            if (CurrentProfile.PaddingSize > 0)
             {
                 Image im = ImageOperations.ConvertToVips(inputImage); //TODO: open from file in the beginning              
                 //im = Image.NewFromFile(file.FullName);      
-                im = im.Embed(PaddingSize, PaddingSize, im.Width + 2 * PaddingSize, im.Height + 2 * PaddingSize, "VIPS_EXTEND_COPY");
+                im = im.Embed(CurrentProfile.PaddingSize, CurrentProfile.PaddingSize, im.Width + 2 * CurrentProfile.PaddingSize, im.Height + 2 * CurrentProfile.PaddingSize, "VIPS_EXTEND_COPY");                              
                 inputImage = ImageOperations.ConvertToMagickImage(im);
                 values.FinalDimensions = new int[] { inputImage.Width, inputImage.Height };
-                values.PaddingSize = PaddingSize;
+                values.PaddingSize = CurrentProfile.PaddingSize;
             }
 
             if (values.UseAlpha)
                 inputImageAlpha = (MagickImage)inputImage.Separate(Channels.Alpha).First();
 
-            if (!RgbaModel)
+            if (!CurrentProfile.RgbaModel)
                 inputImage.HasAlpha = false;
 
             int seamlessPadding = 0;
@@ -221,22 +221,28 @@ namespace ImageEnhancingUtility.Core
                     imageHasAlpha = false;
                 else
                 {
-                    bool isSolidColor = inputImageAlpha.TotalColors == 1;
-                    
-                    //if (isSolidColor)
-                    //{
-                    //    var hist = inputImageAlpha.Histogram();
-                    //    isSolidColor = hist.ContainsKey(new MagickColor("#FFFFFF")) || hist.ContainsKey(new MagickColor("#000000"));
-                    //}
-
-                    values.AlphaSolidColor = isSolidColor;
-
-                    if (HotProfile.IgnoreSingleColorAlphas && isSolidColor)
+                    if (HotProfile.IgnoreSingleColorAlphas)
                     {
-                        inputImageAlpha.Dispose();
-                        inputImageAlpha = null;
-                        imageHasAlpha = false;
-                        values.UseAlpha = false;
+                        bool isSolidColor = inputImageAlpha.TotalColors == 1;                       
+
+                        if (!isSolidColor)
+                        {
+                            var hist = inputImageAlpha.Histogram();
+                            var white = new MagickColor("#FFFFFF");
+                            if (hist.ContainsKey(white))
+                                isSolidColor = hist[white] >= inputImageAlpha.Width * inputImageAlpha.Height * 0.99; //margin of error
+                            //isSolidColor = hist.ContainsKey(new MagickColor("#FFFFFF")) || hist.ContainsKey(new MagickColor("#000000"));
+                        }
+
+                        values.AlphaSolidColor = isSolidColor;
+
+                        if (HotProfile.IgnoreSingleColorAlphas && isSolidColor)
+                        {
+                            inputImageAlpha.Dispose();
+                            inputImageAlpha = null;
+                            imageHasAlpha = false;
+                            values.UseAlpha = false;
+                        }
                     }
                     else
                     {
@@ -319,12 +325,12 @@ namespace ImageEnhancingUtility.Core
                     if (addRow && row == rows - 1)
                         tile_Y1 = imageHeight - tileHeight;
 
-                    var cropRectangle = new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset + (PaddingSize + seamlessPadding) * 2, tileHeight + yOffset + (PaddingSize + seamlessPadding) * 2);
+                    var cropRectangle = new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset + (CurrentProfile.PaddingSize + seamlessPadding) * 2, tileHeight + yOffset + (CurrentProfile.PaddingSize + seamlessPadding) * 2);
 
                     if (values.UseAlpha) //crop alpha
                     {
                         MagickImage outputImageAlpha = (MagickImage)inputImageAlpha.Clone();
-                        outputImageAlpha.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset + PaddingSize * 2, tileHeight + yOffset + PaddingSize * 2));
+                        outputImageAlpha.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset + CurrentProfile.PaddingSize * 2, tileHeight + yOffset + CurrentProfile.PaddingSize * 2));
                         string lrAlphaFolderPath = $"{lrPathAlpha}{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}{DirSeparator}";
                         if (InMemoryMode)
                         {
@@ -386,7 +392,7 @@ namespace ImageEnhancingUtility.Core
 
                         outputImage.Crop(cropRectangle);
                         MagickFormat format = MagickFormat.Png24;
-                        if (RgbaModel) format = MagickFormat.Png32;
+                        if (CurrentProfile.RgbaModel) format = MagickFormat.Png32;                        
                         var dirpath = Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "");
                         string outPath = $"{LrPath}{dirpath}{DirSeparator}{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex:D2}.png";
                         if (!InMemoryMode)
@@ -476,7 +482,7 @@ namespace ImageEnhancingUtility.Core
 
             try
             {
-                image = ImageOperations.LoadImage(file);
+                image = ImageOperations.LoadImage(file);                      
                 imageHasAlpha = image.HasAlpha;
             }
             catch (Exception ex)

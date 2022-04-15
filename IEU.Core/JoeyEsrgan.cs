@@ -9,13 +9,21 @@ using ReactiveUI;
 
 namespace ImageEnhancingUtility.Core
 {    
-    public enum SeamlessMod
+    public enum SeamlessMode
     {
         None,
         Tile,
         Mirror,
         Replicate,
         AlphaPad
+    }
+
+    public enum AlphaMode
+    {
+        no_alpha,
+        bas,
+        alpha_separately,
+        swapping
     }
 
     [ProtoContract]
@@ -28,9 +36,9 @@ namespace ImageEnhancingUtility.Core
         {            
             get
             {
-                return $"\"{ModelsArgument}\" --input \"{Input}\" --output \"{Output}\" {(fp16 ? "--fp16" : "")} {(Reverse ? "--reverse" : "")} {(SkipExisting ? "--skip_existing" : "")}" +
-                    $" {seamlessModArgument} {(Mirror ? "--mirror" : "")} {(CPU?"--cpu":"")} {(CacheMaxSplitDepth? "--cache_max_split_depth":"")}"+
-                    $" {(BinaryAlpha ? "--binary_alpha" : "")} --alpha_threshold {AlphaThreshold.ToString().Replace(",", ".")} --alpha_boundary_offset {AlphaBoundaryOffset.ToString().Replace(",", ".")} --alpha_mode {AlphaMode}";
+                return $"\"{ModelsArgument}\" --input \"{Input}\" --output \"{Output}\" {(fp16 ? "--fp16" : "")} {(Reverse ? "--reverse" : "")} {(SkipExisting ? "--skip-existing" : "")} {(DeleteInput ? "--delete-input" : "")} {(VerboseMode ? "--verbose" : "")}" +
+                    $" {seamlessModeArgument} {(Mirror ? "--mirror" : "")} {(CPU?"--cpu":"")} {(CacheMaxSplitDepth? "--cache-max-split-depth":"")}"+
+                    $" {(BinaryAlpha ? "--binary-alpha" : "")} {(TernaryAlpha ? "--ternary-alpha" : "")} --alpha-threshold {AlphaThreshold.ToString().Replace(",", ".")} --alpha-boundary-offset {AlphaBoundaryOffset.ToString().Replace(",", ".")} --alpha-mode {alphaModeArgument}";
             }
         }
 
@@ -45,18 +53,18 @@ namespace ImageEnhancingUtility.Core
         public bool SkipExisting { get; set; } = false;
 
         [ProtoMember(3)]
-        public SeamlessMod SeamlessMod { get; set; } = SeamlessMod.None;
+        public SeamlessMode SeamlessMode { get; set; } = SeamlessMode.None;
 
-        Dictionary<SeamlessMod, string> seamlessModArguments = new Dictionary<SeamlessMod, string>
+        Dictionary<SeamlessMode, string> seamlessModeArguments = new Dictionary<SeamlessMode, string>
         { 
-            { SeamlessMod.None, "" },
-            { SeamlessMod.Tile, "--seamless tile" },
-            { SeamlessMod.Mirror, "--seamless mirror"  },
-            { SeamlessMod.Replicate, "--seamless replicate" },
-            { SeamlessMod.AlphaPad, "--seamless alpha_pad" }
+            { SeamlessMode.None, "" },
+            { SeamlessMode.Tile, "--seamless tile" },
+            { SeamlessMode.Mirror, "--seamless mirror"  },
+            { SeamlessMode.Replicate, "--seamless replicate" },
+            { SeamlessMode.AlphaPad, "--seamless alpha_pad" }
         };
-              
-        string seamlessModArgument { get => seamlessModArguments[SeamlessMod]; }
+       
+        string seamlessModeArgument { get => seamlessModeArguments[SeamlessMode]; }
 
         [ProtoMember(4)]
         public bool Mirror { get; set; } = false;
@@ -70,11 +78,31 @@ namespace ImageEnhancingUtility.Core
         [ProtoMember(8)]
         public double AlphaBoundaryOffset { get; set; } = 0.2;
         [ProtoMember(9)]
-        public int AlphaMode { get; set; } = 1;
+
+        public AlphaMode AlphaMod { get; set; } = AlphaMode.bas;
+        Dictionary<AlphaMode, string> alphaModArguments = new Dictionary<AlphaMode, string>
+        {
+            { AlphaMode.no_alpha, "no_alpha" },
+            { AlphaMode.bas, "bas" },
+            { AlphaMode.alpha_separately, "alpha_separately"  },
+            { AlphaMode.swapping, "swapping" }          
+        };
+        string alphaModeArgument { get => alphaModArguments[AlphaMod]; }
+
         [ProtoMember(10)]
         public bool CacheMaxSplitDepth { get; set; } = false;
         [ProtoMember(11)]
         public bool fp16 { get; set; } = false;
+
+        [ProtoMember(12)]
+        public bool TernaryAlpha { get; set; } = false;
+
+        [ProtoMember(13)]
+        public bool DeleteInput { get; set; } = false;
+        [ProtoMember(14)]
+        public bool VerboseMode { get; set; } = false;
+        
+
 
         [Browsable(false)]
         public new IObservable<IReactivePropertyChangedEventArgs<IReactiveObject>> Changed { get; }

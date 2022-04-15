@@ -93,8 +93,7 @@ namespace ImageEnhancingUtility.Core
             }
             ));
 
-            GC.Collect();
-            Logger.Write("Finished!", Color.LightGreen);
+            GC.Collect();            
 
             string pathToMergedFiles = OutputDirectoryPath;
             if (tempOutMode == 1)
@@ -305,10 +304,11 @@ namespace ImageEnhancingUtility.Core
                     if (!WriteToFileVipsNative(imageResult, outputFormat, destinationPath))
                         return;
                     imageResult.Dispose();
-                    //pathImage.Item2.Dispose();
-                    IncrementDoneCounter();
-                    //ReportProgress();
+                    //pathImage.Item2.Dispose();                   
                     Logger.Write($"<{file.Name}> MERGE DONE", Color.LightGreen);
+
+                    IncrementDoneCounter();
+                    ReportProgress();
 
                     if (HotProfile.DeleteResults)
                         tileFilesToDelete.ForEach(x => x.Delete());
@@ -347,12 +347,16 @@ namespace ImageEnhancingUtility.Core
                 WriteToFileDds(finalImage, destinationPath, HotProfile);
             else
                 finalImage.Write(destinationPath);
+
             imageResult?.Dispose();
             finalImage.Dispose();
             //pathImage.Item2.Dispose();
+            //
+            Logger.Write($"{file.Name} DONE", Color.LightGreen);
+
             IncrementDoneCounter();
             ReportProgress();
-            Logger.Write($"{file.Name} DONE", Color.LightGreen);
+
             if (HotProfile.DeleteResults)
                 tileFilesToDelete.ForEach(x => x.Delete());
             GC.Collect();
@@ -431,8 +435,8 @@ namespace ImageEnhancingUtility.Core
                             }
 
                             //remove padding
-                            if (PaddingSize > 0)
-                                imageAlphaNextTile = imageAlphaNextTile.Crop(PaddingSize * upMod, PaddingSize * upMod, imageAlphaNextTile.Width - PaddingSize * upMod * 2, imageAlphaNextTile.Height - PaddingSize * upMod * 2);
+                            if (CurrentProfile.PaddingSize > 0)
+                                imageAlphaNextTile = imageAlphaNextTile.Crop(CurrentProfile.PaddingSize * upMod, CurrentProfile.PaddingSize * upMod, imageAlphaNextTile.Width - CurrentProfile.PaddingSize * upMod * 2, imageAlphaNextTile.Height - CurrentProfile.PaddingSize * upMod * 2);
 
                             if (j == 0)
                             {
@@ -458,8 +462,8 @@ namespace ImageEnhancingUtility.Core
                     }
 
                     //remove padding
-                    if (PaddingSize > 0)
-                        imageNextTile = imageNextTile.Crop(PaddingSize * upMod, PaddingSize * upMod, imageNextTile.Width - PaddingSize * upMod * 2, imageNextTile.Height - PaddingSize * upMod * 2);
+                    if (CurrentProfile.PaddingSize > 0)
+                        imageNextTile = imageNextTile.Crop(CurrentProfile.PaddingSize * upMod, CurrentProfile.PaddingSize * upMod, imageNextTile.Width - CurrentProfile.PaddingSize * upMod * 2, imageNextTile.Height - CurrentProfile.PaddingSize * upMod * 2);
 
                     if (j == 0)
                     {

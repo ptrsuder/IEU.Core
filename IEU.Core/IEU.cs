@@ -27,6 +27,8 @@ using Image = NetVips.Image;
 using Path = System.IO.Path;
 using ReactiveCommand = ReactiveUI.ReactiveCommand;
 using Unit = System.Reactive.Unit;
+using Timer = System.Timers.Timer;
+using System.Timers;
 
 //TODO:
 //new filter: (doesn't)have result
@@ -59,8 +61,6 @@ namespace ImageEnhancingUtility.Core
         }
 
         public string Name = "";
-
-       
 
         Dictionary<string, Dictionary<string, string>> lrDict = new Dictionary<string, Dictionary<string, string>>();
         [Category("Exposed")]
@@ -435,29 +435,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _useOldVipsMerge, value);
         }
 
-        private int _paddingSize = 0;
-        [ProtoMember(53)]
-        public int PaddingSize
-        {
-            get => _paddingSize;
-            set => this.RaiseAndSetIfChanged(ref _paddingSize, value);
-        }
-
-        private bool _useJoey = false;
-        [ProtoMember(60)]
-        public bool UseJoey
-        {
-            get => _useJoey;
-            set => this.RaiseAndSetIfChanged(ref _useJoey, value);
-        }
-
-        private bool _rgbaModel = false;
-        [ProtoMember(61)]
-        public bool RgbaModel
-        {
-            get => _rgbaModel;
-            set => this.RaiseAndSetIfChanged(ref _rgbaModel, value);
-        }
+     
 
         #endregion
 
@@ -780,13 +758,16 @@ namespace ImageEnhancingUtility.Core
         #endregion
 
         #region PROGRESS/LOG
+
         public Logger Logger = new Logger();
         private void ReportProgress()
         {
-            double fdd = (double)FilesDone;
+            double fdd = FilesDone;
             if (FilesDone == 0 && FilesTotal != 0)
                 fdd = 0.001;
-            ProgressBarValue = (fdd / (double)FilesTotal) * 100.00;
+            if(FilesDone == FilesTotal && InMemoryMode)
+                PrintTime();
+            ProgressBarValue = (fdd / FilesTotal) * 100.00;
             ProgressLabel = $@"{FilesDone}/{FilesTotal}";
         }
         #endregion
@@ -809,7 +790,7 @@ namespace ImageEnhancingUtility.Core
             MaxTileResolutionHeight = batch.MaxTileH;
             MaxTileResolution = batch.MaxTileResolution;
             OverlapSize = batch.OverlapSize;
-            PaddingSize = batch.Padding;
+            CurrentProfile.PaddingSize = batch.Padding;
             ResultSuffix = batch.ResultSuffix;
 
             return batch;
@@ -912,7 +893,7 @@ namespace ImageEnhancingUtility.Core
                 process = await BasicSR_Test(NoWindow, HotProfile);
             else
             {
-                if (UseJoey)
+                if (CurrentProfile.UseJoey)
                     process = await JoeyESRGAN(NoWindow, HotProfile);
                 else
                     process = await ESRGAN(NoWindow, HotProfile);
@@ -1471,7 +1452,7 @@ namespace ImageEnhancingUtility.Core
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            if (InMemoryMode && !ignoreInMemory)
+            if (InMemoryMode && !ignoreInMemory) //for preview
             {
                 writer = process.StandardInput;
                 WriteModelsToStream();
@@ -1577,7 +1558,7 @@ namespace ImageEnhancingUtility.Core
                             writer.WriteLine("end"); //go to next model  
 
                             if (compDict.Keys.Count == checkedModels.Count &&
-                                Array.TrueForAll<List<string>>(compDict.Values.ToArray(), x => x.Count == fileQueuCount))
+                                Array.TrueForAll(compDict.Values.ToArray(), x => x.Count == fileQueuCount))
                             {
                                 if (!IsSub)
                                 {
@@ -1675,6 +1656,18 @@ namespace ImageEnhancingUtility.Core
         }
 
         #endregion                
+                
+        Stopwatch stopWatch;
+
+        void PrintTime()
+        {
+            stopWatch.Stop();
+            var ts = stopWatch.Elapsed;
+            var st = String.Format("{0:00}:{1:00}.{2:00}",
+                                    ts.Hours * 60 + ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+            Logger.Write($"Finished in {st}");
+        }
+        
 
         async public Task<bool> SplitUpscaleMerge()
         {
@@ -1689,18 +1682,22 @@ namespace ImageEnhancingUtility.Core
                 return false;
             }
 
-            if (UseJoey)
+            stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            if (CurrentProfile.UseJoey)
             {
-                bool upscaleSuccess = await Upscale(HidePythonProcess);
+                bool upscaleSuccess = await Upscale(HidePythonProcess);                
+                PrintTime();
                 return true;
             }
 
             if (InMemoryMode)
-                await SplitUpscaleMergeInMemory();
-            
+                await SplitUpscaleMergeInMemory();            
             else
             {
                 await SplitUpscaleMergeNormal();
+                PrintTime();
                 return true;
             }
             return false;
@@ -1724,7 +1721,7 @@ namespace ImageEnhancingUtility.Core
                 OutputMode = OutputDestinationMode,
                 OverwriteMode = OverwriteMode,
                 OverlapSize = OverlapSize,
-                Padding = PaddingSize              
+                Padding = CurrentProfile.PaddingSize              
             };            
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
@@ -1867,7 +1864,7 @@ namespace ImageEnhancingUtility.Core
             previewIEU.AutoSetTileSizeEnable = AutoSetTileSizeEnable;
             previewIEU.VramMonitorEnable = false;
             previewIEU.DebugMode = DebugMode;
-            previewIEU.PaddingSize = PaddingSize;           
+            previewIEU.CurrentProfile.PaddingSize = CurrentProfile.PaddingSize;           
 
             previewIEU.batchValues = new BatchValues()
             {
@@ -1877,7 +1874,7 @@ namespace ImageEnhancingUtility.Core
                 OutputMode = 0,
                 OverwriteMode = 0,
                 OverlapSize = OverlapSize,
-                Padding = PaddingSize                
+                Padding = CurrentProfile.PaddingSize                
             };
         }
 
@@ -2031,7 +2028,10 @@ namespace ImageEnhancingUtility.Core
             SetPipeline();
             bool success = await previewIEU.Upscale(true);
             if (!success)
+            {
                 File.WriteAllText(PreviewDirPath + $"{DirSeparator}log.txt", previewIEU.Logger.Logs);
+                return false;
+            }
             
             if (!saveAsPng)
             {

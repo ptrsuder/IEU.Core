@@ -229,6 +229,15 @@ namespace ImageEnhancingUtility
             }
             return new int[] { tileCols, tileRows };
         }
+
+        public static string GetCondaEnv(bool UseCondaEnv, string CondaEnv)
+        {
+            if (UseCondaEnv && CondaEnv != "")
+                return $" & conda activate {CondaEnv}";
+            else
+                return "";
+        }
+
     }
 
 }

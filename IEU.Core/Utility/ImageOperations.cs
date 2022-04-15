@@ -23,7 +23,19 @@ namespace ImageEnhancingUtility.Core.Utility
             {
                 bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
                 memoryStream.Position = 0;
-                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
+                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png });
+            }
+            return result;
+        }
+
+        public static MagickImage ConvertToMagickImage(NetVips.Image image)
+        {
+            MagickImage result;            
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                image.WriteToStream(memoryStream, ".png");
+                memoryStream.Position = 0;
+                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png });
             }
             return result;
         }
@@ -37,7 +49,7 @@ namespace ImageEnhancingUtility.Core.Utility
             {
                 bitmap.Save(memoryStream, imageFormat);
                 memoryStream.Position = 0;
-                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png00 });
+                result = new MagickImage(memoryStream, new MagickReadSettings() { Format = MagickFormat.Png });
             }
             return result;
         }
@@ -74,7 +86,7 @@ namespace ImageEnhancingUtility.Core.Utility
             Bitmap test;
             using (MemoryStream memoryStream = new MemoryStream())
             {
-                image.Write(memoryStream, MagickFormat.Png32);
+                image.Write(memoryStream, MagickFormat.Png);
                 memoryStream.Position = 0;
                 Image temp = Image.FromStream(memoryStream);
                 test = (Bitmap)temp.Clone();
@@ -85,8 +97,8 @@ namespace ImageEnhancingUtility.Core.Utility
 
         public static NetVips.Image ConvertToVips(MagickImage image)
         {
-            byte[] imageBuffer = image.ToByteArray(MagickFormat.Png00);        
-            return NetVips.Image.NewFromBuffer(imageBuffer);           
+            byte[] imageBuffer = image.ToByteArray(MagickFormat.Png);        
+            return NetVips.Image.PngloadBuffer(imageBuffer);           
         }
 
         public static NetVips.Image ConvertToVips(string base64String)
@@ -107,14 +119,14 @@ namespace ImageEnhancingUtility.Core.Utility
             else
                 image = new MagickImage(file.FullName);
             return image;
-        }
+        }        
 
         public static Image LoadImageToBitmap(string fullname)
         {
             string extension = Path.GetExtension(fullname).ToUpper();
             if (!Filter.ExtensionsList.Contains(extension))
                 return null;
-            Image image = null;
+            Image image = null;          
             string[] simpleFormats = new string[] { "*.BMP", ".DIB", ".RLE", ".GIF", ".JPG", ".PNG", ".JPEG" };
 
             if (simpleFormats.Contains(extension))
@@ -153,12 +165,12 @@ namespace ImageEnhancingUtility.Core.Utility
             return newImage;
         }
 
-        public static MagickImage ExpandTiledTexture(MagickImage image, int seamlessExpandSize = 16)
+        public static MagickImage ExpandTiledTexture(MagickImage image, ref int expandSize)
         {
             int imageHeight = image.Height, imageWidth = image.Width;
-            int expandSize = seamlessExpandSize;
+            if (expandSize == 0) expandSize = 16;
             if (imageHeight <= 32 || imageWidth <= 32)
-                expandSize = seamlessExpandSize / 2;
+                expandSize /= 2;
 
             MagickImage expandedImage = (MagickImage)image.Clone();
             MagickImage bottomEdge = (MagickImage)image.Clone();
@@ -182,26 +194,100 @@ namespace ImageEnhancingUtility.Core.Utility
             rightEdge.Crop(new MagickGeometry(image.Width - expandSize, 0, expandSize, image.Height));
             expandedImage.Page = new MagickGeometry($"+{expandSize}+0");
             rightEdge.Page = new MagickGeometry("+0+0");
-            expandedImage = (MagickImage)edges.Mosaic();
+            expandedImage = (MagickImage)edges.Mosaic();      
 
             MagickImage leftEdge = (MagickImage)image.Clone();
             edges = new MagickImageCollection() { expandedImage, leftEdge };
             leftEdge.Crop(new MagickGeometry(0, 0, expandSize, image.Height));
             leftEdge.Page = new MagickGeometry($"+{expandedImage.Width}+0");
             expandedImage.Page = new MagickGeometry($"+0+0");
-            expandedImage = (MagickImage)edges.Mosaic();
+            expandedImage = (MagickImage)edges.Mosaic();           
 
             edges.Dispose();
 
             return expandedImage;
         }
 
-        public static MagickImage PadImage(MagickImage image, int x, int y)
+        public static MagickImage PadImage(MagickImage image, int x, int y, Gravity gravity = Gravity.Northwest)
         {
-            MagickImage result = (MagickImage)image.Clone();
-            int[] newDimensions = Helper.GetGoodDimensions(image.Width, image.Height, x, y);
-            result.Extent(newDimensions[0], newDimensions[1]);
+            if (image.Width == x && image.Height == y)
+                return image;  
+
+            MagickImage result = (MagickImage)image.Clone();            
+            result.VirtualPixelMethod = VirtualPixelMethod.Edge;
+            result.Distort(DistortMethod.Resize, x, y);
+            //result.Write("S:\\ESRGAN-master\\IEU_preview\\distort.png");
+            result.Composite(image, gravity, CompositeOperator.Atop);
+            //result.Write(@"S:\\ESRGAN-master\\IEU_preview\\composite.png");
+            //result.Extent(newDimensions[0], newDimensions[1]);
             return result;
+        }
+
+        static public void ImagePreprocess(ref MagickImage image, ref ImageValues values, Profile HotProfile, Logger logger)
+        {
+            if (HotProfile.ResizeImageBeforeScaleFactor != 1.0)
+            {
+                values.ResizeMod = HotProfile.ResizeImageBeforeScaleFactor;
+                //image = ImageOperations.PadImage(image, paddedDimensions[0], paddedDimensions[1]);
+                image = ImageOperations.ResizeImage(image, HotProfile.ResizeImageBeforeScaleFactor, (FilterType)HotProfile.ResizeImageBeforeFilterType);
+            }
+
+            switch (HotProfile.NoiseReductionType)
+            {
+                case 0:
+                    break;
+                case 1:
+                    image.Enhance();
+                    break;
+                case 2:
+                    image.Despeckle();
+                    break;
+                case 3:
+                    image.AdaptiveBlur();
+                    break;
+            }
+            logger.WriteDebug($"Applying NoiseReduction: type {HotProfile.NoiseReductionType}");
+        }
+        static public void ImagePostrpocess(ref MagickImage finalImage, Profile HotProfile, Logger logger)
+        {
+            MagickImage alphaChannel = null;
+            if (!HotProfile.IgnoreAlpha && finalImage.HasAlpha && HotProfile.ThresholdAlphaEnabled)
+                alphaChannel = finalImage.Separate(Channels.Alpha).First() as MagickImage;
+
+            if (HotProfile.ThresholdBlackValue != 0)
+            {
+                finalImage.HasAlpha = false;
+                if (HotProfile.ThresholdEnabled)
+                {
+                    logger.WriteDebug($"Applying BW threshold for RGB");
+                    finalImage.BlackThreshold(new Percentage((double)HotProfile.ThresholdBlackValue));
+                }
+                if (alphaChannel != null && HotProfile.ThresholdAlphaEnabled)
+                {
+                    logger.WriteDebug($"Applying BW threshold for alpha");
+                    alphaChannel.BlackThreshold(new Percentage((double)HotProfile.ThresholdBlackValue));
+                }
+            }
+
+            if (HotProfile.ThresholdWhiteValue != 100)
+            {
+                finalImage.HasAlpha = false;
+                if (HotProfile.ThresholdEnabled)
+                    finalImage.WhiteThreshold(new Percentage((double)HotProfile.ThresholdWhiteValue));
+                if (alphaChannel != null && HotProfile.ThresholdAlphaEnabled)
+                    alphaChannel.WhiteThreshold(new Percentage((double)HotProfile.ThresholdWhiteValue));
+            }
+            if (alphaChannel != null)
+            {
+                finalImage.HasAlpha = true;
+                finalImage.Composite(alphaChannel, CompositeOperator.CopyAlpha);
+            }
+
+            if (HotProfile.ResizeImageAfterScaleFactor != 1.0)
+            {
+                logger.WriteDebug($"Resize image x{HotProfile.ResizeImageAfterScaleFactor}");
+                finalImage = ImageOperations.ResizeImage(finalImage, HotProfile.ResizeImageAfterScaleFactor, (FilterType)HotProfile.ResizeImageAfterFilterType);
+            }
         }
     }
 }

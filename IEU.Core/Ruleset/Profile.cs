@@ -1,15 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
 using DdsFileTypePlus;
+using Newtonsoft.Json;
 using ProtoBuf;
 using ReactiveUI;
 
 namespace ImageEnhancingUtility.Core
 {
     [ProtoContract]
+    [JsonObject(MemberSerialization.OptOut)]
     public class Profile: ReactiveObject
     {
-        [ProtoMember(1)]
+        [ProtoMember(1)]        
         public string Name { get; set; }
         [ProtoMember(2)]
         public string Description;   
@@ -72,35 +75,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _deleteResults, value);
         }
 
-        private bool _preciseTileResolution = false;
-        [ProtoMember(12)]
-        public bool PreciseTileResolution
-        {
-            get => _preciseTileResolution;
-            set
-            {
-                OverlapSize = 0;
-                this.RaiseAndSetIfChanged(ref _preciseTileResolution, value);
-            }
-        }
-
-        private int _overlapSize = 16;
-        [ProtoMember(13)]
-        public int OverlapSize
-        {
-            get => _overlapSize;
-            set => this.RaiseAndSetIfChanged(ref _overlapSize, value);
-        }
-               
-
-        private int _overwriteMode = 0;
-        [ProtoMember(15)]
-        public int OverwriteMode
-        {
-            get => _overwriteMode;
-            set => this.RaiseAndSetIfChanged(ref _overwriteMode, value);
-        }
-
+                      
         private int _noiseReductionType = 0;
         [ProtoMember(16)]
         public int NoiseReductionType
@@ -254,7 +229,7 @@ namespace ImageEnhancingUtility.Core
         }     
 
 
-    [ProtoMember(28)]
+        [ProtoMember(28)]
         public ImageFormatInfo pngFormat = new ImageFormatInfo(".png")
         { CompressionFactor = 3 };
         [ProtoMember(29)]
@@ -360,8 +335,14 @@ namespace ImageEnhancingUtility.Core
             get => _ddsBC7CompressionMode;
             set => this.RaiseAndSetIfChanged(ref _ddsBC7CompressionMode, value);
         }
+
+        bool _ddsGenerateMipmaps = true;
         [ProtoMember(34, IsRequired = true)]
-        public bool ddsGenerateMipmaps = true;
+        public bool DdsGenerateMipmaps
+        {
+            get => _ddsGenerateMipmaps;
+            set => this.RaiseAndSetIfChanged(ref _ddsGenerateMipmaps, value);
+        }
 
         bool _useModel = false;
         [ProtoMember(35)]
@@ -369,14 +350,46 @@ namespace ImageEnhancingUtility.Core
         {
             get => _useModel;
             set => this.RaiseAndSetIfChanged(ref _useModel, value);
-        }
-            
+        }      
+
         ModelInfo _model;
         [ProtoMember(36)]
         public ModelInfo Model
         {
             get => _model;
             set => this.RaiseAndSetIfChanged(ref _model, value);
+        }
+
+        bool _ddsIsCubemap = false;
+        [ProtoMember(42, IsRequired = true)]
+        public bool DdsIsCubemap
+        {
+            get => _ddsIsCubemap;
+            set => this.RaiseAndSetIfChanged(ref _ddsIsCubemap, value);
+        }
+
+        private int _paddingSize = 0;
+        [ProtoMember(53)]
+        public int PaddingSize
+        {
+            get => _paddingSize;
+            set => this.RaiseAndSetIfChanged(ref _paddingSize, value);
+        }
+
+        private bool _useJoey = false;
+        [ProtoMember(60)]
+        public bool UseJoey
+        {
+            get => _useJoey;
+            set => this.RaiseAndSetIfChanged(ref _useJoey, value);
+        }
+
+        private bool _rgbaModel = false;
+        [ProtoMember(61)]
+        public bool RgbaModel
+        {
+            get => _rgbaModel;
+            set => this.RaiseAndSetIfChanged(ref _rgbaModel, value);
         }
 
         #endregion

@@ -22,7 +22,7 @@ namespace ImageEnhancingUtility.Core
             get
             {
                 var name = Name;
-                if(ParentFolder != "")
+                if (ParentFolder != "")
                     name = ParentFolder + " : " + Name;
                 return name;
             }
@@ -30,16 +30,13 @@ namespace ImageEnhancingUtility.Core
 
         [ProtoMember(4)]
         public int UpscaleFactor
-        { get; set; }
-                
+        { get; set; } = 0;        
+
         public int Priority
         { get; set; } = 0;
 
-        public ModelInfo(string name, string path)
-        {
-            Name = name;
-            FullName = path;
-            ParentFolder = "";
+        public ModelInfo(string name, string path) : this(name, path, "")
+        {            
         }
 
         public ModelInfo(string name, string path, string folder)
@@ -49,6 +46,11 @@ namespace ImageEnhancingUtility.Core
             ParentFolder = folder;
         }
 
-        public ModelInfo() {}
+        public ModelInfo(string name, string path, string folder, int mod): this(name, path, folder)
+        {           
+            UpscaleFactor = mod;
+        }
+
+        public ModelInfo() { }
     }
 }

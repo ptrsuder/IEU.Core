@@ -32,7 +32,7 @@ using System.Timers;
 
 
 //TODO:
-//new filter: (doesn't)have result
+//new filter: (doesn't) have result
 //identical filenames with different extension
 [assembly: InternalsVisibleTo("ImageEnhancingUtility.Tests")]
 namespace ImageEnhancingUtility.Core
@@ -40,7 +40,7 @@ namespace ImageEnhancingUtility.Core
     [ProtoContract]
     public partial class IEU : ReactiveObject
     {
-        public readonly string AppVersion = "0.13.05";
+        public readonly string AppVersion = "0.14.0";
         public readonly string GitHubRepoName = "IEU.Core";
 
         private int _overwriteMode = 0;       

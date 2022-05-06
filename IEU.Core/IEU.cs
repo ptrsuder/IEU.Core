@@ -945,8 +945,8 @@ namespace ImageEnhancingUtility.Core
         void WriteTestScriptToDisk()
         {
             string archName = "ESRGAN";
-            if (UseBasicSR) archName = "BasicSR";
-            string scriptsDir = $"{Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)}{DirSeparator}Scripts{DirSeparator}ESRGAN";
+            if (UseBasicSR) archName = "BasicSR";          
+            string scriptsDir = $"{Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory)}{DirSeparator}Scripts{DirSeparator}ESRGAN";
             string block = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.block.py");
             string blockPath = $"{DirSeparator}block.py";
             string architecture = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.architecture.py");
@@ -1402,7 +1402,7 @@ namespace ImageEnhancingUtility.Core
         Process PthReader(string modelPath)
         {
             Process process = new Process();
-            process.StartInfo.Arguments = $"{Helper.GetApplicationRoot()}";
+            process.StartInfo.Arguments = $"{AppDomain.CurrentDomain.BaseDirectory}";
             process.StartInfo.Arguments += Helper.GetCondaEnv(UseCondaEnv, CondaEnv);
             process.StartInfo.Arguments += $" & python pthReader.py -p \"{modelPath}\"";
             process.StartInfo.CreateNoWindow = true;

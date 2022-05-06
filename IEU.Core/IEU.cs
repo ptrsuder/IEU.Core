@@ -1885,7 +1885,7 @@ namespace ImageEnhancingUtility.Core
             if (!InMemoryMode)
                 return await PreviewNormal(imagePath, image, previewModel, saveAsPng, copyToOriginal, copyDestination);
             else
-                return await PreviewInMemory(imagePath, image, previewModel, saveAsPng, copyToOriginal);
+                return await PreviewInMemory(imagePath, image, previewModel, saveAsPng, copyToOriginal, copyDestination);
         }
 
         async public Task<bool> PreviewNormal
@@ -1975,7 +1975,7 @@ namespace ImageEnhancingUtility.Core
             return true;
         }
 
-        async public Task<bool> PreviewInMemory(string imagePath, System.Drawing.Image image, ModelInfo previewModel, bool saveAsPng = false, bool copyToOriginal = false)
+        async public Task<bool> PreviewInMemory(string imagePath, System.Drawing.Image image, ModelInfo previewModel, bool saveAsPng = false, bool copyToOriginal = false, string copyDestination = "")
         {
             PreviewDirPath = $"{EsrganPath}{DirSeparator}IEU_preview";
             string previewResultsDirPath = PreviewDirPath + $"{DirSeparator}results";
@@ -2059,8 +2059,9 @@ namespace ImageEnhancingUtility.Core
                 string modelName = Path.GetFileNameWithoutExtension(previewModel.Name);
                 string dir = Path.GetDirectoryName(imagePath);
                 string fileName = Path.GetFileNameWithoutExtension(imagePath);
-                string destination = $"{ dir }{DirSeparator}{ fileName}_{modelName}{outputFormat.Extension}";
-                File.Copy(preview.FullName, destination, true);
+                if (copyDestination == "")
+                    copyDestination = $"{ dir }{DirSeparator}{fileName}_{modelName}{outputFormat.Extension}";
+                File.Copy(preview.FullName, copyDestination, true);
             }
             return true;
         }

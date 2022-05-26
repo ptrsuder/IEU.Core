@@ -358,7 +358,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _enableBlend, value);
         }
 
-        bool _inMemoryMode = false;
+        bool _inMemoryMode = true;
         [ProtoMember(29)]
         public bool InMemoryMode
         {
@@ -651,7 +651,7 @@ namespace ImageEnhancingUtility.Core
             model.Priority = newPriority;
         }
 
-#region RULESET
+        #region RULESET
 
         public void AddProfile(string name)
         {
@@ -680,6 +680,11 @@ namespace ImageEnhancingUtility.Core
         public void LoadProfile(Profile profile)
         {
             CurrentProfile = profile.Clone();
+        }
+
+        public void LoadProfile(int profile)
+        {
+            CurrentProfile = Profiles.Items.ElementAt(profile).Clone();
         }
 
         public void DeleteProfile(Profile profile)
@@ -1228,9 +1233,7 @@ namespace ImageEnhancingUtility.Core
             int tempOutMode = OutputDestinationMode;
 
             //if (HotProfile.OverwriteMode == 1)
-            //    resultsPath = LrPath;
-
-            int modelIndex = 0;
+            //    resultsPath = LrPath;            
 
             if (checkedModels.Count == 1)
                 JoeyEsrgan.ModelsArgument = $"{checkedModels[0].FullName}";
@@ -1674,8 +1677,7 @@ namespace ImageEnhancingUtility.Core
             var st = String.Format("{0:00}:{1:00}.{2:00}",
                                     ts.Hours * 60 + ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
             Logger.Write($"Finished in {st}");
-        }
-        
+        }        
 
         async public Task<bool> SplitUpscaleMerge()
         {
@@ -1835,9 +1837,9 @@ namespace ImageEnhancingUtility.Core
         }
         #endregion
 
-#region PREVIEW
+        #region PREVIEW
 
-        private IEU previewIEU;
+        private IEU previewIEU; 
 
         public string PreviewDirPath = "";
 
@@ -2042,18 +2044,14 @@ namespace ImageEnhancingUtility.Core
             }
             
             if (!saveAsPng)
-            {
-                //previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
+            {                
                 previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.selectedOutputFormat;
             }
             await previewIEU.Merge(previewOriginal.FullName, previewIEU.batchValues.images.Values.FirstOrDefault().results[0]);
 
             ImageFormatInfo outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase)).First();
             if (!saveAsPng)
-            {
-                //if (CurrentProfile.UseOriginalImageFormat)
-                //    outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(Path.GetExtension(imagePath), StringComparison.InvariantCultureIgnoreCase)).First();
-                //else
+            {                
                 outputFormat = CurrentProfile.selectedOutputFormat;
                 preview = new FileInfo(PreviewDirPath + $"{DirSeparator}preview{outputFormat.Extension}");
             }

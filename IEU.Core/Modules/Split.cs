@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -146,6 +147,8 @@ namespace ImageEnhancingUtility.Core
             }
         }
 
+        [Category("Exposed")]
+        public double whiteAlphaNoiseThreshold { get; set; } = 0.9999;
         void CreateTiles(FileInfo file, MagickImage inputImage, bool imageHasAlpha, Profile HotProfile)
         {
             var values = new ImageValues();
@@ -226,12 +229,18 @@ namespace ImageEnhancingUtility.Core
                         bool isSolidColor = inputImageAlpha.TotalColors == 1;                       
 
                         if (!isSolidColor)
-                        {
+                        {                           
                             var hist = inputImageAlpha.Histogram();
+
                             var white = new MagickColor("#FFFFFF");
-                            if (hist.ContainsKey(white))
-                                isSolidColor = hist[white] >= inputImageAlpha.Width * inputImageAlpha.Height * 0.99; //margin of error
-                            //isSolidColor = hist.ContainsKey(new MagickColor("#FFFFFF")) || hist.ContainsKey(new MagickColor("#000000"));
+                            var black = new MagickColor("#000000");
+
+                            if (inputImageAlpha.TotalColors == 2 && hist.ContainsKey(white) && hist.ContainsKey(black))
+                            {
+                                isSolidColor = false;                                
+                            }
+                            else if (hist.ContainsKey(white))
+                                isSolidColor = hist[white] >= inputImageAlpha.Width * inputImageAlpha.Height * whiteAlphaNoiseThreshold; //margin of error                            
                         }
 
                         values.AlphaSolidColor = isSolidColor;
@@ -473,8 +482,7 @@ namespace ImageEnhancingUtility.Core
             inputImage.Dispose();
 
             Logger.Write($"{file.Name} SPLIT DONE", Color.LightGreen);
-        }
-        
+        }        
         void SplitTask(FileInfo file, Profile HotProfile)
         {
             MagickImage image;

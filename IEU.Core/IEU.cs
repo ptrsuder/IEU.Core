@@ -1879,7 +1879,7 @@ namespace ImageEnhancingUtility.Core
             };
         }
 
-        public string PreviewLog { get => previewIEU.Logger.Logs; }
+        public string PreviewLog { get => previewIEU?.Logger.Logs; }
         async public Task<bool> Preview(string imagePath, System.Drawing.Image image, ModelInfo previewModel, bool saveAsPng = false, bool copyToOriginal = false, string copyDestination = "")
         {
             if (!InMemoryMode)

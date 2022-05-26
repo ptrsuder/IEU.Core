@@ -952,11 +952,16 @@ namespace ImageEnhancingUtility.Core
             string architecture = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.architecture.py");
             string archPath = $"{DirSeparator}architecture.py";
             string upscale = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.upscale.py");
-            string upscaleFromMemory = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleFromMemory.py");
+            string upscaleFromMemory = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleFromMemory.py");            
 
             string scriptPath = $"{DirSeparator}IEU_test.py";
             string upscalePath = $"{DirSeparator}upscale.py";
             string upscaleFromMemoryPath = $"{DirSeparator}upscaleFromMemory.py";
+            if(inMemorySkipEsrgan)
+            {
+                upscaleFromMemory = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleFromMemoryBlank.py");
+                upscaleFromMemoryPath = $"{DirSeparator}upscaleFromMemoryBlank.py";
+            }
 
             Directory.CreateDirectory(scriptsDir);
             if (!File.Exists(scriptsDir + blockPath))
@@ -1412,6 +1417,8 @@ namespace ImageEnhancingUtility.Core
 
             return process;
         }
+
+        bool inMemorySkipEsrgan = false;
 
         public Task<int> RunProcessAsync(Process process, bool ignoreInMemory = false)
         {

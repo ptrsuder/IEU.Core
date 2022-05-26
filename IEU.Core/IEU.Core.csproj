@@ -32,6 +32,7 @@
     <None Remove="Scripts\ESRGAN\block.py" />
     <None Remove="Scripts\ESRGAN\upscale.py" />
     <None Remove="Scripts\ESRGAN\upscaleFromMemory.py" />
+    <None Remove="Scripts\ESRGAN\upscaleFromMemoryBlank.py" />
     <None Remove="upscaleDefault.py" />
     <None Remove="upscaleFolderForImage.py" />
     <None Remove="upscaleFolderForModel.py" />
@@ -48,6 +49,7 @@
     <EmbeddedResource Include="Scripts\ESRGAN\architecture.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\block.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscale.py" />
+    <EmbeddedResource Include="Scripts\ESRGAN\upscaleFromMemoryBlank.py" />
     <EmbeddedResource Include="Scripts\ESRGAN\upscaleFromMemory.py" />
     <EmbeddedResource Include="Scripts\interpModels.py" />
     <EmbeddedResource Include="Scripts\pthReader.py" />

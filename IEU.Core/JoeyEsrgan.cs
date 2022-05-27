@@ -21,7 +21,7 @@ namespace ImageEnhancingUtility.Core
     public enum AlphaMode
     {
         no_alpha,
-        bas,
+        bg_difference,
         alpha_separately,
         swapping
     }
@@ -79,12 +79,12 @@ namespace ImageEnhancingUtility.Core
         public double AlphaBoundaryOffset { get; set; } = 0.2;
         [ProtoMember(9)]
 
-        public AlphaMode AlphaMod { get; set; } = AlphaMode.bas;
+        public AlphaMode AlphaMod { get; set; } = AlphaMode.no_alpha;
         Dictionary<AlphaMode, string> alphaModArguments = new Dictionary<AlphaMode, string>
         {
-            { AlphaMode.no_alpha, "no_alpha" },
-            { AlphaMode.bas, "bas" },
-            { AlphaMode.alpha_separately, "alpha_separately"  },
+            { AlphaMode.no_alpha, "none" },
+            { AlphaMode.bg_difference, "bg_difference" },
+            { AlphaMode.alpha_separately, "separate"  },
             { AlphaMode.swapping, "swapping" }          
         };
         string alphaModeArgument { get => alphaModArguments[AlphaMod]; }

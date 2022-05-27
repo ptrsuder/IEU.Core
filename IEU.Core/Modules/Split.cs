@@ -148,7 +148,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         [Category("Exposed")]
-        public double whiteAlphaNoiseThreshold { get; set; } = 0.9999;
+        public double whiteAlphaNoiseThreshold { get; set; } = 0.0001;
         void CreateTiles(FileInfo file, MagickImage inputImage, bool imageHasAlpha, Profile HotProfile)
         {
             var values = new ImageValues();
@@ -199,7 +199,8 @@ namespace ImageEnhancingUtility.Core
             {
                 Image im = ImageOperations.ConvertToVips(inputImage); //TODO: open from file in the beginning              
                 //im = Image.NewFromFile(file.FullName);      
-                im = im.Embed(CurrentProfile.PaddingSize, CurrentProfile.PaddingSize, im.Width + 2 * CurrentProfile.PaddingSize, im.Height + 2 * CurrentProfile.PaddingSize, "VIPS_EXTEND_COPY");                              
+                im = im.Embed(CurrentProfile.PaddingSize, CurrentProfile.PaddingSize, im.Width + 2 * CurrentProfile.PaddingSize, im.Height + 2 * CurrentProfile.PaddingSize, "VIPS_EXTEND_COPY");
+               
                 inputImage = ImageOperations.ConvertToMagickImage(im);
                 values.FinalDimensions = new int[] { inputImage.Width, inputImage.Height };
                 values.PaddingSize = CurrentProfile.PaddingSize;
@@ -240,7 +241,7 @@ namespace ImageEnhancingUtility.Core
                                 isSolidColor = false;                                
                             }
                             else if (hist.ContainsKey(white))
-                                isSolidColor = hist[white] >= inputImageAlpha.Width * inputImageAlpha.Height * whiteAlphaNoiseThreshold; //margin of error                            
+                                isSolidColor = hist[white] >= inputImageAlpha.Width * inputImageAlpha.Height * (1 - whiteAlphaNoiseThreshold); //margin of error                            
                         }
 
                         values.AlphaSolidColor = isSolidColor;

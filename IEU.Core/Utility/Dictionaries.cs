@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ImageMagick;
+using NetVips;
 
 namespace ImageEnhancingUtility
 {
@@ -65,5 +66,14 @@ namespace ImageEnhancingUtility
             { (int)FilterType.Cubic, "Cubic" }
         };
 
+        public static Dictionary<int, string> VipsKernel = new Dictionary<int, string>()
+        {
+            { 0, "Nearest" },
+            { 1, "Linear" },
+            { 2, "Cubic" },
+            { 3, "Mitchell" },
+            { 4, "Lanczos2" },
+            { 5, "Lanczos3" }
+        };    
     }
 }

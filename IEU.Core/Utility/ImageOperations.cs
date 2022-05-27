@@ -141,6 +141,16 @@ namespace ImageEnhancingUtility.Core.Utility
                     image = ConvertToBitmap(img);
             }
             return image;
+        }       
+        
+        public static NetVips.Image BlackWhiteThreshold(NetVips.Image image, int blackThreshold, int whiteThreshold)
+        {
+            var lch = image.Colourspace("lch").Bandsplit();
+            var c = lch[0];
+            c = (c < blackThreshold).Ifthenelse(0, c);
+            c = (c > whiteThreshold).Ifthenelse(255, c);
+
+            return c.Bandjoin(lch[1]).Bandjoin(lch[2]).Colourspace("srgb");
         }
 
         public static Bitmap Base64ToBitmap(string base64String)
@@ -283,10 +293,54 @@ namespace ImageEnhancingUtility.Core.Utility
                 finalImage.Composite(alphaChannel, CompositeOperator.CopyAlpha);
             }
 
-            if (HotProfile.ResizeImageAfterScaleFactor != 1.0)
+            //if (HotProfile.ResizeImageAfterScaleFactor != 1.0)
+            //{
+            //    logger.WriteDebug($"Resize image x{HotProfile.ResizeImageAfterScaleFactor}");
+            //    finalImage = ImageOperations.ResizeImage(finalImage, HotProfile.ResizeImageAfterScaleFactor, (FilterType)HotProfile.ResizeImageAfterFilterType);
+            //}
+        }
+
+        static public void ImagePostrpocess(ref NetVips.Image finalImage, Profile HotProfile, Logger logger)
+        {
+            //imageResult.Bandjoin(imageAlphaResult.ExtractBand(0))
+            NetVips.Image alphaChannel = null;
+            var bands = finalImage.Bandsplit();
+
+            if (!HotProfile.IgnoreAlpha && finalImage.HasAlpha() && HotProfile.ThresholdAlphaEnabled)
+                alphaChannel = finalImage.ExtractBand(bands.Length-1) as NetVips.Image;
+
+            if (HotProfile.ThresholdBlackValue != 0 || HotProfile.ThresholdWhiteValue != 255)
+            {
+                //finalImage.HasAlpha() = false;
+                if (HotProfile.ThresholdEnabled)
+                {
+                    logger.WriteDebug($"Applying BW threshold for RGB: B<{HotProfile.ThresholdBlackValue} W>{HotProfile.ThresholdWhiteValue}");
+                    finalImage = BlackWhiteThreshold(finalImage, HotProfile.ThresholdBlackValue, HotProfile.ThresholdWhiteValue);
+                }
+                    
+                if (alphaChannel != null && HotProfile.ThresholdAlphaEnabled)
+                {                   
+                    logger.WriteDebug($"Applying BW threshold for alpha: B<{HotProfile.ThresholdBlackValue} W>{HotProfile.ThresholdWhiteValue}");
+                    alphaChannel = BlackWhiteThreshold(alphaChannel, HotProfile.ThresholdBlackValue, HotProfile.ThresholdWhiteValue);                    
+                }
+            }
+           
+            if (alphaChannel != null)
+            {
+                //finalImage.HasAlpha = true;
+                finalImage = bands[0];
+                for (int i = 1; i < bands.Length - 1; i++)
+                {
+                    finalImage.Bandjoin(bands[i]);
+                }                
+                finalImage = finalImage.Bandjoin(alphaChannel.ExtractBand(0));
+                finalImage = finalImage.Copy(interpretation: "srgb").Cast("uchar");
+            }
+
+            if (HotProfile.ResizeImageAfterScaleFactor > 1.0)
             {
                 logger.WriteDebug($"Resize image x{HotProfile.ResizeImageAfterScaleFactor}");
-                finalImage = ImageOperations.ResizeImage(finalImage, HotProfile.ResizeImageAfterScaleFactor, (FilterType)HotProfile.ResizeImageAfterFilterType);
+                finalImage = finalImage.Resize(HotProfile.ResizeImageAfterScaleFactor, IEU.VipsKernel[HotProfile.ResizeImageAfterFilterType]);
             }
         }
     }

@@ -340,7 +340,7 @@ namespace ImageEnhancingUtility.Core
                     if (values.UseAlpha) //crop alpha
                     {
                         MagickImage outputImageAlpha = (MagickImage)inputImageAlpha.Clone();
-                        outputImageAlpha.Crop(new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset + CurrentProfile.PaddingSize * 2, tileHeight + yOffset + CurrentProfile.PaddingSize * 2));
+                        outputImageAlpha.Crop(cropRectangle);
                         string lrAlphaFolderPath = $"{lrPathAlpha}{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}{DirSeparator}";
                         if (InMemoryMode)
                         {

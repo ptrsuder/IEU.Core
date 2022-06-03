@@ -61,6 +61,9 @@ namespace ImageEnhancingUtility.Core
             }
         }
 
+        [Category("Exposed")]
+        public bool SkipEsrgan { get; set; } = false;
+
         public string Name = "";
 
         Dictionary<string, Dictionary<string, string>> lrDict = new Dictionary<string, Dictionary<string, string>>();
@@ -86,7 +89,9 @@ namespace ImageEnhancingUtility.Core
                 VramMonitorEnable = false;
                 this.RaiseAndSetIfChanged(ref _noNvidia, value);
             }
-        }       
+        }
+
+        const string memoryHelperName = "000000zzz_memory_helper";
 
         #region FIELDS/PROPERTIES       
 
@@ -359,7 +364,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         bool _inMemoryMode = true;
-        [ProtoMember(29)]
+        [ProtoMember(29, IsRequired = true)]
         public bool InMemoryMode
         {
             get => _inMemoryMode;
@@ -891,7 +896,7 @@ namespace ImageEnhancingUtility.Core
             if (CreateMemoryImage)
             {
                 Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
-                image.WriteToFile($"{LrPath}{DirSeparator}([000])000)_memory_helper_tile-00.png");
+                image.WriteToFile($"{LrPath}{DirSeparator}{memoryHelperName}_tile-00.png");
             }
 
             Process process;
@@ -962,8 +967,10 @@ namespace ImageEnhancingUtility.Core
             string scriptPath = $"{DirSeparator}IEU_test.py";
             string upscalePath = $"{DirSeparator}upscale.py";
             string upscaleFromMemoryPath = $"{DirSeparator}upscaleFromMemory.py";
-            if(inMemorySkipEsrgan)
+            if(SkipEsrgan)
             {
+                upscale = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.upscaleBlank.py");
+                upscalePath = $"{DirSeparator}upscaleBlank.py";
                 upscaleFromMemory = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleFromMemoryBlank.py");
                 upscaleFromMemoryPath = $"{DirSeparator}upscaleFromMemoryBlank.py";
             }
@@ -1050,7 +1057,13 @@ namespace ImageEnhancingUtility.Core
                 await writer.WriteLineAsync(json);
             }
             if (fileQueue.Count == 0 && !IsSub)
+            {
                 WriteToStream.Complete();
+                if(filesNotSkipped == 0)
+                {
+                    //PrintTime();                    
+                }
+            }
             if (fileQueue != null)
                 UpdateQueue();
         }
@@ -1419,9 +1432,7 @@ namespace ImageEnhancingUtility.Core
             process.OutputDataReceived += PthReaderOutputHandler;
 
             return process;
-        }
-
-        bool inMemorySkipEsrgan = false;
+        }        
 
         public Task<int> RunProcessAsync(Process process, bool ignoreInMemory = false)
         {
@@ -1534,7 +1545,7 @@ namespace ImageEnhancingUtility.Core
                  
                     var match = regex.Match(origPath);
                     origPath = match.Groups[1].Value.Replace(LrPath, InputDirectoryPath) + match.Groups[4].Value;
-                    if (origPath.Contains("([000])000)_memory_helper"))
+                    if (origPath.Contains(memoryHelperName))
                     {
                         File.Delete(origPath);
                         lrDict.Remove(origPath);
@@ -1764,9 +1775,7 @@ namespace ImageEnhancingUtility.Core
             hrDict.Add(firstFile.FullName, new Dictionary<string, MagickImage>());
 
             if (AutoSetTileSizeEnable)
-                await AutoSetTileSize();
-
-            mergeTasks = new List<Task>();   
+                await AutoSetTileSize();              
 
             SplitImage.Post(firstFile);
             await WriteToStream.Completion.ConfigureAwait(false);            
@@ -1784,7 +1793,7 @@ namespace ImageEnhancingUtility.Core
             Queue<FileInfo> fileQueue = new Queue<FileInfo>();
             if (CreateMemoryImage)
             {
-                var path = $"{InputDirectoryPath}{DirSeparator}([000])000)_memory_helper.png";
+                var path = $"{InputDirectoryPath}{DirSeparator}{memoryHelperName}.png";
                 Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
                 image.WriteToFile(path);
                 fileQueue.Enqueue(new FileInfo(path));
@@ -1806,19 +1815,43 @@ namespace ImageEnhancingUtility.Core
             }
             if (newFile != null)
                 SplitImage.Post(newFile);
-        }
-
-        List<Task> mergeTasks;
-
+        }        
+        int filesNotSkipped = 0;
         TransformBlock<FileInfo, Dictionary<string, string>> SplitImage;
         ActionBlock<Dictionary<string, string>> WriteToStream;        
         void SetPipeline()
         {
+           
             SplitImage = new TransformBlock<FileInfo, Dictionary<string, string>>(async file =>
             {
-                await Split(file);
+                bool fileSkipped = true;
+                List<Rule> rules = new List<Rule>(Ruleset.Values);
+                if (DisableRuleSystem)
+                    rules = new List<Rule> { new Rule("Simple rule", CurrentProfile, CurrentFilter) };
 
+                checkedModels = SelectedModelsItems;
+
+                foreach (var rule in rules)
+                {
+                    if (rule.Filter.ApplyFilter(file))
+                    {
+                        if (rule.Profile.Model.UpscaleFactor == 0)
+                            continue;
+                        filesNotSkipped++;
+                        await Task.Run(() => SplitTask(file, rule.Profile));
+                        fileSkipped = false;
+                        break;
+                    }
+                }
+                if (fileSkipped)
+                {                    
+                    IncrementDoneCounter(false);   
+                    ReportProgress();
+                    Logger.Write($"{file.Name} is filtered, skipping", Color.HotPink);
+                    return null;
+                }              
                 return lrDict[file.FullName];
+
             }, new ExecutionDataflowBlockOptions
             {
                 MaxDegreeOfParallelism = InMemoryMaxSplit
@@ -1826,7 +1859,13 @@ namespace ImageEnhancingUtility.Core
 
             WriteToStream = new ActionBlock<Dictionary<string, string>>(async images =>
             {
+                if (images == null)
+                {
+                    images = new Dictionary<string, string>();                    
+                }
+                
                 await WriteImageToStream(images);
+                
             }, new ExecutionDataflowBlockOptions
             {
                 MaxDegreeOfParallelism = 1

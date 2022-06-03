@@ -130,9 +130,8 @@ namespace ImageEnhancingUtility.Core
             foreach (var rule in rules)
             {
                 if (rule.Filter.ApplyFilter(file))
-                {
-                    var profile = rule.Profile;
-                    if (profile.Model.UpscaleFactor == 0)
+                {                    
+                    if (rule.Profile.Model.UpscaleFactor == 0)
                         continue;                   
                     await Task.Run(() => SplitTask(file, rule.Profile));
                     fileSkipped = false;
@@ -227,16 +226,15 @@ namespace ImageEnhancingUtility.Core
                 {
                     if (HotProfile.IgnoreSingleColorAlphas)
                     {
-                        bool isSolidColor = inputImageAlpha.TotalColors == 1;                       
+                        var hist = inputImageAlpha.Histogram();
+                        bool isSolidColor = hist.Count == 1;                       
 
                         if (!isSolidColor)
-                        {                           
-                            var hist = inputImageAlpha.Histogram();
-
+                        {     
                             var white = new MagickColor("#FFFFFF");
                             var black = new MagickColor("#000000");
 
-                            if (inputImageAlpha.TotalColors == 2 && hist.ContainsKey(white) && hist.ContainsKey(black))
+                            if (hist.Count == 2 && hist.ContainsKey(white) && hist.ContainsKey(black))
                             {
                                 isSolidColor = false;                                
                             }
@@ -253,12 +251,18 @@ namespace ImageEnhancingUtility.Core
                             imageHasAlpha = false;
                             values.UseAlpha = false;
                         }
+                        else
+                        {
+                            if (HotProfile.SeamlessTexture)
+                                inputImageAlpha = ImageOperations.ExpandTiledTexture(inputImageAlpha, ref seamlessPadding);
+                        }
                     }
                     else
                     {
                         if (HotProfile.SeamlessTexture)
                             inputImageAlpha = ImageOperations.ExpandTiledTexture(inputImageAlpha, ref seamlessPadding);
                     }
+
                 }
             }
 
@@ -360,10 +364,16 @@ namespace ImageEnhancingUtility.Core
                             if (HotProfile.UseDifferentModelForAlpha)
                             {
                                 Directory.CreateDirectory(lrAlphaFolderPath);
+                                if (SkipEsrgan)
+                                    outputImageAlpha.Resize(new Percentage(checkedModels[0].UpscaleFactor * 100));
                                 outputImageAlpha.Write($"{lrAlphaFolderPath}{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex:D2}.png");
                             }
                             else
+                            {
+                                if (SkipEsrgan)
+                                    outputImageAlpha.Resize(new Percentage(checkedModels[0].UpscaleFactor * 100));
                                 outputImageAlpha.Write($"{LrPath}{DirSeparator}{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}{DirSeparator}{Path.GetFileNameWithoutExtension(fileAlpha.Name)}_tile-{tileIndex:D2}.png");
+                            }
                         }
                     }
                     if (HotProfile.SplitRGB)
@@ -406,9 +416,15 @@ namespace ImageEnhancingUtility.Core
                         var dirpath = Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "");
                         string outPath = $"{LrPath}{dirpath}{DirSeparator}{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex:D2}.png";
                         if (!InMemoryMode)
+                        {
+                            if (SkipEsrgan)
+                                outputImage.Resize(new Percentage(checkedModels[0].UpscaleFactor * 100));
                             outputImage.Write(outPath, format);
+                        }
                         else
                         {
+                            if (SkipEsrgan)
+                                outputImage.Resize(new Percentage(checkedModels[0].UpscaleFactor * 100));
                             outPath = $"{LrPath}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}{DirSeparator}{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex:D2}{file.Extension}";
                             lrImages.Add(outPath, outputImage.ToBase64());
                         }
@@ -424,7 +440,7 @@ namespace ImageEnhancingUtility.Core
             foreach (var f in files)
             {
                 //remove leftover old tiles from results
-                var match = Regex.Match(Path.GetFileNameWithoutExtension(f), $"({basename}_tile-)([0-9]*)");
+                var match = Regex.Match(Path.GetFileNameWithoutExtension(f), $"({Regex.Escape(basename)}_tile-)([0-9]*)");
                 string t = match.Groups[2].Value;
                 if (t == "") continue;
                 if (Int32.Parse(t) > lastIndex)

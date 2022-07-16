@@ -74,7 +74,6 @@ namespace ImageEnhancingUtility.Core
             get => _deleteResults;
             set => this.RaiseAndSetIfChanged(ref _deleteResults, value);
         }
-
                       
         private int _noiseReductionType = 0;
         [ProtoMember(16)]
@@ -226,7 +225,7 @@ namespace ImageEnhancingUtility.Core
         {
             get => _alphaFilterType;
             set => this.RaiseAndSetIfChanged(ref _alphaFilterType, value);
-        }     
+        }   
 
 
         [ProtoMember(28)]
@@ -343,6 +342,7 @@ namespace ImageEnhancingUtility.Core
             get => _ddsGenerateMipmaps;
             set => this.RaiseAndSetIfChanged(ref _ddsGenerateMipmaps, value);
         }
+        #endregion
 
         bool _useModel = false;
         [ProtoMember(35)]
@@ -390,9 +390,7 @@ namespace ImageEnhancingUtility.Core
         {
             get => _rgbaModel;
             set => this.RaiseAndSetIfChanged(ref _rgbaModel, value);
-        }
-
-        #endregion
+        }        
 
         public Profile()
         {

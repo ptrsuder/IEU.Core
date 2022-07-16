@@ -18,7 +18,7 @@ namespace ImageEnhancingUtility.Core
     {
         async public Task Split(FileInfo[] inputFiles = null)
         {
-            if (AutoSetTileSizeEnable)
+            if (CurrentPreset.AutoSetTileSizeEnable)
                 await AutoSetTileSize();
 
             if (!IsSub)
@@ -27,7 +27,7 @@ namespace ImageEnhancingUtility.Core
             checkedModels = SelectedModelsItems;            
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
-            if (OutputDestinationMode == 3)
+            if (CurrentPreset.OutputDestinationMode == 3)
                 searchOption = SearchOption.AllDirectories;
 
             DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
@@ -63,7 +63,7 @@ namespace ImageEnhancingUtility.Core
             if (inputFiles == null)
                 inputFiles = inputDirectoryFiles;
 
-            if (!InMemoryMode)
+            if (!CurrentPreset.InMemoryMode)
             {
                 ResetDoneCounter();
                 SetTotalCounter(inputFiles.Length);
@@ -72,14 +72,14 @@ namespace ImageEnhancingUtility.Core
 
             batchValues = new BatchValues()
             {
-                MaxTileResolution = MaxTileResolution,
-                MaxTileH = MaxTileResolutionHeight,
-                MaxTileW = MaxTileResolutionWidth,
-                OutputMode = OutputDestinationMode,
-                OverwriteMode = OverwriteMode,
-                OverlapSize = OverlapSize,
+                MaxTileResolution = CurrentPreset.MaxTileResolution,
+                MaxTileH = CurrentPreset.MaxTileResolutionHeight,
+                MaxTileW = CurrentPreset.MaxTileResolutionWidth,
+                OutputMode = CurrentPreset.OutputDestinationMode,
+                OverwriteMode = CurrentPreset.OverwriteMode,
+                OverlapSize = CurrentPreset.OverlapSize,
                 Padding = CurrentProfile.PaddingSize,
-                UseModelChain = UseModelChain,
+                UseModelChain = CurrentPreset.UseModelChain,
                 ModelChain = checkedModels
                 //Seamless = 
             };
@@ -165,7 +165,7 @@ namespace ImageEnhancingUtility.Core
 
             if (PreciseTileResolution)
             {
-                tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolutionWidth, MaxTileResolutionHeight);
+                tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolutionWidth, CurrentPreset.MaxTileResolutionHeight);
                 if (tiles[0] == 0 || tiles[1] == 0)
                 {
                     Logger.Write(file.Name + " resolution is smaller than specified tile size");
@@ -174,7 +174,8 @@ namespace ImageEnhancingUtility.Core
             }
             else
             {
-                tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
+                tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
+                if (IsSub) SetTotalCounter(tiles[0] * tiles[1]);
                 values.Columns = tiles[0];
                 values.Rows = tiles[1];
                 values.CropToDimensions = new int[] { imageWidth, imageHeight };
@@ -188,7 +189,7 @@ namespace ImageEnhancingUtility.Core
 
             imageWidth = inputImage.Width;
             imageHeight = inputImage.Height;
-            tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
+            tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
 
             values.FinalDimensions = new int[] { inputImage.Width, inputImage.Height };
             values.Columns = tiles[0];
@@ -294,8 +295,8 @@ namespace ImageEnhancingUtility.Core
             int rows = tiles[1], columns = tiles[0];
             if (PreciseTileResolution)
             {
-                tileWidth = MaxTileResolutionWidth;
-                tileHeight = MaxTileResolutionHeight;
+                tileWidth = CurrentPreset.MaxTileResolutionWidth;
+                tileHeight = CurrentPreset.MaxTileResolutionHeight;
                 if (imageWidth % tileWidth >= 16)
                 {
                     addColumn = true;
@@ -311,7 +312,7 @@ namespace ImageEnhancingUtility.Core
 
             Directory.CreateDirectory($"{LrPath}{DirSeparator}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}");
             Dictionary<string, string> lrImages = new Dictionary<string, string>();
-            if (InMemoryMode)
+            if (CurrentPreset.InMemoryMode)
                 lrDict.Add(file.FullName, lrImages);
 
             int lastIndex = 0;
@@ -329,8 +330,8 @@ namespace ImageEnhancingUtility.Core
                         rightOverlap = 0;
 
                     int tileIndex = row * columns + col;
-                    int xOffset = rightOverlap * OverlapSize;
-                    int yOffset = bottomOverlap * OverlapSize;
+                    int xOffset = rightOverlap * CurrentPreset.OverlapSize;
+                    int yOffset = bottomOverlap * CurrentPreset.OverlapSize;
                     int tile_X1 = col * tileWidth;
                     int tile_Y1 = row * tileHeight;
 
@@ -346,7 +347,7 @@ namespace ImageEnhancingUtility.Core
                         MagickImage outputImageAlpha = (MagickImage)inputImageAlpha.Clone();
                         outputImageAlpha.Crop(cropRectangle);
                         string lrAlphaFolderPath = $"{lrPathAlpha}{Path.GetDirectoryName(fileAlpha.FullName).Replace(InputDirectoryPath, "")}{DirSeparator}";
-                        if (InMemoryMode)
+                        if (CurrentPreset.InMemoryMode)
                         {
                             if (HotProfile.UseDifferentModelForAlpha)
                             {
@@ -379,7 +380,7 @@ namespace ImageEnhancingUtility.Core
                     if (HotProfile.SplitRGB)
                     {
                         var pathBase = $"{LrPath}{DirSeparator}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}{Path.GetFileNameWithoutExtension(file.Name)}";
-                        if (OutputDestinationMode == 3)
+                        if (CurrentPreset.OutputDestinationMode == 3)
                             pathBase = $"{LrPath}" + file.FullName.Replace(InputDirectoryPath, "").Replace(file.Name, Path.GetFileNameWithoutExtension(file.Name));
 
                         var pathR = $"{pathBase}_R_tile-{tileIndex:D2}.png";
@@ -393,7 +394,7 @@ namespace ImageEnhancingUtility.Core
                         MagickImage outputImageBlue = (MagickImage)inputImageBlue.Clone();
                         outputImageBlue.Crop(cropRectangle);
 
-                        if (InMemoryMode)
+                        if (CurrentPreset.InMemoryMode)
                         {
                             lrImages.Add(Path.ChangeExtension(pathR, file.Extension), outputImageRed.ToBase64());
                             lrImages.Add(Path.ChangeExtension(pathG, file.Extension), outputImageGreen.ToBase64());
@@ -415,7 +416,7 @@ namespace ImageEnhancingUtility.Core
                         if (CurrentProfile.RgbaModel) format = MagickFormat.Png32;                        
                         var dirpath = Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "");
                         string outPath = $"{LrPath}{dirpath}{DirSeparator}{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex:D2}.png";
-                        if (!InMemoryMode)
+                        if (!CurrentPreset.InMemoryMode)
                         {
                             if (SkipEsrgan)
                                 outputImage.Resize(new Percentage(checkedModels[0].UpscaleFactor * 100));
@@ -453,7 +454,7 @@ namespace ImageEnhancingUtility.Core
                 if (HotProfile.UseModel && HotProfile.Model != null && !IsSub)
                     checkedModels = new List<ModelInfo>() { HotProfile.Model };
 
-            if (UseModelChain)
+            if (CurrentPreset.UseModelChain)
             {
                 basePath = DirSeparator + Path.GetFileNameWithoutExtension(file.Name);
                 ModelInfo biggestModel = checkedModels[0];
@@ -465,13 +466,13 @@ namespace ImageEnhancingUtility.Core
             else
                 foreach (var model in checkedModels)
                 {
-                    if (OutputDestinationMode == 0)
+                    if (CurrentPreset.OutputDestinationMode == 0)
                         basePath = DirSeparator + Path.GetFileNameWithoutExtension(file.Name);
 
-                    if (OutputDestinationMode == 3)
+                    if (CurrentPreset.OutputDestinationMode == 3)
                         basePath = file.FullName.Replace(InputDirectoryPath, "").Replace(file.Name, Path.GetFileNameWithoutExtension(file.Name));
 
-                    if (OutputDestinationMode == 1)
+                    if (CurrentPreset.OutputDestinationMode == 1)
                     {
                         if (HotProfile.SplitRGB) //search for initial tiles in _R folder                    
                             basePath = $"{DirSeparator}Images{DirSeparator}{Path.GetFileNameWithoutExtension(file.Name)}_ChannelChar{DirSeparator}" +
@@ -480,7 +481,7 @@ namespace ImageEnhancingUtility.Core
                             basePath = $"{DirSeparator}Images{DirSeparator}{Path.GetFileNameWithoutExtension(file.Name)}" +
                                     $"{DirSeparator}[{Path.GetFileNameWithoutExtension(model.Name)}]_{Path.GetFileNameWithoutExtension(file.Name)}";
                     }
-                    if (OutputDestinationMode == 2)
+                    if (CurrentPreset.OutputDestinationMode == 2)
                     {
                         if (HotProfile.SplitRGB) //search for initial tiles in _R folder                    
                             basePath = $"{DirSeparator}Models{DirSeparator}{Path.GetFileNameWithoutExtension(model.Name)}" +
@@ -518,7 +519,7 @@ namespace ImageEnhancingUtility.Core
             }
 
             CreateTiles(file, image, imageHasAlpha, HotProfile);
-            if (!InMemoryMode)
+            if (!CurrentPreset.InMemoryMode)
             {
                 IncrementDoneCounter();
                 ReportProgress();

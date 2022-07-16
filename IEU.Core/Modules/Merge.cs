@@ -47,8 +47,8 @@ namespace ImageEnhancingUtility.Core
             ResetDoneCounter();
             ResetTotalCounter();
 
-            int tempOutMode = OutputDestinationMode;
-            if (UseModelChain) tempOutMode = 0;
+            int tempOutMode = CurrentPreset.OutputDestinationMode;
+            if (CurrentPreset.UseModelChain) tempOutMode = 0;
 
             FileInfo[] inputFiles = batchValues.images.Keys.Select(x => new FileInfo(x)).ToArray();
 
@@ -164,7 +164,7 @@ namespace ImageEnhancingUtility.Core
 
             await Task.Run(() =>
             {
-                if (InMemoryMode)
+                if (CurrentPreset.InMemoryMode)
                 {
                     MergeTask(pathImage, values, result, profile);
                 }
@@ -177,7 +177,7 @@ namespace ImageEnhancingUtility.Core
                             profile);
             });
 
-            if (InMemoryMode)
+            if (CurrentPreset.InMemoryMode)
             {
                 lrDict.Remove(path);
                 hrDict.Remove(path);
@@ -185,9 +185,9 @@ namespace ImageEnhancingUtility.Core
             GC.Collect();
 
             string pathToMergedFiles = OutputDirectoryPath;
-            if (OutputDestinationMode == 1)
+            if (CurrentPreset.OutputDestinationMode == 1)
                 pathToMergedFiles += $"{DirSeparator}images";
-            if (OutputDestinationMode == 2)
+            if (CurrentPreset.OutputDestinationMode == 2)
                 pathToMergedFiles += $"{DirSeparator}models";
         }
 
@@ -201,8 +201,8 @@ namespace ImageEnhancingUtility.Core
 
             string resultSuffix = "";
 
-            if (UseResultSuffix)
-                resultSuffix = ResultSuffix;
+            if (CurrentPreset.UseResultSuffix)
+                resultSuffix = CurrentPreset.ResultSuffix;
 
             int imageWidth = values.Dimensions[0], imageHeight = values.Dimensions[1];
 
@@ -252,14 +252,14 @@ namespace ImageEnhancingUtility.Core
                 destinationPath =
                     OutputDirectoryPath + result.BasePath.Replace(Path.GetFileNameWithoutExtension(file.Name), outputFilename) + outputFormat;
 
-            if (OutputDestinationMode == 3)
+            if (CurrentPreset.OutputDestinationMode == 3)
                 destinationPath = $"{OutputDirectoryPath}{Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "")}{DirSeparator}" +
                     $"{Path.GetFileNameWithoutExtension(file.Name)}{outputFormat}";
 
             Logger.WriteDebug($"Destination path: {destinationPath}");
 
             int mergedWidth = 0, mergedHeight = 0;
-            if (UseImageMagickMerge)
+            if (CurrentPreset.UseImageMagickMerge)
             {
                 //finalImage = MergeTilesNew(pathImage, tiles, new int[] { tileWidth, tileHeight }, result.BasePath, basePathAlpha, resultSuffix, tileFilesToDelete, imageHasAlpha, HotProfile);
                 //mergedWidth = finalImage.Width;
@@ -275,14 +275,14 @@ namespace ImageEnhancingUtility.Core
             if (HotProfile.SeamlessTexture)
             {
                 Logger.WriteDebug($"Extrating seamless texture. Upscale modificator: {upscaleMod}");
-                if (UseImageMagickMerge)
+                if (CurrentPreset.UseImageMagickMerge)
                     finalImage = ExtractTiledTexture(finalImage, upscaleMod, expandSize);
                 else
                     ExtractTiledTexture(ref imageResult, upscaleMod, expandSize);
             }
             else
             {
-                if (UseImageMagickMerge)
+                if (CurrentPreset.UseImageMagickMerge)
                     finalImage.Crop((int) (values.CropToDimensions[0] * upscaleMod), (int)(values.CropToDimensions[1] * upscaleMod), Gravity.Northwest);
                 else
                     imageResult = imageResult.Crop(0, 0, (int)(values.CropToDimensions[0] * upscaleMod), (int)(values.CropToDimensions[1] * upscaleMod));
@@ -290,7 +290,7 @@ namespace ImageEnhancingUtility.Core
 
             #region SAVE IMAGE
 
-            if (!UseImageMagickMerge)
+            if (!CurrentPreset.UseImageMagickMerge)
             {
                 if (imageResult == null)
                     return;
@@ -298,7 +298,7 @@ namespace ImageEnhancingUtility.Core
                 {
                     Logger.WriteDebug($"Saving with vips");
 
-                    if (OverwriteMode == 2)
+                    if (CurrentPreset.OverwriteMode == 2)
                     {
                         Logger.WriteDebug($"Overwriting file");
                         file.Delete();
@@ -320,8 +320,12 @@ namespace ImageEnhancingUtility.Core
                     //pathImage.Item2.Dispose();                   
                     Logger.Write($"<{file.Name}> MERGE DONE", Color.LightGreen);
 
-                    IncrementDoneCounter();
-                    ReportProgress();
+                    if(!IsSub)
+                    {
+                        IncrementDoneCounter();
+                        ReportProgress();
+                    }
+                    
 
                     if (HotProfile.DeleteResults)
                         tileFilesToDelete.ForEach(x => x.Delete());
@@ -343,7 +347,7 @@ namespace ImageEnhancingUtility.Core
 
             //ImageOperations.ImagePostrpocess(ref finalImage, HotProfile, Logger);
 
-            if (OverwriteMode == 2)
+            if (CurrentPreset.OverwriteMode == 2)
             {
                 file.Delete();
                 destinationPath = $"{OutputDirectoryPath}{DirSeparator}" +
@@ -391,7 +395,7 @@ namespace ImageEnhancingUtility.Core
             int tileWidth = (int) (values.TileW * upMod), tileHeight = (int)(values.TileH * upMod);
 
             string basePathAlpha = result.BasePath;
-            if (OutputDestinationMode == 1) // grab alpha tiles from different folder
+            if (CurrentPreset.OutputDestinationMode == 1) // grab alpha tiles from different folder
             {
                 string fileName = Path.GetFileNameWithoutExtension(file.Name);
                 basePathAlpha = basePathAlpha.Replace(
@@ -400,7 +404,7 @@ namespace ImageEnhancingUtility.Core
             }
 
             Dictionary<string, MagickImage> hrTiles = null;
-            if (InMemoryMode)
+            if (CurrentPreset.InMemoryMode)
             {
                 hrTiles = hrDict[pathImage.Item1];
             }
@@ -417,16 +421,16 @@ namespace ImageEnhancingUtility.Core
                     try
                     {
                         if (values.profile1.SplitRGB)
-                            imageNextTile = JoinRGB(pathImage, result, tileIndex, ResultSuffix, ref tileFilesToDelete);
+                            imageNextTile = JoinRGB(pathImage, result, tileIndex, CurrentPreset.ResultSuffix, ref tileFilesToDelete);
                         else
                         {
-                            string newTilePath = $"{ResultsPath + result.BasePath}_tile-{tileIndex:D2}{ResultSuffix}.png";
-                            if (InMemoryMode)
+                            string newTilePath = $"{ResultsPath + result.BasePath}_tile-{tileIndex:D2}{CurrentPreset.ResultSuffix}.png";
+                            if (CurrentPreset.InMemoryMode)
                                 imageNextTile = ImageOperations.ConvertToVips(hrTiles[newTilePath]);
                             else
                             {
                                 imageNextTile = Image.NewFromFile(newTilePath, false, Enums.Access.Sequential);
-                               tileFilesToDelete.Add(new FileInfo($"{ResultsPath + result.BasePath}_tile-{tileIndex:D2}{ResultSuffix}.png"));
+                               tileFilesToDelete.Add(new FileInfo($"{ResultsPath + result.BasePath}_tile-{tileIndex:D2}{CurrentPreset.ResultSuffix}.png"));
                             }
                             if (HotProfile.ResizeImageAfterScaleFactor < 1.0)
                                 imageNextTile = imageNextTile.Resize(HotProfile.ResizeImageAfterScaleFactor, VipsKernel[HotProfile.ResizeImageAfterFilterType]);
@@ -443,13 +447,13 @@ namespace ImageEnhancingUtility.Core
                     {
                         try
                         {
-                            var newAlphaTilePath = $"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex:D2}{ResultSuffix}.png";
-                            if (InMemoryMode)
+                            var newAlphaTilePath = $"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex:D2}{CurrentPreset.ResultSuffix}.png";
+                            if (CurrentPreset.InMemoryMode)
                                 imageAlphaNextTile = ImageOperations.ConvertToVips(hrTiles[newAlphaTilePath]);
                             else
                             {
                                 imageAlphaNextTile = Image.NewFromFile(newAlphaTilePath, false, Enums.Access.Sequential);                               
-                                tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex:D2}{ResultSuffix}.png"));
+                                tileFilesToDelete.Add(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex:D2}{CurrentPreset.ResultSuffix}.png"));
                             }
 
                             if (HotProfile.ResizeImageAfterScaleFactor < 1.0)
@@ -479,7 +483,7 @@ namespace ImageEnhancingUtility.Core
                         {
                             alphaReadError = true;
                             if (!HotProfile.IgnoreSingleColorAlphas)
-                                Logger.WriteOpenError(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex:D2}{ResultSuffix}.png"), ex.Message);
+                                Logger.WriteOpenError(new FileInfo($"{ResultsPath + basePathAlpha}_alpha_tile-{tileIndex:D2}{CurrentPreset.ResultSuffix}.png"), ex.Message);
                         }
                     }
 
@@ -563,7 +567,7 @@ namespace ImageEnhancingUtility.Core
         void JoinTiles(ref Image imageRow, Image imageNextTile, string direction, int dx, int dy)
         {
             Logger.WriteDebug("Merging with old vips method");
-            int mblendSize = EnableBlend ? OverlapSize : 0;
+            int mblendSize = EnableBlend ? CurrentPreset.OverlapSize : 0;
             Logger.WriteDebug($"mblend: {EnableBlend}");
             imageRow = imageRow.Merge(imageNextTile, direction, dx, dy, mblendSize);
         }
@@ -700,11 +704,11 @@ namespace ImageEnhancingUtility.Core
 
                 imageWidth = (int)(paddedDimensions[0] * HotProfile.ResizeImageBeforeScaleFactor);
                 imageHeight = (int)(paddedDimensions[1] * HotProfile.ResizeImageBeforeScaleFactor);
-                tiles = Helper.GetTilesSize(imageWidth, imageHeight, MaxTileResolution);
+                tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
                 values.CropToDimensions = new int[] { paddedDimensions[0], paddedDimensions[1] };
             }
 
-            if (imageWidth * imageHeight > MaxTileResolution)
+            if (imageWidth * imageHeight > CurrentPreset.MaxTileResolution)
             {
                 //make sure that image can be tiled without leftover pixels
                 bool dimensionsAreOK = imageWidth % tiles[0] == 0 && imageHeight % tiles[1] == 0;
@@ -739,7 +743,7 @@ namespace ImageEnhancingUtility.Core
         {
             Image imageNextTileR, imageNextTileG, imageNextTileB;
             FileInfo tileR, tileG, tileB;
-            if (OutputDestinationMode == 1)
+            if (CurrentPreset.OutputDestinationMode == 1)
             {
                 tileR = new FileInfo($"{ResultsPath + result.BasePath.Replace("_ChannelChar", "_R")}_R_tile-{tileIndex:D2}{resultSuffix}.png");
                 tileG = new FileInfo($"{ResultsPath + result.BasePath.Replace("_ChannelChar", "_G")}_G_tile-{tileIndex:D2}{resultSuffix}.png");
@@ -751,7 +755,7 @@ namespace ImageEnhancingUtility.Core
                 tileG = new FileInfo($"{ResultsPath + result.BasePath}_G_tile-{tileIndex:D2}{resultSuffix}.png");
                 tileB = new FileInfo($"{ResultsPath + result.BasePath}_B_tile-{tileIndex:D2}{resultSuffix}.png");
             }
-            if (InMemoryMode)
+            if (CurrentPreset.InMemoryMode)
             {
                 var hrTiles = hrDict[pathImage.Item1];
                 imageNextTileR = ImageOperations.ConvertToVips(hrTiles[tileR.FullName])[0];

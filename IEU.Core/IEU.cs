@@ -43,11 +43,11 @@ namespace ImageEnhancingUtility.Core
         public readonly string AppVersion = "0.14.0";
         public readonly string GitHubRepoName = "IEU.Core";
 
-        private int _overwriteMode = 0;       
-        public int OverwriteMode
+        Preset _currentPreset = new Preset("current");
+        public Preset CurrentPreset
         {
-            get => _overwriteMode;
-            set => this.RaiseAndSetIfChanged(ref _overwriteMode, value);
+            get => _currentPreset;
+            set => this.RaiseAndSetIfChanged(ref _currentPreset, value);
         }
 
         private bool _preciseTileResolution = false;      
@@ -56,7 +56,7 @@ namespace ImageEnhancingUtility.Core
             get => _preciseTileResolution;
             set
             {
-                OverlapSize = 0;
+                CurrentPreset.OverlapSize = 0;
                 this.RaiseAndSetIfChanged(ref _preciseTileResolution, value);
             }
         }
@@ -85,7 +85,7 @@ namespace ImageEnhancingUtility.Core
             get => _noNvidia;
             set
             {
-                AutoSetTileSizeEnable = false;
+                CurrentPreset.AutoSetTileSizeEnable = false;
                 VramMonitorEnable = false;
                 this.RaiseAndSetIfChanged(ref _noNvidia, value);
             }
@@ -117,12 +117,12 @@ namespace ImageEnhancingUtility.Core
             set
             {
                 if (value.Count > 1 && _selectedModelsItems.Count <= 1) // from single model to mult
-                    OutputDestinationModes = Dictionaries.OutputDestinationModesMultModels;
+                    CurrentPreset.OutputDestinationModes = Dictionaries.OutputDestinationModesMultModels;
                 if (value.Count <= 1 && _selectedModelsItems.Count > 1) // from mult models to single
                 {
-                    //int temp = OutputDestinationMode;
-                    OutputDestinationModes = Dictionaries.OutputDestinationModesSingleModel;
-                    //OutputDestinationMode = temp;
+                    //int temp = CurrentPreset.OutputDestinationMode;
+                    CurrentPreset.OutputDestinationModes = Dictionaries.OutputDestinationModesSingleModel;
+                    //CurrentPreset.OutputDestinationMode = temp;
                 }
                 this.RaiseAndSetIfChanged(ref _selectedModelsItems, value);
             }
@@ -200,110 +200,9 @@ namespace ImageEnhancingUtility.Core
             get => _resultsPath;
             set => this.RaiseAndSetIfChanged(ref _resultsPath, value);
         }
-#endregion
+        #endregion
 
-#region SETTINGS
-
-        private int _maxTileResolution = 512 * 380;
-        public int MaxTileResolution
-        {
-            get => _maxTileResolution;
-            set => this.RaiseAndSetIfChanged(ref _maxTileResolution, value);
-        }
-
-        private int _maxTileResolutionWidth = 512;
-        [ProtoMember(10)]
-        public int MaxTileResolutionWidth
-        {
-            get => _maxTileResolutionWidth;
-            set
-            {
-                MaxTileResolution = value * MaxTileResolutionHeight;
-                this.RaiseAndSetIfChanged(ref _maxTileResolutionWidth, value);
-            }
-        }
-
-        private int _maxTileResolutionHeight = 380;
-        [ProtoMember(11)]
-        public int MaxTileResolutionHeight
-        {
-            get => _maxTileResolutionHeight;
-            set
-            {
-                if (value == 0)
-                    value = 16;
-                MaxTileResolution = value * MaxTileResolutionWidth;
-                this.RaiseAndSetIfChanged(ref _maxTileResolutionHeight, value);
-            }
-        }
-
-        private int _overlapSize = 16;
-        [ProtoMember(12, IsRequired = true)]
-        public int OverlapSize
-        {
-            get => _overlapSize;
-            set => this.RaiseAndSetIfChanged(ref _overlapSize, value);
-        }
-
-        Dictionary<string, int> _outputDestinationModes = Dictionaries.OutputDestinationModesSingleModel;
-        public Dictionary<string, int> OutputDestinationModes
-        {
-            get => _outputDestinationModes;
-            set
-            {
-                if (value == Dictionaries.OutputDestinationModesMultModels)
-                    OverwriteModes = Dictionaries.OverwriteModesNone;
-                else
-                    OverwriteModes = Dictionaries.OverwriteModesAll;
-                this.RaiseAndSetIfChanged(ref _outputDestinationModes, value);
-            }
-        }
-
-        private int _outputDestinationMode = 0;
-        [ProtoMember(13)]
-        public int OutputDestinationMode
-        {
-            get => _outputDestinationMode;
-            set
-            {
-                if (value == 1 || value == 2)
-                    OverwriteModes = Dictionaries.OverwriteModesNone;
-                else
-                    OverwriteModes = Dictionaries.OverwriteModesAll;
-                this.RaiseAndSetIfChanged(ref _outputDestinationMode, value);
-            }
-        }
-
-        Dictionary<string, int> _overwriteModes = Dictionaries.OverwriteModesAll;
-        public Dictionary<string, int> OverwriteModes
-        {
-            get => _overwriteModes;
-            set => this.RaiseAndSetIfChanged(ref _overwriteModes, value);
-        }
-
-        bool _createMemoryImage = false;
-        [ProtoMember(14, IsRequired = true)]
-        public bool CreateMemoryImage
-        {
-            get => _createMemoryImage;
-            set => this.RaiseAndSetIfChanged(ref _createMemoryImage, value);
-        }
-
-        bool _useCPU = false;
-        [ProtoMember(16)]
-        public bool UseCPU
-        {
-            get => _useCPU;
-            set => this.RaiseAndSetIfChanged(ref _useCPU, value);
-        }
-
-        bool _useBasicSR = false;
-        [ProtoMember(17)]
-        public bool UseBasicSR
-        {
-            get => _useBasicSR;
-            set => this.RaiseAndSetIfChanged(ref _useBasicSR, value);
-        }
+        #region SETTINGS     
 
         string _lastModelForAlphaPath = "";
         [ProtoMember(18)]
@@ -322,15 +221,7 @@ namespace ImageEnhancingUtility.Core
                 }
                 _lastModelForAlphaPath = value;
             }
-        }
-
-        bool _darkThemeEnabled = false;
-        [ProtoMember(19)]
-        public bool DarkThemeEnabled
-        {
-            get => _darkThemeEnabled;
-            set => this.RaiseAndSetIfChanged(ref _darkThemeEnabled, value);
-        }
+        }       
 
         bool _disableRuleSystem = true;
         [ProtoMember(23, IsRequired = true)]
@@ -361,55 +252,7 @@ namespace ImageEnhancingUtility.Core
         {
             get => _enableBlend;
             set => this.RaiseAndSetIfChanged(ref _enableBlend, value);
-        }
-
-        bool _inMemoryMode = true;
-        [ProtoMember(29, IsRequired = true)]
-        public bool InMemoryMode
-        {
-            get => _inMemoryMode;
-            set => this.RaiseAndSetIfChanged(ref _inMemoryMode, value);
-        }
-
-        bool _useImageMagickMerge = false;
-        [ProtoMember(30, IsRequired = true)]
-        public bool UseImageMagickMerge
-        {
-            get => _useImageMagickMerge;
-            set => this.RaiseAndSetIfChanged(ref _useImageMagickMerge, value);
-        }
-
-        bool _debugMode = false;
-        [ProtoMember(31)]
-        public bool DebugMode
-        {
-            get => _debugMode;
-            set => this.RaiseAndSetIfChanged(ref _debugMode, value);
-        }
-
-        bool _useModelChain = false;
-        [ProtoMember(32)]
-        public bool UseModelChain
-        {
-            get => _useModelChain;
-            set => this.RaiseAndSetIfChanged(ref _useModelChain, value);
-        }
-
-        private bool _useResultSuffix = false;
-        [ProtoMember(42)]
-        public bool UseResultSuffix
-        {
-            get => _useResultSuffix;
-            set => this.RaiseAndSetIfChanged(ref _useResultSuffix, value);
-        }
-
-        private string _resultSuffix = "";
-        [ProtoMember(43)]
-        public string ResultSuffix
-        {
-            get => _resultSuffix;
-            set => this.RaiseAndSetIfChanged(ref _resultSuffix, value);
-        }
+        }        
 
         private bool _vramMonitorEnable = false;
         [ProtoMember(44, IsRequired = true)]
@@ -425,14 +268,7 @@ namespace ImageEnhancingUtility.Core
             get => _vramMonitorFrequency;
             set => this.RaiseAndSetIfChanged(ref _vramMonitorFrequency, value);
         }
-        private bool _autoSetTileSizeEnable = false;
-        [ProtoMember(46, IsRequired = true)]
-        public bool AutoSetTileSizeEnable
-        {
-            get => _autoSetTileSizeEnable;
-            set => this.RaiseAndSetIfChanged(ref _autoSetTileSizeEnable, value);
-        }
-
+      
         bool _useOldVipsMerge = true;
         [ProtoMember(47, IsRequired = true)]
         public bool UseOldVipsMerge
@@ -440,9 +276,7 @@ namespace ImageEnhancingUtility.Core
             get => _useOldVipsMerge;
             set => this.RaiseAndSetIfChanged(ref _useOldVipsMerge, value);
         }
-
-     
-
+            
         #endregion
 
         #region MAINTAB_PROGRESS       
@@ -488,8 +322,8 @@ namespace ImageEnhancingUtility.Core
 
         public bool GreyscaleModel = false;
 
-#region RULESET
-        public Profile GlobalProfile;
+        #region RULESET
+
         Profile _currentProfile;
         public Profile CurrentProfile
         {
@@ -497,7 +331,6 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _currentProfile, value);
         }
 
-        public Filter GlobalFilter;
         Filter _currentFilter;
         public Filter CurrentFilter
         {
@@ -518,9 +351,14 @@ namespace ImageEnhancingUtility.Core
         public Rule GlobalRule;
 
         public string SaveProfileName = "NewProfile";
+
+        [ProtoMember(29)]
+        readonly List<Preset> _presets = new List<Preset>();
+        public SourceList<Preset> Presets = new SourceList<Preset>();
+
         #endregion
 
-#endregion
+        #endregion
 
         public ReactiveCommand<FileInfo[], Unit> SplitCommand { get; }
         public ReactiveCommand<Tuple<bool, Profile>, bool> UpscaleCommand { get; }
@@ -532,6 +370,8 @@ namespace ImageEnhancingUtility.Core
         public IEU(bool isSub = false)
         {
             IsSub = isSub;
+            if(!isSub)
+                previewIEU = new IEU(true);
 
             Task splitFunc(FileInfo[] x) => Split();
             SplitCommand = ReactiveCommand.CreateFromTask((Func<FileInfo[], Task>)splitFunc);
@@ -548,7 +388,10 @@ namespace ImageEnhancingUtility.Core
             Logger.Write(RuntimeInformation.FrameworkDescription);
 
             if (!IsSub)
+            {
                 ReadSettings();
+                CurrentPreset = Preset.Load("current")??CurrentPreset;
+            }
 
             if (_profiles.Count == 0)
                 AddProfile(new Profile("Global"));
@@ -560,11 +403,16 @@ namespace ImageEnhancingUtility.Core
             else
                 Filters.AddRange(_filters);
 
-            GlobalProfile = Profiles.Items.FirstOrDefault();
-            GlobalFilter = Filters.Items.FirstOrDefault();
-            CurrentProfile = GlobalProfile.Clone();
-            CurrentFilter = GlobalFilter.Clone();
-            GlobalRule = new Rule("Global", GlobalProfile, GlobalFilter) { Priority = 0 };
+            if (_presets.Count == 0)
+                AddPreset(new Preset("Global") { Profile = _profiles[0], Filter = _filters[0] });
+            else
+                Presets.AddRange(_presets);
+
+            CurrentPreset.Profile = Profiles.Items.FirstOrDefault();
+            CurrentPreset.Filter = Filters.Items.FirstOrDefault();
+            CurrentProfile = CurrentPreset.Profile.Clone();
+            CurrentFilter = CurrentPreset.Filter.Clone();
+            GlobalRule = new Rule("Global", CurrentPreset.Profile, CurrentPreset.Filter) { Priority = 0 };
             if (Ruleset.Count == 0)
                 Ruleset.Add(0, GlobalRule);
             else
@@ -766,7 +614,54 @@ namespace ImageEnhancingUtility.Core
             rule.Priority = newPriority;
         }
 
-#endregion
+        public void AddPreset(string name)
+        {
+            Preset oldProfile = Presets.Items.Where(x => x.Name == name).FirstOrDefault() as Preset;
+            _presets.Remove(oldProfile);
+            Presets.Remove(oldProfile);
+
+            Preset newProfile = CurrentPreset.Clone();
+            newProfile.Profile = CurrentProfile;
+            newProfile.Filter = CurrentFilter;
+            newProfile.Name = name;
+
+            if (name == "Global")
+            {
+                Presets.Insert(0, newProfile);
+                _presets.Insert(0, newProfile);
+            }
+            else
+                AddPreset(newProfile);
+        }
+
+        private void AddPreset(Preset newProfile)
+        {
+            Presets.Add(newProfile);
+            _presets.Add(newProfile);
+        }
+
+        public void LoadPreset(Preset profile)
+        {
+            CurrentPreset = profile.Clone();
+            LoadProfile(CurrentPreset.Profile);
+            LoadFilter(CurrentPreset.Filter);
+        }
+
+        public void LoadPreset(int profile)
+        {
+            CurrentPreset = Presets.Items.ElementAt(profile).Clone();
+        }
+        public void DeletePreset(Preset profile)
+        {
+            if (Presets.Items.Contains(profile))
+            {
+                Presets.Remove(profile);
+                _presets.Remove(profile);
+            }
+        }
+
+
+        #endregion
 
         #region PROGRESS/LOG
 
@@ -776,13 +671,13 @@ namespace ImageEnhancingUtility.Core
             double fdd = FilesDone;
             if (FilesDone == 0 && FilesTotal != 0)
                 fdd = 0.001;
-            if(FilesDone == FilesTotal && InMemoryMode)
+            if(FilesDone == FilesTotal && CurrentPreset.InMemoryMode && !IsSub)
                 PrintTime();
             ProgressBarValue = (fdd / FilesTotal) * 100.00;
             ProgressLabel = $@"{FilesDone}/{FilesTotal}";
-        }
+        }        
         #endregion
-               
+
         [Category("Exposed")]
         [ProtoMember(52)]
         public int MaxConcurrency { get; set; } = 99;
@@ -795,14 +690,14 @@ namespace ImageEnhancingUtility.Core
         BatchValues ReadBatchValues(string path = "CurrentSession.json")
         {           
             var batch = JsonConvert.DeserializeObject<BatchValues>(File.ReadAllText(path));
-            OutputDestinationMode = batch.OutputMode;
-            OverwriteMode = batch.OverwriteMode;
-            MaxTileResolutionWidth = batch.MaxTileW;
-            MaxTileResolutionHeight = batch.MaxTileH;
-            MaxTileResolution = batch.MaxTileResolution;
-            OverlapSize = batch.OverlapSize;
+            CurrentPreset.OutputDestinationMode = batch.OutputMode;
+            CurrentPreset.OverwriteMode = batch.OverwriteMode;
+            CurrentPreset.MaxTileResolutionWidth = batch.MaxTileW;
+            CurrentPreset.MaxTileResolutionHeight = batch.MaxTileH;
+            CurrentPreset.MaxTileResolution = batch.MaxTileResolution;
+            CurrentPreset.OverlapSize = batch.OverlapSize;
             CurrentProfile.PaddingSize = batch.Padding;
-            ResultSuffix = batch.ResultSuffix;
+            CurrentPreset.ResultSuffix = batch.ResultSuffix;
 
             return batch;
         }
@@ -855,7 +750,7 @@ namespace ImageEnhancingUtility.Core
         async public Task<bool> Upscale(bool NoWindow = true, Profile HotProfile = null, bool async = true)
         {
             if (HotProfile == null)
-                HotProfile = GlobalProfile;
+                HotProfile = CurrentPreset.Profile;
             if (DisableRuleSystem)
                 HotProfile = CurrentProfile;
             if (!IsSub)
@@ -872,7 +767,7 @@ namespace ImageEnhancingUtility.Core
                 return false;
             }
 
-            if (UseModelChain && checkedModels.Count > 1)
+            if (CurrentPreset.UseModelChain && checkedModels.Count > 1)
             {
                 string upscaleSizePattern = "(?:_?[1|2|4|8|16]x_)|(?:_x[1|2|4|8|16]_?)|(?:_[1|2|4|8|16]x_?)|(?:_?x[1|2|4|8|16]_)";
                 int latestSize = 1;
@@ -893,14 +788,14 @@ namespace ImageEnhancingUtility.Core
             if (!directory.Exists)
                 directory.Create();
 
-            if (CreateMemoryImage)
+            if (CurrentPreset.CreateMemoryImage)
             {
-                Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
+                Image image = Image.Black(CurrentPreset.MaxTileResolutionWidth, CurrentPreset.MaxTileResolutionHeight);
                 image.WriteToFile($"{LrPath}{DirSeparator}{memoryHelperName}_tile-00.png");
             }
 
             Process process;
-            if (UseBasicSR)
+            if (CurrentPreset.UseBasicSR)
                 process = await BasicSR_Test(NoWindow, HotProfile);
             else
             {
@@ -955,7 +850,7 @@ namespace ImageEnhancingUtility.Core
         void WriteTestScriptToDisk()
         {
             string archName = "ESRGAN";
-            if (UseBasicSR) archName = "BasicSR";          
+            if (CurrentPreset.UseBasicSR) archName = "BasicSR";          
             string scriptsDir = $"{Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory)}{DirSeparator}Scripts{DirSeparator}ESRGAN";
             string block = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.block.py");
             string blockPath = $"{DirSeparator}block.py";
@@ -985,13 +880,13 @@ namespace ImageEnhancingUtility.Core
             if (!File.Exists(scriptsDir + upscaleFromMemoryPath))
                 File.WriteAllText(scriptsDir + upscaleFromMemoryPath, upscaleFromMemory);
 
-            if (UseBasicSR) scriptPath = EsrganPath + $"{DirSeparator}codes{DirSeparator}IEU_test.py";
+            if (CurrentPreset.UseBasicSR) scriptPath = EsrganPath + $"{DirSeparator}codes{DirSeparator}IEU_test.py";
             else
             {
                 File.Copy(scriptsDir + blockPath, EsrganPath + blockPath, true);
                 File.Copy(scriptsDir + archPath, EsrganPath + archPath, true);
             }
-            if (InMemoryMode)
+            if (CurrentPreset.InMemoryMode)
                 File.Copy(scriptsDir + upscaleFromMemoryPath, EsrganPath + scriptPath, true);
             else
                 File.Copy(scriptsDir + upscalePath, EsrganPath + scriptPath, true);
@@ -1126,22 +1021,22 @@ namespace ImageEnhancingUtility.Core
             process.StartInfo.Arguments = $"{EsrganPath}";
             process.StartInfo.Arguments += Helper.GetCondaEnv(UseCondaEnv, CondaEnv);
             bool noValidModel = true;
-            string torchDevice = UseCPU ? "cpu" : "cuda";
+            string torchDevice = CurrentPreset.UseCPU ? "cpu" : "cuda";
             int upscaleMultiplayer = 0;
             string resultsPath = ResultsPath;
 
-            int tempOutMode = OutputDestinationMode;
+            int tempOutMode = CurrentPreset.OutputDestinationMode;
 
-            if (OverwriteMode == 1)
+            if (CurrentPreset.OverwriteMode == 1)
                 resultsPath = LrPath;
 
             int modelIndex = 0;
-            if (InMemoryMode)
+            if (CurrentPreset.InMemoryMode)
             {
                 noValidModel = false;
                 process.StartInfo.Arguments +=
                    $" & python IEU_test.py \"blank\" 1 {torchDevice}" +
-                   $" \"{LrPath + $"{DirSeparator}*"}\" \"{resultsPath}\" {tempOutMode} {InMemoryMode}";
+                   $" \"{LrPath + $"{DirSeparator}*"}\" \"{resultsPath}\" {tempOutMode} {CurrentPreset.InMemoryMode}";
             }
             else
                 foreach (ModelInfo checkedModel in checkedModels)
@@ -1150,7 +1045,7 @@ namespace ImageEnhancingUtility.Core
                             continue;
                     noValidModel = false;
 
-                    if (UseModelChain)
+                    if (CurrentPreset.UseModelChain)
                     {
                         tempOutMode = 0;
                         resultsPath = LrPath;
@@ -1160,7 +1055,7 @@ namespace ImageEnhancingUtility.Core
 
                     process.StartInfo.Arguments +=
                     $" & python IEU_test.py \"{checkedModel.FullName}\" {upscaleMultiplayer} {torchDevice}" +
-                    $" \"{LrPath + $"{DirSeparator}*"}\" \"{resultsPath}\" {tempOutMode} {InMemoryMode}";
+                    $" \"{LrPath + $"{DirSeparator}*"}\" \"{resultsPath}\" {tempOutMode} {CurrentPreset.InMemoryMode}";
 
                     modelIndex++;
                 }
@@ -1181,7 +1076,7 @@ namespace ImageEnhancingUtility.Core
                 if (validModelAlpha)
                     process.StartInfo.Arguments +=
                         $" & python IEU_test.py \"{HotProfile.ModelForAlpha.FullName}\" {upscaleMultiplayerAlpha} {torchDevice}" +
-                        $" \"{LrPath + $"_alpha{DirSeparator}*"}\" \"{resultsPath}\" {OutputDestinationMode} {InMemoryMode}";
+                        $" \"{LrPath + $"_alpha{DirSeparator}*"}\" \"{resultsPath}\" {CurrentPreset.OutputDestinationMode} {CurrentPreset.InMemoryMode}";
                 else
                 {
                     Logger.Write("Can't detect model for alpha scale");
@@ -1206,10 +1101,10 @@ namespace ImageEnhancingUtility.Core
                 return null;
             }
 
-            if (!InMemoryMode)
+            if (!CurrentPreset.InMemoryMode)
             {
                 SearchOption searchOption = SearchOption.TopDirectoryOnly;
-                if (OutputDestinationMode == 3)
+                if (CurrentPreset.OutputDestinationMode == 3)
                     searchOption = SearchOption.AllDirectories;
                 SetTotalCounter(Directory.GetFiles(LrPath, "*", searchOption).Count() * checkedModels.Count);
                 if (HotProfile.UseDifferentModelForAlpha)
@@ -1232,7 +1127,7 @@ namespace ImageEnhancingUtility.Core
 
         async Task<Process> JoeyESRGAN(bool NoWindow, Profile HotProfile)
         {
-            if (checkedModels.Count > 1 && !UseModelChain)
+            if (checkedModels.Count > 1 && !CurrentPreset.UseModelChain)
             {
                 Logger.Write("Only single model must be selected when not using model chain");
                 return null;
@@ -1243,9 +1138,9 @@ namespace ImageEnhancingUtility.Core
             process.StartInfo.Arguments = $"{EsrganPath}";
             process.StartInfo.Arguments += Helper.GetCondaEnv(UseCondaEnv, CondaEnv);
 
-            int tempOutMode = OutputDestinationMode;
+            int tempOutMode = CurrentPreset.OutputDestinationMode;
 
-            //if (HotProfile.OverwriteMode == 1)
+            //if (HotProfile.CurrentPreset.OverwriteMode == 1)
             //    resultsPath = LrPath;            
 
             if (checkedModels.Count == 1)
@@ -1262,7 +1157,7 @@ namespace ImageEnhancingUtility.Core
 
             //JoeyEsrgan.TileSize = (int)Math.Round(Math.Sqrt(MaxTileResolution));
             //JoeyEsrgan.SeamlessMod = HotProfile.SeamlessTexture?SeamlessMod.Tile:SeamlessMod.None;
-            //JoeyEsrgan.CPU = UseCPU;
+            //JoeyEsrgan.CPU = CurrentPreset.UseCPU;
 
             var argumentString = JoeyEsrgan.ArgumentString;
 
@@ -1287,7 +1182,7 @@ namespace ImageEnhancingUtility.Core
             //    if (validModelAlpha)
             //        process.StartInfo.Arguments +=
             //            $" & python IEU_test.py \"{HotProfile.ModelForAlpha.FullName}\" {upscaleMultiplayerAlpha} {torchDevice}" +
-            //            $" \"{LrPath + $"_alpha{DirectorySeparator}*"}\" \"{resultsPath}\" {OutputDestinationMode}";
+            //            $" \"{LrPath + $"_alpha{DirectorySeparator}*"}\" \"{resultsPath}\" {CurrentPreset.OutputDestinationMode}";
             //}
 
             //if (noValidModel)
@@ -1307,7 +1202,7 @@ namespace ImageEnhancingUtility.Core
             }
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
-            if (OutputDestinationMode == 3)
+            if (CurrentPreset.OutputDestinationMode == 3)
                 searchOption = SearchOption.AllDirectories;
             var filesNumber = Directory.GetFiles(InputDirectoryPath, "*", searchOption).Count();
             if (filesNumber == 0)
@@ -1351,7 +1246,7 @@ namespace ImageEnhancingUtility.Core
                 noValidModel = false;
 
                 config.Scale = upscaleMultiplayer;
-                if (UseCPU)
+                if (CurrentPreset.UseCPU)
                     config.GpuIds = null;
                 TestDataset dataset = new TestDataset() { DatarootLR = LrPath, DatarootHR = ResultsPath };
                 config.Datasets.Test = dataset;
@@ -1378,7 +1273,7 @@ namespace ImageEnhancingUtility.Core
                     return null;
                 }
                 configAlpha.Scale = upscaleMultiplayerAlpha;
-                if (UseCPU)
+                if (CurrentPreset.UseCPU)
                     configAlpha.GpuIds = null;
                 TestDataset dataset = new TestDataset() { DatarootLR = LrPath + $"_alpha{DirSeparator}*", DatarootHR = ResultsPath };
                 configAlpha.Datasets.Test = dataset;
@@ -1406,7 +1301,7 @@ namespace ImageEnhancingUtility.Core
                 return null;
             }
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
-            if (OutputDestinationMode == 3)
+            if (CurrentPreset.OutputDestinationMode == 3)
                 searchOption = SearchOption.AllDirectories;
             SetTotalCounter(Directory.GetFiles(LrPath, "*", searchOption).Count() * checkedModels.Count);
             if (HotProfile.UseDifferentModelForAlpha)
@@ -1474,7 +1369,7 @@ namespace ImageEnhancingUtility.Core
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            if (InMemoryMode && !ignoreInMemory) //for preview
+            if (CurrentPreset.InMemoryMode && !ignoreInMemory) //for preview
             {
                 writer = process.StandardInput;
                 WriteModelsToStream();
@@ -1530,7 +1425,7 @@ namespace ImageEnhancingUtility.Core
                 && !outLine.Data.Contains("UserWarning")
                 && !outLine.Data.Contains("nn."))
             {
-                if (outLine.Data.StartsWith("b'") && InMemoryMode)
+                if (outLine.Data.StartsWith("b'") && CurrentPreset.InMemoryMode)
                 {
                     Regex regex = new Regex("(.*):::(.*):::(.*):::(.*)");
                     var img = regex.Match(outLine.Data).Groups[1].Value;
@@ -1562,6 +1457,12 @@ namespace ImageEnhancingUtility.Core
                     }
                     var lrTiles = lrDict[origPath];
                     Logger.Write(path, Color.LightGreen);
+
+                    if(IsSub)
+                    {
+                        IncrementDoneCounter();
+                        ReportProgress();
+                    }
 
                     if (hrTiles.Count == lrTiles.Count) //all tiles for current image
                     {
@@ -1671,10 +1572,10 @@ namespace ImageEnhancingUtility.Core
                 magicNumber = magicNumberFor4x / 2;
             var newmax = (int)gpuMonitor.vcurMemory * magicNumber;
 
-            MaxTileResolutionWidth = MaxTileResolutionHeight = (int)Math.Sqrt(newmax);
+            CurrentPreset.MaxTileResolutionWidth = CurrentPreset.MaxTileResolutionHeight = (int)Math.Sqrt(newmax);
 
-            MaxTileResolution = newmax;
-            Logger.Write($"Setting max tile size to {MaxTileResolutionWidth}x{MaxTileResolutionHeight}");
+            CurrentPreset.MaxTileResolution = newmax;
+            Logger.Write($"Setting max tile size to {CurrentPreset.MaxTileResolutionWidth}x{CurrentPreset.MaxTileResolutionHeight}");
         }
 
         #endregion                
@@ -1713,7 +1614,7 @@ namespace ImageEnhancingUtility.Core
                 return true;
             }
 
-            if (InMemoryMode)
+            if (CurrentPreset.InMemoryMode)
                 await SplitUpscaleMergeInMemory();            
             else
             {
@@ -1736,17 +1637,17 @@ namespace ImageEnhancingUtility.Core
 
             batchValues = new BatchValues()
             {
-                MaxTileResolution = MaxTileResolution,
-                MaxTileH = MaxTileResolutionHeight,
-                MaxTileW = MaxTileResolutionWidth,
-                OutputMode = OutputDestinationMode,
-                OverwriteMode = OverwriteMode,
-                OverlapSize = OverlapSize,
+                MaxTileResolution = CurrentPreset.MaxTileResolution,
+                MaxTileH = CurrentPreset.MaxTileResolutionHeight,
+                MaxTileW = CurrentPreset.MaxTileResolutionWidth,
+                OutputMode = CurrentPreset.OutputDestinationMode,
+                OverwriteMode = CurrentPreset.OverwriteMode,
+                OverlapSize = CurrentPreset.OverlapSize,
                 Padding = CurrentProfile.PaddingSize              
             };            
 
             SearchOption searchOption = SearchOption.TopDirectoryOnly;
-            if (OutputDestinationMode == 3)
+            if (CurrentPreset.OutputDestinationMode == 3)
                 searchOption = SearchOption.AllDirectories;
             DirectoryInfo inputDirectory = new DirectoryInfo(InputDirectoryPath);
             FileInfo[] inputDirectoryFiles = inputDirectory.GetFiles("*", searchOption)
@@ -1774,7 +1675,7 @@ namespace ImageEnhancingUtility.Core
             var firstFile = fileQueue.Dequeue();
             hrDict.Add(firstFile.FullName, new Dictionary<string, MagickImage>());
 
-            if (AutoSetTileSizeEnable)
+            if (CurrentPreset.AutoSetTileSizeEnable)
                 await AutoSetTileSize();              
 
             SplitImage.Post(firstFile);
@@ -1783,7 +1684,8 @@ namespace ImageEnhancingUtility.Core
 
         #region INMEMORY
 
-        [Category("Exposed")][ProtoMember(51)]
+        [Category("Exposed")]
+        [ProtoMember(51)]
         public int InMemoryMaxSplit { get; set; } = 2;
 
         Queue<FileInfo> fileQueue;
@@ -1791,10 +1693,10 @@ namespace ImageEnhancingUtility.Core
         Queue<FileInfo> CreateQueue(FileInfo[] files)
         {
             Queue<FileInfo> fileQueue = new Queue<FileInfo>();
-            if (CreateMemoryImage)
+            if (CurrentPreset.CreateMemoryImage)
             {
                 var path = $"{InputDirectoryPath}{DirSeparator}{memoryHelperName}.png";
-                Image image = Image.Black(MaxTileResolutionWidth, MaxTileResolutionHeight);
+                Image image = Image.Black(CurrentPreset.MaxTileResolutionWidth, CurrentPreset.MaxTileResolutionHeight);
                 image.WriteToFile(path);
                 fileQueue.Enqueue(new FileInfo(path));
             }
@@ -1878,51 +1780,56 @@ namespace ImageEnhancingUtility.Core
 
         #region PREVIEW
 
-        private IEU previewIEU; 
+        public IEU previewIEU { get; set; } 
 
         public string PreviewDirPath = "";
 
-        void SetPreviewIEU(ref IEU previewIEU)
+        void SetPreviewIEU()
         {
             string previewResultsDirPath = PreviewDirPath + $"{DirSeparator}results";
             string previewLrDirPath = PreviewDirPath + $"{DirSeparator}LR";
             string previewInputDirPath = PreviewDirPath + $"{DirSeparator}input";
 
+
+            previewIEU.ResetTotalCounter();
+            previewIEU.ResetDoneCounter();
+
+            previewIEU.ProgressBarValue = 0;           
             previewIEU.EsrganPath = EsrganPath;
             previewIEU.LrPath = previewLrDirPath;
             previewIEU.InputDirectoryPath = previewInputDirPath;
             previewIEU.ResultsPath = previewResultsDirPath;
             previewIEU.OutputDirectoryPath = PreviewDirPath;
-            previewIEU.MaxTileResolution = MaxTileResolution;
-            previewIEU.OverlapSize = OverlapSize;
-            previewIEU.OutputDestinationMode = 0;
-            previewIEU.UseCPU = UseCPU;
-            previewIEU.UseBasicSR = UseBasicSR;
+            previewIEU.CurrentPreset.MaxTileResolution = CurrentPreset.MaxTileResolution;
+            previewIEU.CurrentPreset.OverlapSize = CurrentPreset.OverlapSize;
+            previewIEU.CurrentPreset.OutputDestinationMode = 0;
+            previewIEU.CurrentPreset.UseCPU = CurrentPreset.UseCPU;
+            previewIEU.CurrentPreset.UseBasicSR = CurrentPreset.UseBasicSR;
             previewIEU.CurrentProfile = CurrentProfile.Clone();
-            previewIEU.OverwriteMode = 0;
+            previewIEU.CurrentPreset.OverwriteMode = 0;
             previewIEU.CurrentProfile.UseOriginalImageFormat = false;
             previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.pngFormat;
             previewIEU.DisableRuleSystem = true;
-            previewIEU.CreateMemoryImage = false;
+            previewIEU.CurrentPreset.CreateMemoryImage = false;
             previewIEU.UseCondaEnv = UseCondaEnv;
             previewIEU.CondaEnv = CondaEnv;
-            previewIEU.InMemoryMode = InMemoryMode;
+            previewIEU.CurrentPreset.InMemoryMode = CurrentPreset.InMemoryMode;
             previewIEU.UseOldVipsMerge = UseOldVipsMerge;
             previewIEU.EnableBlend = EnableBlend;
-            previewIEU.UseImageMagickMerge = UseImageMagickMerge;
-            previewIEU.AutoSetTileSizeEnable = AutoSetTileSizeEnable;
+            previewIEU.CurrentPreset.UseImageMagickMerge = CurrentPreset.UseImageMagickMerge;
+            previewIEU.CurrentPreset.AutoSetTileSizeEnable = CurrentPreset.AutoSetTileSizeEnable;
             previewIEU.VramMonitorEnable = false;
-            previewIEU.DebugMode = DebugMode;
+            previewIEU.CurrentPreset.DebugMode = CurrentPreset.DebugMode;
             previewIEU.CurrentProfile.PaddingSize = CurrentProfile.PaddingSize;           
 
             previewIEU.batchValues = new BatchValues()
             {
-                MaxTileResolution = MaxTileResolution,
-                MaxTileH = MaxTileResolutionHeight,
-                MaxTileW = MaxTileResolutionWidth,
+                MaxTileResolution = CurrentPreset.MaxTileResolution,
+                MaxTileH = CurrentPreset.MaxTileResolutionHeight,
+                MaxTileW = CurrentPreset.MaxTileResolutionWidth,
                 OutputMode = 0,
                 OverwriteMode = 0,
-                OverlapSize = OverlapSize,
+                OverlapSize = CurrentPreset.OverlapSize,
                 Padding = CurrentProfile.PaddingSize                
             };
         }
@@ -1930,7 +1837,7 @@ namespace ImageEnhancingUtility.Core
         public string PreviewLog { get => previewIEU?.Logger.Logs; }
         async public Task<bool> Preview(string imagePath, System.Drawing.Image image, ModelInfo previewModel, bool saveAsPng = false, bool copyToOriginal = false, string copyDestination = "")
         {
-            if (!InMemoryMode)
+            if (!CurrentPreset.InMemoryMode)
                 return await PreviewNormal(imagePath, image, previewModel, saveAsPng, copyToOriginal, copyDestination);
             else
                 return await PreviewInMemory(imagePath, image, previewModel, saveAsPng, copyToOriginal, copyDestination);
@@ -1974,9 +1881,9 @@ namespace ImageEnhancingUtility.Core
             i2.Save(previewOriginal.FullName, ImageFormat.Png);
             i2.Dispose();
 
-            previewIEU = new IEU(true);
+            //previewIEU = new IEU(true);
 
-            SetPreviewIEU(ref previewIEU);            
+            SetPreviewIEU();            
 
             previewIEU.SelectedModelsItems = new List<ModelInfo>() { previewModel };           
 
@@ -2059,9 +1966,9 @@ namespace ImageEnhancingUtility.Core
             i2.Save(previewOriginal.FullName, ImageFormat.Png);
             i2.Dispose();
             
-            previewIEU = new IEU(true);
+            //previewIEU = new IEU(true);
 
-            SetPreviewIEU(ref previewIEU);
+            SetPreviewIEU();
             previewIEU.lrDict = new Dictionary<string, Dictionary<string, string>>();
             previewIEU.hrDict = new Dictionary<string, Dictionary<string, MagickImage>>
             {
@@ -2127,7 +2034,7 @@ namespace ImageEnhancingUtility.Core
             (string originalPath, string resultsAPath, string resultsBPath, string destinationPath, double alpha, Profile HotProfile = null)
         {
             if (HotProfile == null)
-                HotProfile = GlobalProfile;
+                HotProfile = CurrentPreset.Profile;
             DirectoryInfo originalDirectory = new DirectoryInfo(originalPath);
             DirectoryInfo resultsADirectory = new DirectoryInfo(resultsAPath);
             DirectoryInfo resultsBDirectory = new DirectoryInfo(resultsBPath);

@@ -36,7 +36,7 @@ namespace ImageEnhancingUtility
         public static Dictionary<string, int> OutputDestinationModesSingleModel = new Dictionary<string, int>
         {
                 { "Default", 0 },
-                { "Preserve folder structure", 3 },
+                { "Recursive", 3 },
                 { "Folder for each image", 1 },
                 { "Folder for each model", 2 }
         };

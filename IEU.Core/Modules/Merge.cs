@@ -37,11 +37,6 @@ namespace ImageEnhancingUtility.Core
             if (batchValues == null)
                 batchValues = ReadBatchValues();
 
-            //histMatchTest.MatchHist();
-            //return;
-            ////opencvTest.Stitch();
-            ////return;
-
             DirectoryInfo di = new DirectoryInfo(InputDirectoryPath);
 
             ResetDoneCounter();
@@ -237,10 +232,10 @@ namespace ImageEnhancingUtility.Core
 
             ImageFormatInfo outputFormat;
             if (HotProfile.UseOriginalImageFormat)
-                outputFormat = HotProfile.FormatInfos
+                outputFormat = DefaultFormats
                     .Where(x => x.Extension.Equals(file.Extension, StringComparison.InvariantCultureIgnoreCase)).First();
             else
-                outputFormat = HotProfile.selectedOutputFormat;
+                outputFormat = HotProfile.OutputFormat;
             if (outputFormat == null)
                 outputFormat = new ImageFormatInfo(file.Extension);
 
@@ -708,17 +703,69 @@ namespace ImageEnhancingUtility.Core
                 values.CropToDimensions = new int[] { paddedDimensions[0], paddedDimensions[1] };
             }
 
-            if (imageWidth * imageHeight > CurrentPreset.MaxTileResolution)
+            if(HotProfile.StrictTiling)
+            {
+                var res = CalculateTileAndPaddedDimensions(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
+                paddedDimensions = new int[] { res.PaddedWidth, res.PaddedHeight };
+                tiles[0] = paddedDimensions[0] / res.TileWidth;
+                tiles[1] = paddedDimensions[1] / res.TileHeight;
+
+            }
+
+            if (paddedDimensions[0] * paddedDimensions[1] > CurrentPreset.MaxTileResolution)
             {
                 //make sure that image can be tiled without leftover pixels
-                bool dimensionsAreOK = imageWidth % tiles[0] == 0 && imageHeight % tiles[1] == 0;
+                bool dimensionsAreOK = paddedDimensions[0] % tiles[0] == 0 && paddedDimensions[1] % tiles[1] == 0;
 
                 if (!dimensionsAreOK && !HotProfile.SeamlessTexture)
                 {
                     paddedDimensions = Helper.GetGoodDimensions(paddedDimensions[0], paddedDimensions[1], tiles[0], tiles[1]);
+                    tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
                 }
             }
             return paddedDimensions;
+        }
+
+        public static (int PaddedWidth, int PaddedHeight, int TileWidth, int TileHeight) CalculateTileAndPaddedDimensions(int imageWidth, int imageHeight, int maxTileResolution)
+        {
+            // Start with the maximum possible tile dimensions that are multiples of 16
+            int maxTileSide = (int)Math.Sqrt(maxTileResolution);
+            maxTileSide = (maxTileSide / 16) * 16; // Ensure it's a multiple of 16
+
+            int bestTileWidth = 16;
+            int bestTileHeight = 16;
+            int minTileCount = int.MaxValue;
+
+            // Iterate over possible tile dimensions that are multiples of 16
+            for (int tileWidth = 16; tileWidth <= maxTileSide; tileWidth += 16)
+            {
+                for (int tileHeight = 16; tileHeight <= maxTileSide; tileHeight += 16)
+                {
+                    int area = tileWidth * tileHeight;
+                    if (area > maxTileResolution) break;
+
+                    // Calculate padded dimensions
+                    int paddedWidth = ((imageWidth + tileWidth - 1) / tileWidth) * tileWidth;
+                    int paddedHeight = ((imageHeight + tileHeight - 1) / tileHeight) * tileHeight;
+
+                    // Calculate the number of tiles needed
+                    int tileCount = (paddedWidth / tileWidth) * (paddedHeight / tileHeight);
+
+                    // Minimize the number of tiles while maximizing the padded dimensions
+                    if (tileCount < minTileCount || (tileCount == minTileCount && (paddedWidth <= imageWidth && paddedHeight <= imageHeight)))
+                    {
+                        bestTileWidth = tileWidth;
+                        bestTileHeight = tileHeight;
+                        minTileCount = tileCount;
+                    }
+                }
+            }
+
+            // Recalculate padded dimensions with the best tile size
+            int finalPaddedWidth = ((imageWidth + bestTileWidth - 1) / bestTileWidth) * bestTileWidth;
+            int finalPaddedHeight = ((imageHeight + bestTileHeight - 1) / bestTileHeight) * bestTileHeight;
+
+            return (finalPaddedWidth, finalPaddedHeight, bestTileWidth, bestTileHeight);
         }
 
         void ExtractTiledTexture(ref Image imageResult, double upscaleModificator, int expandSize)

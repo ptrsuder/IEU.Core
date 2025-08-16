@@ -4,97 +4,59 @@ import os.path
 import glob
 import cv2
 import numpy as np
+from spandrel import MAIN_REGISTRY, ModelDescriptor, ModelLoader
 import torch
-import architecture as arch
 import re
+import io
+import base64
+import json
+from urllib.parse import unquote
+#from pytorch.model_loading import load_state_dict
+#from pytorch.types import PyTorchModel
+#from pytorch.unpickler import RestrictedUnpickle
 
 model_path = sys.argv[1]
-upscaleSize = int(sys.argv[2])
-deviceName = sys.argv[3]
+deviceName = sys.argv[2]
 device = torch.device(deviceName)
 
-test_img_folder = sys.argv[4]
-output_folder = sys.argv[5]
+test_img_folder = sys.argv[3]
+output_folder = sys.argv[4]
 
-mode = sys.argv[6]
+mode = sys.argv[5]
 
-passAsString = sys.argv[7]
+passAsString = sys.argv[6]
 
-state_dict = torch.load(model_path)
+model_descriptor = ModelLoader(device).load_from_file(model_path)
 
-if 'conv_first.weight' in state_dict:
-            print('Attempting to convert and load a new-format model')
-            old_net = {}
-            items = []
-            for k, v in state_dict.items():
-                items.append(k)
-
-            old_net['model.0.weight'] = state_dict['conv_first.weight']
-            old_net['model.0.bias'] = state_dict['conv_first.bias']
-
-            for k in items.copy():
-                if 'RDB' in k:
-                    ori_k = k.replace('RRDB_trunk.', 'model.1.sub.')
-                    if '.weight' in k:
-                        ori_k = ori_k.replace('.weight', '.0.weight')
-                    elif '.bias' in k:
-                        ori_k = ori_k.replace('.bias', '.0.bias')
-                    old_net[ori_k] = state_dict[k]
-                    items.remove(k)
-
-            old_net['model.1.sub.23.weight'] = state_dict['trunk_conv.weight']
-            old_net['model.1.sub.23.bias'] = state_dict['trunk_conv.bias']
-            old_net['model.3.weight'] = state_dict['upconv1.weight']
-            old_net['model.3.bias'] = state_dict['upconv1.bias']
-            old_net['model.6.weight'] = state_dict['upconv2.weight']
-            old_net['model.6.bias'] = state_dict['upconv2.bias']
-            old_net['model.8.weight'] = state_dict['HRconv.weight']
-            old_net['model.8.bias'] = state_dict['HRconv.bias']
-            old_net['model.10.weight'] = state_dict['conv_last.weight']
-            old_net['model.10.bias'] = state_dict['conv_last.bias']
-            state_dict = old_net
-
-# extract model information
-scale2 = 0
-max_part = 0
-for part in list(state_dict):
-    parts = part.split(".")
-    n_parts = len(parts)
-    if n_parts == 5 and parts[2] == 'sub':
-        nb = int(parts[3])
-    elif n_parts == 3:
-        part_num = int(parts[1])
-        if part_num > 6 and parts[2] == 'weight':
-            scale2 += 1
-        if part_num > max_part:
-            max_part = part_num
-            out_nc = state_dict[part].shape[0]
-upscaleSize = 2 ** scale2
-in_nc = state_dict['model.0.weight'].shape[1]
-nf = state_dict['model.0.weight'].shape[0]
-
-model = arch.RRDB_Net(in_nc, out_nc, nf, nb, gc=32, upscale=upscaleSize, norm_type=None, act_type='leakyrelu', \
-                        mode='CNA', res_scale=1, upsample_mode='upconv')
-model.load_state_dict(state_dict, strict=True)
-del state_dict
-model.eval()
-for k, v in model.named_parameters():
+for _, v in model_descriptor.model.named_parameters():
     v.requires_grad = False
-model = model.to(device)
+model_descriptor.model.eval()
+use_fp16 = True
+model_descriptor = model_descriptor.to(device)
+should_use_fp16 = use_fp16 and model_descriptor.supports_half
+if should_use_fp16:
+    model_descriptor.model.half()
+else:
+    model_descriptor.model.float()          
+   
+in_nc = model_descriptor.input_channels
+out_nc = model_descriptor.output_channels
+scale = model_descriptor.scale
 
 print('Model: {:s}.\n'.format(os.path.basename(model_path)))
 sys.stdout.flush()
 alphanum = lambda item: (int(re.findall('\d+', item)[0]) if item[0].isdigit() else float('inf'), item)
 idx = 0
 test_img_folder = test_img_folder.replace('*','')
+
 for path, subdirs, files in sorted(os.walk(test_img_folder), key=alphanum):
     for name in sorted(files, key=alphanum):
-        idx += 1        
+        idx += 1
         base = os.path.splitext(os.path.basename(name))[0]
         inputpath = os.path.join(path, name)
         outputpath = os.path.join(path, name).replace(test_img_folder,'')       
         # read image
-        img = cv2.imdecode(np.fromfile(inputpath, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+        img = cv2.imdecode(np.fromfile(inputpath, dtype=np.uint8), cv2.IMREAD_UNCHANGED)  
         img = img * 1. / np.iinfo(img.dtype).max
 
         if img.ndim == 2:
@@ -107,25 +69,49 @@ for path, subdirs, files in sorted(os.walk(test_img_folder), key=alphanum):
         elif img.shape[2] == 3 and in_nc == 4: # pad with solid alpha channel
             img = np.dstack((img, np.full(img.shape[:-1], 1.)))
 
-        if img.shape[2] == 3:
-            img = img[:, :, [2, 1, 0]]
-        elif img.shape[2] == 4:
-            img = img[:, :, [2, 1, 0, 3]]
-        img = torch.from_numpy(np.transpose(img, (2, 0, 1))).float()
-        img_LR = img.unsqueeze(0)
-        img_LR = img_LR.to(device)
-        output = model(img_LR).data.squeeze(0).float().cpu().clamp_(0, 1).numpy()
+        # if img.shape[2] == 3:
+        #     img = img[:, :, [2, 1, 0]]
+        # elif img.shape[2] == 4:
+        #     img = img[:, :, [2, 1, 0, 3]]
+        # if should_use_fp16:
+        #     img = torch.from_numpy(np.transpose(img, (2, 0, 1))).half()
+        # else:
+        #     img = torch.from_numpy(np.transpose(img, (2, 0, 1))).float() 
+                
+        dtype = torch.float16 if use_fp16 else torch.float32
+        img = np.ascontiguousarray(img)
+        img = np.copy(img)
+        input_tensor = torch.from_numpy(img).to(device, dtype)
+        t = input_tensor;
+        if len(t.shape) == 3 and t.shape[2] == 3:
+            # (H, W, C) RGB -> BGR
+                t = t.flip(2)
+        elif len(t.shape) == 3 and t.shape[2] == 4:
+        # (H, W, C) RGBA -> BGRA
+                t = torch.cat((t[:, :, 2:3], t[:, :, 1:2], t[:, :, 0:1], t[:, :, 3:4]), 2)
+               
+        if len(t.shape) == 2:
+        # (H, W) -> (1, 1, H, W)
+            t = t.unsqueeze(0).unsqueeze(0)
+        elif len(t.shape) == 3:
+        # (H, W, C) -> (1, C, H, W)
+            t = t.permute(2, 0, 1).unsqueeze(0)     
+            
+        # img_LR = img.unsqueeze(0)
+        # img_LR = img_LR.to(device)
+            
+        img_LR = t;         
+           
+        output0 = model_descriptor.model(img_LR)
+
+        output = output0.data.squeeze(0).float().cpu().clamp_(0, 1).numpy()
         if output.shape[0] == 3:
-            output = output[[2, 1, 0], :, :]
+                output = output[[2, 1, 0], :, :]
         elif output.shape[0] == 4:
             output = output[[2, 1, 0, 3], :, :]
+
         output = np.transpose(output, (1, 2, 0))
         output = (output * 255.0).round()
-        if passAsString == True:            
-            buffer = cv2.imencode(".png", output)[1]
-            data = base64.b64encode(buffer)
-            print(data)
-            continue
 
         newpath = base
         printpath = ''

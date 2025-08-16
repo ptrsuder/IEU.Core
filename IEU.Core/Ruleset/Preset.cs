@@ -179,6 +179,7 @@ namespace ImageEnhancingUtility.Core
                 this.RaiseAndSetIfChanged(ref _maxTileResolutionHeight, value);
             }
         }
+
         
         public Preset() { }
         public Preset(string name) { Name = name; }

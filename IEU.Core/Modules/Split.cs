@@ -175,7 +175,7 @@ namespace ImageEnhancingUtility.Core
             else
             {
                 tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
-                if (IsSub) SetTotalCounter(tiles[0] * tiles[1]);
+                if (IsSub) SetTotalCounter(tiles[0] * tiles[1] * (values.UseAlpha?2:1));
                 values.Columns = tiles[0];
                 values.Rows = tiles[1];
                 values.CropToDimensions = new int[] { imageWidth, imageHeight };
@@ -189,7 +189,7 @@ namespace ImageEnhancingUtility.Core
 
             imageWidth = inputImage.Width;
             imageHeight = inputImage.Height;
-            tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
+            //tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
 
             values.FinalDimensions = new int[] { inputImage.Width, inputImage.Height };
             values.Columns = tiles[0];

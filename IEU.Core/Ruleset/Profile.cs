@@ -159,31 +159,11 @@ namespace ImageEnhancingUtility.Core
             get => _seamlessTexture;
             set => this.RaiseAndSetIfChanged(ref _seamlessTexture, value);
         }
+             
 
-        private List<ImageFormatInfo> _formatInfos;
-        public List<ImageFormatInfo> FormatInfos
-        {
-            get => _formatInfos;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _formatInfos, value);
-            }
-        }
+        public ImageFormatInfo OutputFormat;
 
-        public ImageFormatInfo selectedOutputFormat;
-
-        int _selectedOutputFormatIndex = 0;
-        [ProtoMember(26)]
-        public int SelectedOutputFormatIndex
-        {
-            get => _selectedOutputFormatIndex;
-            set
-            {
-                if (FormatInfos != null)
-                    selectedOutputFormat = FormatInfos[value];
-                this.RaiseAndSetIfChanged(ref _selectedOutputFormatIndex, value);
-            }
-        }
+       
 
         bool _useDifferentModelForAlpha = false;
         [ProtoMember(27)]
@@ -228,121 +208,7 @@ namespace ImageEnhancingUtility.Core
         }   
 
 
-        [ProtoMember(28)]
-        public ImageFormatInfo pngFormat = new ImageFormatInfo(".png")
-        { CompressionFactor = 3 };
-        [ProtoMember(29)]
-        public ImageFormatInfo tiffFormat = new ImageFormatInfo(".tiff")
-        { CompressionMethod = Dictionaries.TiffCompressionModes[TiffCompression.None], QualityFactor = 100 };
-        [ProtoMember(30)]
-        public ImageFormatInfo webpFormat = new ImageFormatInfo(".webp")
-        { CompressionMethod = Dictionaries.WebpPresets[WebpPreset.Default], QualityFactor = 100 };
-        public ImageFormatInfo tgaFormat = new ImageFormatInfo(".tga");
-        public ImageFormatInfo ddsFormat = new ImageFormatInfo(".dds");
-        public ImageFormatInfo jpgFormat = new ImageFormatInfo(".jpg");
-        public ImageFormatInfo bmpFormat = new ImageFormatInfo(".bmp");
-
-        #region DDS SETTINGS
         
-        private List<DdsFileFormatSetting> _ddsFileFormatCurrent = new List<DdsFileFormatSetting>();
-        public List<DdsFileFormatSetting> DdsFileFormatsCurrent
-        {
-            get => _ddsFileFormatCurrent;
-            set
-            {
-                DdsFileFormat = value[0];
-                this.RaiseAndSetIfChanged(ref _ddsFileFormatCurrent, value);
-            }
-        }
-
-        private int _ddsTextureTypeSelectedIndex = 0;
-        [ProtoMember(31)]
-        public int DdsTextureTypeSelectedIndex
-        {
-            get => _ddsTextureTypeSelectedIndex;
-            set
-            {
-                DdsFileFormatsCurrent = ddsFileFormats[value];
-                DdsFileFormat = DdsFileFormatsCurrent[0];
-                this.RaiseAndSetIfChanged(ref _ddsTextureTypeSelectedIndex, value);
-            }
-        }
-
-        private int _ddsFileFormatSelectedIndex = 0;
-        [ProtoMember(32)]
-        public int DdsFileFormatSelectedIndex
-        {
-            get => _ddsFileFormatSelectedIndex;
-            set
-            {
-                if (DdsFileFormatsCurrent.Count > 0)
-                    DdsFileFormat = DdsFileFormatsCurrent[value];
-                this.RaiseAndSetIfChanged(ref _ddsFileFormatSelectedIndex, value);
-            }
-        }
-
-        private int _ddsBC7CompressionSelected = 0;
-        [ProtoMember(33)]
-        public int DdsBC7CompressionSelected
-        {
-            get => _ddsBC7CompressionSelected;
-            set => this.RaiseAndSetIfChanged(ref _ddsBC7CompressionSelected, value);
-        }               
-
-        readonly static List<DdsFileFormatSetting> ddsFileFormatsColor = new List<DdsFileFormatSetting>
-        {
-            new DdsFileFormatSetting("BC1 (Linear) [DXT1]", DdsFileTypePlus.DdsFileFormat.BC1),
-            new DdsFileFormatSetting("BC1 (sRGB) [DXT1]", DdsFileTypePlus.DdsFileFormat.BC1Srgb),
-            new DdsFileFormatSetting("BC7 (Linear)", DdsFileTypePlus.DdsFileFormat.BC7),
-            new DdsFileFormatSetting("BC7 (sRGB)", DdsFileTypePlus.DdsFileFormat.BC7Srgb),
-            new DdsFileFormatSetting("BC4 (Grayscale)", DdsFileTypePlus.DdsFileFormat.BC4),
-            new DdsFileFormatSetting("Lossless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
-        };
-        readonly static List<DdsFileFormatSetting> ddsFileFormatsColorAlpha = new List<DdsFileFormatSetting>
-        {
-            new DdsFileFormatSetting("BC3 (Linear) [DXT5]", DdsFileTypePlus.DdsFileFormat.BC3),
-            new DdsFileFormatSetting("BC3 (sRGB) [DXT5]", DdsFileTypePlus.DdsFileFormat.BC3Srgb),
-            new DdsFileFormatSetting("BC2 (Linear)", DdsFileTypePlus.DdsFileFormat.BC2),
-            new DdsFileFormatSetting("BC7 (Linear)", DdsFileTypePlus.DdsFileFormat.BC7),
-            new DdsFileFormatSetting("BC7 (sRGB)", DdsFileTypePlus.DdsFileFormat.BC7Srgb),
-            new DdsFileFormatSetting("Lossless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
-        };
-        readonly static List<DdsFileFormatSetting> ddsFileFormatsNormalMap = new List<DdsFileFormatSetting>
-        {
-            new DdsFileFormatSetting("BC5 (Two channels)", DdsFileTypePlus.DdsFileFormat.BC5),
-            new DdsFileFormatSetting("Lossless", DdsFileTypePlus.DdsFileFormat.R8G8B8A8)
-        };
-
-        readonly static List<DdsFileFormatSetting>[] ddsFileFormats = new List<DdsFileFormatSetting>[] {
-            ddsFileFormatsColor, ddsFileFormatsColorAlpha, ddsFileFormatsNormalMap };
-
-        public static List<BC7CompressionMode> ddsBC7CompressionModes = new List<BC7CompressionMode>
-        {
-            BC7CompressionMode.Fast,
-            BC7CompressionMode.Normal,
-            BC7CompressionMode.Slow
-        };
-        private DdsFileFormatSetting _ddsFileFormat;
-        public DdsFileFormatSetting DdsFileFormat
-        {
-            get => _ddsFileFormat;
-            set => this.RaiseAndSetIfChanged(ref _ddsFileFormat, value);
-        }
-        BC7CompressionMode _ddsBC7CompressionMode;
-        public BC7CompressionMode DdsBC7CompressionMode
-        {
-            get => _ddsBC7CompressionMode;
-            set => this.RaiseAndSetIfChanged(ref _ddsBC7CompressionMode, value);
-        }
-
-        bool _ddsGenerateMipmaps = true;
-        [ProtoMember(34, IsRequired = true)]
-        public bool DdsGenerateMipmaps
-        {
-            get => _ddsGenerateMipmaps;
-            set => this.RaiseAndSetIfChanged(ref _ddsGenerateMipmaps, value);
-        }
-        #endregion
 
         bool _useModel = false;
         [ProtoMember(35)]
@@ -360,14 +226,7 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _model, value);
         }
 
-        bool _ddsIsCubemap = false;
-        [ProtoMember(42, IsRequired = true)]
-        public bool DdsIsCubemap
-        {
-            get => _ddsIsCubemap;
-            set => this.RaiseAndSetIfChanged(ref _ddsIsCubemap, value);
-        }
-
+       
         private int _paddingSize = 0;
         [ProtoMember(53)]
         public int PaddingSize
@@ -390,7 +249,15 @@ namespace ImageEnhancingUtility.Core
         {
             get => _rgbaModel;
             set => this.RaiseAndSetIfChanged(ref _rgbaModel, value);
-        }        
+        }
+
+        private bool _strictTiling = true;
+        [ProtoMember(62)]
+        public bool StrictTiling
+        {
+            get => _strictTiling;
+            set => this.RaiseAndSetIfChanged(ref _strictTiling, value);
+        }
 
         public Profile()
         {
@@ -405,9 +272,9 @@ namespace ImageEnhancingUtility.Core
         
         void Init()
         {
-            DdsFileFormatsCurrent = ddsFileFormatsColor;
-            FormatInfos = new List<ImageFormatInfo>() { pngFormat, tiffFormat, webpFormat, tgaFormat, ddsFormat, jpgFormat, bmpFormat };
-            selectedOutputFormat = FormatInfos[0];
+            OutputFormat = IEU.DefaultFormats[0];
+            OutputFormat.DdsFileFormatsCurrent = ImageFormatInfo.ddsFileFormatsColor;           
+            
         }
                 
         public static Profile Load(string name)

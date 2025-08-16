@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using DdsFileTypePlus;
 using DynamicData;
-using ImageEnhancingUtility.BasicSR;
 using ImageEnhancingUtility.Core.Utility;
 using ImageMagick;
 using Newtonsoft.Json;
@@ -29,6 +28,7 @@ using ReactiveCommand = ReactiveUI.ReactiveCommand;
 using Unit = System.Reactive.Unit;
 using Timer = System.Timers.Timer;
 using System.Timers;
+using System.Reflection;
 
 
 //TODO:
@@ -131,7 +131,7 @@ namespace ImageEnhancingUtility.Core
 
         #region FOLDER_PATHS
         private string _esrganPath = "";
-        [ProtoMember(4)]
+        [ProtoMember(5)]
         public string EsrganPath
         {
             get => _esrganPath;
@@ -159,7 +159,7 @@ namespace ImageEnhancingUtility.Core
         }
 
         private string _modelsPath = "";
-        [ProtoMember(5)]
+        [ProtoMember(4)]
         public string ModelsPath
         {
             get => _modelsPath;
@@ -338,6 +338,44 @@ namespace ImageEnhancingUtility.Core
             set => this.RaiseAndSetIfChanged(ref _currentFilter, value);
         }
 
+        #region IMAGE FORMATS
+                
+        public static List<ImageFormatInfo> DefaultFormats = new List<ImageFormatInfo>() 
+        { 
+            ImageFormatInfo.pngFormat,
+            ImageFormatInfo.jpgFormat,
+            ImageFormatInfo.webpFormat,
+            ImageFormatInfo.tiffFormat,
+            ImageFormatInfo.bmpFormat,
+            ImageFormatInfo.ddsFormat
+        };  
+      
+
+        ImageFormatInfo _currentFormat;
+        public ImageFormatInfo CurrentFormat
+        {
+            get => _currentFormat;
+            set
+            {
+                CurrentProfile.OutputFormat = value;
+                this.RaiseAndSetIfChanged(ref _currentFormat, value);
+            }
+        }
+
+        int _currentFormatIndex;
+        public int CurrentFormatIndex
+        {
+            get => _currentFormatIndex;
+            set
+            {
+                if (Formats != null)
+                    CurrentFormat = Formats.Items.ElementAt(value);
+                this.RaiseAndSetIfChanged(ref _currentFormatIndex, value);
+            }
+        }
+
+        #endregion
+
         [ProtoMember(20)]
         readonly List<Profile> _profiles = new List<Profile>();
         public SourceList<Profile> Profiles = new SourceList<Profile>();
@@ -345,6 +383,10 @@ namespace ImageEnhancingUtility.Core
         [ProtoMember(21)]
         readonly List<Filter> _filters = new List<Filter>();
         public SourceList<Filter> Filters = new SourceList<Filter>();
+
+        readonly List<ImageFormatInfo> _formats = new List<ImageFormatInfo>();        public SourceList<ImageFormatInfo> Formats = new SourceList<ImageFormatInfo>();
+
+     
 
         [ProtoMember(22)]
         public SortedDictionary<int, Rule> Ruleset = new SortedDictionary<int, Rule>(new RulePriority());
@@ -408,10 +450,17 @@ namespace ImageEnhancingUtility.Core
             else
                 Presets.AddRange(_presets);
 
+            if(_formats.Count == 0)
+            {
+                foreach (var format in DefaultFormats)
+                    AddFormat(format);
+            }    
+
             CurrentPreset.Profile = Profiles.Items.FirstOrDefault();
             CurrentPreset.Filter = Filters.Items.FirstOrDefault();
             CurrentProfile = CurrentPreset.Profile.Clone();
             CurrentFilter = CurrentPreset.Filter.Clone();
+            CurrentFormat = CurrentProfile.OutputFormat.Clone();
             GlobalRule = new Rule("Global", CurrentPreset.Profile, CurrentPreset.Filter) { Priority = 0 };
             if (Ruleset.Count == 0)
                 Ruleset.Add(0, GlobalRule);
@@ -464,14 +513,14 @@ namespace ImageEnhancingUtility.Core
             }
 
             foreach (DirectoryInfo d in di.GetDirectories("*", SearchOption.TopDirectoryOnly))
-                foreach (FileInfo fi in d.GetFiles("*.pth", SearchOption.TopDirectoryOnly))
+                foreach (FileInfo fi in d.GetFiles("*.*", SearchOption.TopDirectoryOnly).Where(x => x.Extension.ToLower() == ".pth" || x.Extension.ToLower() == ".safetensors"))
                 {
                     var mdl = new ModelInfo(fi.Name, fi.FullName, d.Name);
                     mdl.UpscaleFactor = await DetectModelUpscaleFactor(mdl);
                     newList.Add(mdl);
                 }
 
-            foreach (FileInfo fi in di.GetFiles("*.pth", SearchOption.TopDirectoryOnly))
+            foreach (FileInfo fi in di.GetFiles("*.*", SearchOption.TopDirectoryOnly).Where(x => x.Extension.ToLower() == ".pth" || x.Extension.ToLower() == ".safetensors"))
             {
                 var mdl = new ModelInfo(fi.Name, fi.FullName);
                 mdl.UpscaleFactor = await DetectModelUpscaleFactor(mdl);
@@ -640,16 +689,18 @@ namespace ImageEnhancingUtility.Core
             _presets.Add(newProfile);
         }
 
-        public void LoadPreset(Preset profile)
+        public void LoadPreset(Preset preset)
         {
-            CurrentPreset = profile.Clone();
-            LoadProfile(CurrentPreset.Profile);
-            LoadFilter(CurrentPreset.Filter);
+            CurrentPreset = preset.Clone();
+            if(CurrentPreset.Profile != null)
+                LoadProfile(CurrentPreset.Profile);
+            if (CurrentPreset.Filter != null)
+                LoadFilter(CurrentPreset.Filter);
         }
 
-        public void LoadPreset(int profile)
+        public void LoadPreset(int presetIndex)
         {
-            CurrentPreset = Presets.Items.ElementAt(profile).Clone();
+            CurrentPreset = Presets.Items.ElementAt(presetIndex).Clone();
         }
         public void DeletePreset(Preset profile)
         {
@@ -657,6 +708,45 @@ namespace ImageEnhancingUtility.Core
             {
                 Presets.Remove(profile);
                 _presets.Remove(profile);
+            }
+        }
+
+
+        public void AddFormat(string name, string extension)
+        {
+            ImageFormatInfo oldFormat = Formats.Items.Where(x => x.Name == name).FirstOrDefault();
+            _formats.Remove(oldFormat);
+            Formats.Remove(oldFormat);
+
+            ImageFormatInfo newFormat = CurrentFormat.Clone();
+            newFormat.Name = name;
+
+            if (name == "Global")
+            {
+                Formats.Insert(0, newFormat);
+                _formats.Insert(0, newFormat);
+            }
+            else
+                AddFormat(newFormat);
+        }
+
+        private void AddFormat(ImageFormatInfo format)
+        {
+            Formats.Add(format);
+            _formats.Add(format);
+        }
+
+        public void LoadFormat(ImageFormatInfo format)
+        {
+            CurrentFormat = format.Clone();
+        }
+
+        public void DeleteFormat(ImageFormatInfo format)
+        {
+            if (Formats.Items.Contains(format))
+            {
+                Formats.Remove(format);
+                _formats.Remove(format);
             }
         }
 
@@ -710,9 +800,9 @@ namespace ImageEnhancingUtility.Core
                 if (outputFormat.Extension == ".png")
                     imageResult.Pngsave(destinationPath, outputFormat.CompressionFactor);
                 if (outputFormat.Extension == ".tiff")
-                    imageResult.Tiffsave(destinationPath, outputFormat.CompressionMethod, outputFormat.QualityFactor);
+                    imageResult.Tiffsave(destinationPath, outputFormat.TiffCompressionMethod, outputFormat.TiffQuality);
                 if (outputFormat.Extension == ".webp")
-                    imageResult.Webpsave(destinationPath, lossless: true, nearLossless: true, q: outputFormat.QualityFactor, preset: outputFormat.CompressionMethod);
+                    imageResult.Webpsave(destinationPath, lossless: true, nearLossless: true, q: outputFormat.WebpQuality, preset: outputFormat.WebpCompressionMethod);
             }
             catch (Exception ex)
             {
@@ -730,11 +820,11 @@ namespace ImageEnhancingUtility.Core
                 FileStream fileStream = new FileStream(destinationPath, FileMode.Create);
                 DdsFile.Save(
                     fileStream,
-                    HotProfile.DdsFileFormat.DdsFileFormat,
+                    HotProfile.OutputFormat.DdsFileFormat.DdsFileFormat,
                     DdsErrorMetric.Perceptual,
-                    HotProfile.DdsBC7CompressionMode,
-                    HotProfile.DdsIsCubemap,
-                    HotProfile.DdsGenerateMipmaps,
+                    HotProfile.OutputFormat.DdsBC7CompressionMode,
+                    HotProfile.OutputFormat.DdsIsCubemap,
+                    HotProfile.OutputFormat.DdsGenerateMipmaps,
                     ResamplingAlgorithm.Bilinear,
                     processedSurface,
                     null);
@@ -795,18 +885,15 @@ namespace ImageEnhancingUtility.Core
             }
 
             Process process;
-            if (CurrentPreset.UseBasicSR)
-                process = await BasicSR_Test(NoWindow, HotProfile);
-            else
-            {
-                if (CurrentProfile.UseJoey)
-                    process = await JoeyESRGAN(NoWindow, HotProfile);
-                else
-                    process = await ESRGAN(NoWindow, HotProfile);
 
-                if (process == null)
-                    return false;
-            }
+            if (CurrentProfile.UseJoey)
+                process = await JoeyESRGAN(NoWindow, HotProfile);
+            else
+                process = await ESRGAN(NoWindow, HotProfile);
+
+            if (process == null)
+                return false;
+
 
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardInput = true;
@@ -849,13 +936,25 @@ namespace ImageEnhancingUtility.Core
 
         void WriteTestScriptToDisk()
         {
-            string archName = "ESRGAN";
-            if (CurrentPreset.UseBasicSR) archName = "BasicSR";          
-            string scriptsDir = $"{Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory)}{DirSeparator}Scripts{DirSeparator}ESRGAN";
-            string block = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.block.py");
-            string blockPath = $"{DirSeparator}block.py";
-            string architecture = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.architecture.py");
-            string archPath = $"{DirSeparator}architecture.py";
+            var embedsList = Assembly.GetExecutingAssembly().GetManifestResourceNames();
+
+            foreach(var embedPath in embedsList)
+            {
+                if(embedPath.StartsWith("ImageEnhancingUtility.Core.Scripts.ESRGAN.pytorch"))
+                {
+                    var file = EmbeddedResource.GetFileText(embedPath);
+                    var fileName = embedPath.Replace("ImageEnhancingUtility.Core.Scripts.ESRGAN.pytorch", "pytorch");
+                    if (fileName.EndsWith(".py")) fileName = fileName.Remove(fileName.Length - 3).Replace(".", "\\") + ".py";
+                    else
+                        continue;
+                    Directory.CreateDirectory(Path.GetDirectoryName(EsrganPath + "\\" + fileName));
+                    if (!File.Exists(EsrganPath + "\\" + fileName))
+                        File.WriteAllText(EsrganPath + "\\" + fileName, file);
+                }
+            }    
+
+            string archName = "ESRGAN";                    
+            string scriptsDir = $"{Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory)}{DirSeparator}Scripts{DirSeparator}ESRGAN";           
             string upscale = EmbeddedResource.GetFileText($"ImageEnhancingUtility.Core.Scripts.{archName}.upscale.py");
             string upscaleFromMemory = EmbeddedResource.GetFileText("ImageEnhancingUtility.Core.Scripts.ESRGAN.upscaleFromMemory.py");            
 
@@ -870,26 +969,20 @@ namespace ImageEnhancingUtility.Core
                 upscaleFromMemoryPath = $"{DirSeparator}upscaleFromMemoryBlank.py";
             }
 
-            Directory.CreateDirectory(scriptsDir);
-            if (!File.Exists(scriptsDir + blockPath))
-                File.WriteAllText(scriptsDir + blockPath, block);
-            if (!File.Exists(scriptsDir + archPath))
-                File.WriteAllText(scriptsDir + archPath, architecture);
+            Directory.CreateDirectory(scriptsDir);           
             if (!File.Exists(scriptsDir + upscalePath))
                 File.WriteAllText(scriptsDir + upscalePath, upscale);
             if (!File.Exists(scriptsDir + upscaleFromMemoryPath))
                 File.WriteAllText(scriptsDir + upscaleFromMemoryPath, upscaleFromMemory);
 
-            if (CurrentPreset.UseBasicSR) scriptPath = EsrganPath + $"{DirSeparator}codes{DirSeparator}IEU_test.py";
-            else
-            {
-                File.Copy(scriptsDir + blockPath, EsrganPath + blockPath, true);
-                File.Copy(scriptsDir + archPath, EsrganPath + archPath, true);
-            }
+            if (File.Exists(EsrganPath + scriptPath))
+                File.Delete(EsrganPath + scriptPath);
             if (CurrentPreset.InMemoryMode)
-                File.Copy(scriptsDir + upscaleFromMemoryPath, EsrganPath + scriptPath, true);
+                File.WriteAllText(EsrganPath + scriptPath, upscaleFromMemory);
+            //File.Copy(scriptsDir + upscaleFromMemoryPath, EsrganPath + scriptPath, true);
             else
-                File.Copy(scriptsDir + upscalePath, EsrganPath + scriptPath, true);
+                File.WriteAllText(EsrganPath + scriptPath, upscale);
+            //File.Copy(scriptsDir + upscalePath, EsrganPath + scriptPath, true);
         }
 
         async Task<int> DetectModelUpscaleFactor(ModelInfo checkedModel)
@@ -1021,8 +1114,7 @@ namespace ImageEnhancingUtility.Core
             process.StartInfo.Arguments = $"{EsrganPath}";
             process.StartInfo.Arguments += Helper.GetCondaEnv(UseCondaEnv, CondaEnv);
             bool noValidModel = true;
-            string torchDevice = CurrentPreset.UseCPU ? "cpu" : "cuda";
-            int upscaleMultiplayer = 0;
+            string torchDevice = CurrentPreset.UseCPU ? "cpu" : "cuda";            
             string resultsPath = ResultsPath;
 
             int tempOutMode = CurrentPreset.OutputDestinationMode;
@@ -1035,7 +1127,7 @@ namespace ImageEnhancingUtility.Core
             {
                 noValidModel = false;
                 process.StartInfo.Arguments +=
-                   $" & python IEU_test.py \"blank\" 1 {torchDevice}" +
+                   $" & python IEU_test.py \"blank\" {torchDevice}" +
                    $" \"{LrPath + $"{DirSeparator}*"}\" \"{resultsPath}\" {tempOutMode} {CurrentPreset.InMemoryMode}";
             }
             else
@@ -1054,7 +1146,7 @@ namespace ImageEnhancingUtility.Core
                     }
 
                     process.StartInfo.Arguments +=
-                    $" & python IEU_test.py \"{checkedModel.FullName}\" {upscaleMultiplayer} {torchDevice}" +
+                    $" & python IEU_test.py \"{checkedModel.FullName}\" {torchDevice}" +
                     $" \"{LrPath + $"{DirSeparator}*"}\" \"{resultsPath}\" {tempOutMode} {CurrentPreset.InMemoryMode}";
 
                     modelIndex++;
@@ -1062,20 +1154,18 @@ namespace ImageEnhancingUtility.Core
 
             if (HotProfile.UseDifferentModelForAlpha)
             {   //detect upsacle factor for alpha model
-                bool validModelAlpha = false;
-                int upscaleMultiplayerAlpha = 0;
+                bool validModelAlpha = false;                
 
                 if (HotProfile.ModelForAlpha.UpscaleFactor != 0)                
                     validModelAlpha = true;                
 
-                if (upscaleMultiplayer != upscaleMultiplayerAlpha)
+                if (checkedModels.Select(x => x.UpscaleFactor).Any(x => x != HotProfile.ModelForAlpha.UpscaleFactor))
                 {
-                    Logger.Write("Scale of rgb model and alpha model must be the same");
-                    return null;
+                    Logger.Write("Scale of rgb model and alpha model mismatch");                    
                 }
                 if (validModelAlpha)
                     process.StartInfo.Arguments +=
-                        $" & python IEU_test.py \"{HotProfile.ModelForAlpha.FullName}\" {upscaleMultiplayerAlpha} {torchDevice}" +
+                        $" & python IEU_test.py \"{HotProfile.ModelForAlpha.FullName}\" {torchDevice}" +
                         $" \"{LrPath + $"_alpha{DirSeparator}*"}\" \"{resultsPath}\" {CurrentPreset.OutputDestinationMode} {CurrentPreset.InMemoryMode}";
                 else
                 {
@@ -1083,6 +1173,7 @@ namespace ImageEnhancingUtility.Core
                     return null;
                 }
             }
+
             if (noValidModel)
             {
                 Logger.Write("Can't start ESRGAN: no selected models with known upscale size");
@@ -1115,8 +1206,9 @@ namespace ImageEnhancingUtility.Core
             Logger.Write("Starting ESRGAN...");
             return process;
         }
-
+        
         JoeyEsrgan _joeyEsrgan = new JoeyEsrgan();
+        
         [ProtoMember(62)]
         [Browsable(false)]
         public JoeyEsrgan JoeyEsrgan
@@ -1218,103 +1310,7 @@ namespace ImageEnhancingUtility.Core
             Logger.Write("Starting ESRGAN...");
             return process;
         }
-
-        async Task<Process> BasicSR_Test(bool NoWindow, Profile HotProfile)
-        {
-            if (checkedModels.Count > 1 && HotProfile.UseDifferentModelForAlpha)
-            {
-                Logger.Write("Only single model must be selected when using different model for alpha");
-                return null;
-            }
-
-            Process process = new Process();
-
-            process.StartInfo.Arguments = $"{EsrganPath}";
-            process.StartInfo.Arguments += Helper.GetCondaEnv(UseCondaEnv, CondaEnv);
-
-            bool noValidModel = true;
-            int upscaleMultiplayer = 0;
-
-            List<TestConfig> configs = new List<TestConfig>();
-
-            foreach (ModelInfo checkedModel in checkedModels)
-            {
-                TestConfig config = new TestConfig(checkedModel.FullName);
-
-                if (checkedModel.UpscaleFactor == 0)
-                    continue;
-                noValidModel = false;
-
-                config.Scale = upscaleMultiplayer;
-                if (CurrentPreset.UseCPU)
-                    config.GpuIds = null;
-                TestDataset dataset = new TestDataset() { DatarootLR = LrPath, DatarootHR = ResultsPath };
-                config.Datasets.Test = dataset;
-                config.Path.Root = EsrganPath;
-                configs.Add(config);
-            }
-
-            if (HotProfile.UseDifferentModelForAlpha)
-            {
-                TestConfig configAlpha = new TestConfig(HotProfile.ModelForAlpha.FullName);
-
-                //detect upsacle factor for alpha model                
-                bool validModelAlpha = false;
-                int upscaleMultiplayerAlpha = 0;
-
-                if (HotProfile.ModelForAlpha.UpscaleFactor == 0)
-                {
-                    validModelAlpha = true;
-                }
-
-                if (upscaleMultiplayer != upscaleMultiplayerAlpha)
-                {
-                    Logger.Write("Upscale size for rgb model and alpha model must be the same");
-                    return null;
-                }
-                configAlpha.Scale = upscaleMultiplayerAlpha;
-                if (CurrentPreset.UseCPU)
-                    configAlpha.GpuIds = null;
-                TestDataset dataset = new TestDataset() { DatarootLR = LrPath + $"_alpha{DirSeparator}*", DatarootHR = ResultsPath };
-                configAlpha.Datasets.Test = dataset;
-                if (validModelAlpha)
-                    configs.Add(configAlpha);
-            }
-            if (noValidModel)
-            {
-                Logger.Write("Can't start BasicSR: no selected models with known upscale size");
-                return null;
-            }
-            for (int i = 0; i < configs.Count; i++)
-            {
-                configs[i].SaveConfig($"testConfig_{i}", $"{EsrganPath}{DirSeparator}IEU_TestConfigs");
-                process.StartInfo.Arguments += $" & python codes{DirSeparator}IEU_test.py -opt IEU_TestConfigs{DirSeparator}testConfig_{i}.json";
-            }
-
-            process.ErrorDataReceived += EsrganOutputHandler;
-            process.OutputDataReceived += EsrganOutputHandler;
-            process.StartInfo.CreateNoWindow = NoWindow;
-
-            if (!Directory.Exists(LrPath))
-            {
-                Logger.Write(LrPath + " doen't exist!");
-                return null;
-            }
-            SearchOption searchOption = SearchOption.TopDirectoryOnly;
-            if (CurrentPreset.OutputDestinationMode == 3)
-                searchOption = SearchOption.AllDirectories;
-            SetTotalCounter(Directory.GetFiles(LrPath, "*", searchOption).Count() * checkedModels.Count);
-            if (HotProfile.UseDifferentModelForAlpha)
-                SetTotalCounter(FilesTotal + Directory.GetFiles(LrPath + "_alpha").Count());
-
-            ResetDoneCounter();
-
-            WriteTestScriptToDisk();
-
-            Logger.Write("Starting BasicSR...");
-            return process;
-        }
-
+        
         Process PthReader(string modelPath)
         {
             Process process = new Process();
@@ -1801,6 +1797,8 @@ namespace ImageEnhancingUtility.Core
             previewIEU.ResultsPath = previewResultsDirPath;
             previewIEU.OutputDirectoryPath = PreviewDirPath;
             previewIEU.CurrentPreset.MaxTileResolution = CurrentPreset.MaxTileResolution;
+            previewIEU.CurrentPreset.MaxTileResolutionWidth = CurrentPreset.MaxTileResolutionWidth;
+            previewIEU.CurrentPreset.MaxTileResolutionHeight = CurrentPreset.MaxTileResolutionHeight;
             previewIEU.CurrentPreset.OverlapSize = CurrentPreset.OverlapSize;
             previewIEU.CurrentPreset.OutputDestinationMode = 0;
             previewIEU.CurrentPreset.UseCPU = CurrentPreset.UseCPU;
@@ -1808,7 +1806,7 @@ namespace ImageEnhancingUtility.Core
             previewIEU.CurrentProfile = CurrentProfile.Clone();
             previewIEU.CurrentPreset.OverwriteMode = 0;
             previewIEU.CurrentProfile.UseOriginalImageFormat = false;
-            previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.pngFormat;
+            previewIEU.CurrentProfile.OutputFormat = ImageFormatInfo.pngFormat;
             previewIEU.DisableRuleSystem = true;
             previewIEU.CurrentPreset.CreateMemoryImage = false;
             previewIEU.UseCondaEnv = UseCondaEnv;
@@ -1870,18 +1868,23 @@ namespace ImageEnhancingUtility.Core
             FileInfo preview = new FileInfo(PreviewDirPath + $"{DirSeparator}preview.png");
 
             Bitmap i2;
+            MagickImage i3;
             if (image == null)
                 if (File.Exists(imagePath))
-                    i2 = ImageOperations.LoadImageToBitmap(imagePath) as Bitmap;
+                {
+                    i3 = ImageOperations.LoadImage(new FileInfo(imagePath));
+                    i3.Write(previewOriginal.FullName, MagickFormat.Png);
+                    i3.Dispose();
+                    //i2 = ImageOperations.LoadImageToBitmap(imagePath) as Bitmap;
+                }
                 else
                     return false;
             else
+            {
                 i2 = new Bitmap(image);
-
-            i2.Save(previewOriginal.FullName, ImageFormat.Png);
-            i2.Dispose();
-
-            //previewIEU = new IEU(true);
+                i2.Save(previewOriginal.FullName, ImageFormat.Png);
+                i2.Dispose();
+            }
 
             SetPreviewIEU();            
 
@@ -1900,18 +1903,22 @@ namespace ImageEnhancingUtility.Core
             if (!saveAsPng)
             {
                 previewIEU.CurrentProfile.UseOriginalImageFormat = CurrentProfile.UseOriginalImageFormat;
-                previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.selectedOutputFormat;
+                previewIEU.CurrentProfile.OutputFormat = CurrentProfile.OutputFormat;
             }
 
             await previewIEU.Merge();
 
-            ImageFormatInfo outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase)).First();
+            ImageFormatInfo outputFormat = ImageFormatInfo.pngFormat;
             if (!saveAsPng)
             {
                 if (CurrentProfile.UseOriginalImageFormat)
-                    outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(Path.GetExtension(imagePath), StringComparison.InvariantCultureIgnoreCase)).First(); //hack, may be bad
+                {
+                    outputFormat = DefaultFormats.Where(x => x.Extension.Equals(Path.GetExtension(imagePath), StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault(); 
+                    if(outputFormat == null)
+                        outputFormat = ImageFormatInfo.pngFormat;
+                }
                 else
-                    outputFormat = CurrentProfile.selectedOutputFormat;
+                    outputFormat = CurrentProfile.OutputFormat;
                 preview = new FileInfo(PreviewDirPath + $"{DirSeparator}preview{outputFormat.Extension}");
             }
             File.WriteAllText(PreviewDirPath + $"{DirSeparator}log.txt", previewIEU.Logger.Logs);
@@ -1957,7 +1964,7 @@ namespace ImageEnhancingUtility.Core
             Bitmap i2;
             if (image == null)
                 if (File.Exists(imagePath))
-                    i2 = ImageOperations.LoadImageToBitmap(imagePath) as Bitmap;
+                    i2 = new Bitmap(ImageOperations.LoadImageToBitmap(imagePath));
                 else
                     return false;
             else
@@ -1991,14 +1998,14 @@ namespace ImageEnhancingUtility.Core
             
             if (!saveAsPng)
             {                
-                previewIEU.CurrentProfile.selectedOutputFormat = CurrentProfile.selectedOutputFormat;
+                previewIEU.CurrentProfile.OutputFormat = CurrentProfile.OutputFormat;
             }
             await previewIEU.Merge(previewOriginal.FullName, previewIEU.batchValues.images.Values.FirstOrDefault().results[0]);
 
-            ImageFormatInfo outputFormat = CurrentProfile.FormatInfos.Where(x => x.Extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase)).First();
+            ImageFormatInfo outputFormat = ImageFormatInfo.pngFormat;
             if (!saveAsPng)
             {                
-                outputFormat = CurrentProfile.selectedOutputFormat;
+                outputFormat = CurrentFormat;
                 preview = new FileInfo(PreviewDirPath + $"{DirSeparator}preview{outputFormat.Extension}");
             }
             File.WriteAllText(PreviewDirPath + $"{DirSeparator}log.txt", previewIEU.Logger.Logs);
@@ -2053,7 +2060,7 @@ namespace ImageEnhancingUtility.Core
             await Task.Run(() => Parallel.ForEach(originalFiles, parallelOptions: new ParallelOptions() { MaxDegreeOfParallelism = MaxConcurrency }, file =>
             {
                 string originalExtension = file.Extension;
-                string baseFilePath = file.FullName.Replace(originalDirectory.FullName, "").Replace(originalExtension, HotProfile.selectedOutputFormat.Extension);
+                string baseFilePath = file.FullName.Replace(originalDirectory.FullName, "").Replace(originalExtension, HotProfile.OutputFormat.Extension);
                 string pathA = resultsADirectory.FullName + baseFilePath;
                 string pathB = resultsBDirectory.FullName + baseFilePath;
                 string destinationFilePath = destinationPath + baseFilePath;
@@ -2078,7 +2085,7 @@ namespace ImageEnhancingUtility.Core
             var result = ImageInterpolation.Interpolate(pathA, pathB, alpha);
             if (result != null)
             {
-                ImageFormatInfo outputFormat = CurrentProfile.selectedOutputFormat;
+                ImageFormatInfo outputFormat = CurrentProfile.OutputFormat;
 
                 if (outputFormat.Extension == ".dds")
                     WriteToFileDds(result, destinationFilePath, CurrentProfile);

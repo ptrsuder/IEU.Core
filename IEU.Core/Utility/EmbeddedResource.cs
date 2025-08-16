@@ -20,18 +20,5 @@ namespace ImageEnhancingUtility
                 throw new Exception($"Failed to read Embedded Resource {namespaceAndFileName}");
             }
         }
-
-        //public static WindowIcon GetIcon()
-        //{
-        //    try
-        //    {
-        //        using (var stream = typeof(EmbeddedResource).GetTypeInfo().Assembly.GetManifestResourceStream("CropUpscaleMergeAvalonia.icon.ico"))
-        //            return new WindowIcon(new Avalonia.Media.Imaging.Bitmap(stream));
-        //    }
-        //    catch (Exception exception)
-        //    {
-        //        throw new Exception($"Failed to load icon");
-        //    }
-        //}
     }
 }

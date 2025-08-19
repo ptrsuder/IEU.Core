@@ -278,7 +278,7 @@ namespace ImageEnhancingUtility.Core
             else
             {
                 if (CurrentPreset.UseImageMagickMerge)
-                    finalImage.Crop((int) (values.CropToDimensions[0] * upscaleMod), (int)(values.CropToDimensions[1] * upscaleMod), Gravity.Northwest);
+                    finalImage.Crop((uint) (values.CropToDimensions[0] * upscaleMod), (uint)(values.CropToDimensions[1] * upscaleMod), Gravity.Northwest);
                 else
                     imageResult = imageResult.Crop(0, 0, (int)(values.CropToDimensions[0] * upscaleMod), (int)(values.CropToDimensions[1] * upscaleMod));
             }
@@ -334,8 +334,8 @@ namespace ImageEnhancingUtility.Core
                 {
                     Format = MagickFormat.Png00,
                     Compression = CompressionMethod.NoCompression,
-                    Width = imageResult.Width,
-                    Height = imageResult.Height
+                    Width = (uint?)imageResult.Width,
+                    Height = (uint?)imageResult.Height
                 };
                 finalImage = new MagickImage(imageBuffer, readSettings);
             }
@@ -780,9 +780,9 @@ namespace ImageEnhancingUtility.Core
         {
             int edgeSize = (int)(upscaleModificator * expandSize);
             MagickImage tempImage = new MagickImage(imageResult);
-            tempImage.Crop(imageResult.Width - edgeSize * 2, imageResult.Height - edgeSize * 2, Gravity.Center);
+            tempImage.Crop((uint)(imageResult.Width - edgeSize * 2), (uint)(imageResult.Height - edgeSize * 2), Gravity.Center);
             //(edgeSize, edgeSize, imageResult.Width - edgeSize * 2, imageResult.Height - edgeSize * 2);
-            tempImage.RePage();
+            tempImage.ResetPage();
             return tempImage;
         }
 
@@ -857,33 +857,33 @@ namespace ImageEnhancingUtility.Core
         {
             Logger.WriteDebug("Merging with IM method");
             MagickImage expandedImage = new MagickImage(imageRow);
-            int overlap = expandedImage.Width + dx;
+            uint overlap = (uint)(expandedImage.Width + dx);
             Bitmap mask;
             Rectangle brushSize, gradientRectangle;
             LinearGradientMode brushDirection;
             Gravity tileG = Gravity.East;
             Gravity rowG = Gravity.West;
-            int resultW = imageRow.Width, resultH = imageRow.Height;
+            uint resultW = imageRow.Width, resultH = imageRow.Height;
             int offset = 1;
             if (direction == Enums.Direction.Horizontal)
             {
-                overlap = expandedImage.Width + dx;
-                brushSize = new Rectangle(-dx, -dy, overlap, imageRow.Height);
+                overlap = (uint)(expandedImage.Width + dx);
+                brushSize = new Rectangle(-dx, -dy, (int)overlap, (int)imageRow.Height);
                 brushDirection = LinearGradientMode.Horizontal;
-                gradientRectangle = new Rectangle(-dx + offset, -dy, overlap - offset, imageNextTile.Height);
+                gradientRectangle = new Rectangle(-dx + offset, -dy, (int)overlap - offset, (int)imageNextTile.Height);
                 resultW += imageNextTile.Width - overlap;
             }
             else
             {
-                overlap = expandedImage.Height + dy;
-                brushSize = new Rectangle(-dx, -dy, imageRow.Width, overlap);
+                overlap = (uint)(expandedImage.Height + dy);
+                brushSize = new Rectangle(-dx, -dy, (int)imageRow.Width, (int)overlap);
                 brushDirection = LinearGradientMode.Vertical;
-                gradientRectangle = new Rectangle(-dx, -dy, imageRow.Width, overlap);
+                gradientRectangle = new Rectangle(-dx, -dy, (int)imageRow.Width, (int)overlap);
                 resultH += imageNextTile.Height - overlap;
                 tileG = Gravity.South;
                 rowG = Gravity.North;
             }
-            mask = new Bitmap(imageRow.Width, imageRow.Height);
+            mask = new Bitmap((int)imageRow.Width, (int)imageRow.Height);
             using (Graphics graphics = Graphics.FromImage(mask))
             using (LinearGradientBrush brush = new LinearGradientBrush(brushSize, Color.White, Color.Black, brushDirection))
             {

@@ -40,7 +40,7 @@ namespace ImageEnhancingUtility.Core
     [ProtoContract]
     public partial class IEU : ReactiveObject
     {
-        public readonly string AppVersion = "0.14.0";
+        public readonly string AppVersion = "0.14.1";
         public readonly string GitHubRepoName = "IEU.Core";
 
         Preset _currentPreset = new Preset("current");

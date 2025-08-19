@@ -171,27 +171,27 @@ namespace ImageEnhancingUtility.Core.Utility
             newImage.FilterType = filterType;            
             //image.Sharpen();
             //image.Scale(new Percentage(resizeFactor));  
-            newImage.Resize((int)(resizeFactor * image.Width), (int)(resizeFactor * image.Height));
+            newImage.Resize((uint)(resizeFactor * image.Width), (uint)(resizeFactor * image.Height));
             return newImage;
         }
 
         public static MagickImage ExpandTiledTexture(MagickImage image, ref int expandSize)
         {
-            int imageHeight = image.Height, imageWidth = image.Width;
+            int imageHeight = (int)image.Height, imageWidth = (int)image.Width;
             if (expandSize == 0) expandSize = 16;
             if (imageHeight <= 32 || imageWidth <= 32)
                 expandSize /= 2;
 
             MagickImage expandedImage = (MagickImage)image.Clone();
             MagickImage bottomEdge = (MagickImage)image.Clone();
-            bottomEdge.Crop(new MagickGeometry(0, imageHeight - expandSize, imageWidth, expandSize));
+            bottomEdge.Crop(new MagickGeometry(0, imageHeight - expandSize, (uint)imageWidth, (uint)expandSize));
             expandedImage.Page = new MagickGeometry($"+0+{expandSize}");
             bottomEdge.Page = new MagickGeometry("+0+0");
             MagickImageCollection edges = new MagickImageCollection() { bottomEdge, expandedImage };
             expandedImage = (MagickImage)edges.Mosaic();
 
             MagickImage topEdge = (MagickImage)image.Clone();
-            topEdge.Crop(new MagickGeometry(0, 0, imageWidth, expandSize));
+            topEdge.Crop(new MagickGeometry(0, 0, (uint)imageWidth, (uint)expandSize));
             topEdge.Page = new MagickGeometry($"+0+{expandedImage.Height}");
             expandedImage.Page = new MagickGeometry("+0+0");
             edges = new MagickImageCollection() { expandedImage, topEdge };
@@ -201,14 +201,14 @@ namespace ImageEnhancingUtility.Core.Utility
 
             MagickImage rightEdge = (MagickImage)image.Clone();
             edges = new MagickImageCollection() { rightEdge, expandedImage };
-            rightEdge.Crop(new MagickGeometry(image.Width - expandSize, 0, expandSize, image.Height));
+            rightEdge.Crop(new MagickGeometry((int)(image.Width - expandSize), 0, (uint)expandSize, image.Height));
             expandedImage.Page = new MagickGeometry($"+{expandSize}+0");
             rightEdge.Page = new MagickGeometry("+0+0");
             expandedImage = (MagickImage)edges.Mosaic();      
 
             MagickImage leftEdge = (MagickImage)image.Clone();
             edges = new MagickImageCollection() { expandedImage, leftEdge };
-            leftEdge.Crop(new MagickGeometry(0, 0, expandSize, image.Height));
+            leftEdge.Crop(new MagickGeometry(0, 0, (uint)expandSize, image.Height));
             leftEdge.Page = new MagickGeometry($"+{expandedImage.Width}+0");
             expandedImage.Page = new MagickGeometry($"+0+0");
             expandedImage = (MagickImage)edges.Mosaic();           

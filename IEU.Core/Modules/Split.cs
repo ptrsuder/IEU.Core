@@ -152,12 +152,12 @@ namespace ImageEnhancingUtility.Core
         {
             var values = new ImageValues();
             values.Path = file.FullName;
-            values.Dimensions = new int[] { inputImage.Width, inputImage.Height };
+            values.Dimensions = new int[] { (int)inputImage.Width, (int)inputImage.Height };
             values.UseAlpha = imageHasAlpha && !HotProfile.IgnoreAlpha && !CurrentProfile.RgbaModel;
 
             FileInfo fileAlpha = new FileInfo(file.DirectoryName + DirSeparator + Path.GetFileNameWithoutExtension(file.Name) + "_alpha.png");
             string lrPathAlpha = LrPath + "_alpha";
-            int imageWidth = inputImage.Width, imageHeight = inputImage.Height;
+            int imageWidth = (int)inputImage.Width, imageHeight = (int)inputImage.Height;
             MagickImage inputImageRed = null, inputImageGreen = null, inputImageBlue = null, inputImageAlpha = null;
 
             int[] tiles;
@@ -187,11 +187,11 @@ namespace ImageEnhancingUtility.Core
             //if (inputImageAlpha != null && imageHasAlpha == true)
             //    ImagePreprocess(ref inputImageAlpha, paddedDimensions, HotProfile);
 
-            imageWidth = inputImage.Width;
-            imageHeight = inputImage.Height;
+            imageWidth = (int)inputImage.Width;
+            imageHeight = (int)inputImage.Height;
             //tiles = Helper.GetTilesSize(imageWidth, imageHeight, CurrentPreset.MaxTileResolution);
 
-            values.FinalDimensions = new int[] { inputImage.Width, inputImage.Height };
+            values.FinalDimensions = new int[] { (int)inputImage.Width, (int)inputImage.Height };
             values.Columns = tiles[0];
             values.Rows = tiles[1];
 
@@ -202,7 +202,7 @@ namespace ImageEnhancingUtility.Core
                 im = im.Embed(CurrentProfile.PaddingSize, CurrentProfile.PaddingSize, im.Width + 2 * CurrentProfile.PaddingSize, im.Height + 2 * CurrentProfile.PaddingSize, "VIPS_EXTEND_COPY");
                
                 inputImage = ImageOperations.ConvertToMagickImage(im);
-                values.FinalDimensions = new int[] { inputImage.Width, inputImage.Height };
+                values.FinalDimensions = new int[] { (int)inputImage.Width, (int)inputImage.Height };
                 values.PaddingSize = CurrentProfile.PaddingSize;
             }
 
@@ -216,7 +216,7 @@ namespace ImageEnhancingUtility.Core
             if (HotProfile.SeamlessTexture)
             {
                 inputImage = ImageOperations.ExpandTiledTexture(inputImage, ref seamlessPadding);
-                values.FinalDimensions = new int[] { inputImage.Width + 2 * seamlessPadding, inputImage.Height + 2 * seamlessPadding };
+                values.FinalDimensions = new int[] { (int)(inputImage.Width + 2 * seamlessPadding), (int)(inputImage.Height + 2 * seamlessPadding) };
             }
 
             if (values.UseAlpha)
@@ -340,7 +340,7 @@ namespace ImageEnhancingUtility.Core
                     if (addRow && row == rows - 1)
                         tile_Y1 = imageHeight - tileHeight;
 
-                    var cropRectangle = new MagickGeometry(tile_X1, tile_Y1, tileWidth + xOffset + (CurrentProfile.PaddingSize + seamlessPadding) * 2, tileHeight + yOffset + (CurrentProfile.PaddingSize + seamlessPadding) * 2);
+                    var cropRectangle = new MagickGeometry(tile_X1, tile_Y1, (uint)(tileWidth + xOffset + (CurrentProfile.PaddingSize + seamlessPadding) * 2), (uint)(tileHeight + yOffset + (CurrentProfile.PaddingSize + seamlessPadding) * 2));
 
                     if (values.UseAlpha) //crop alpha
                     {

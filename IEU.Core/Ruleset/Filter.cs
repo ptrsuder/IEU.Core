@@ -251,8 +251,8 @@ namespace ImageEnhancingUtility.Core
 
                             if (!alphaFilter) return false;
                         }
-                        imgWidth = image.Width;
-                        imgHeight = image.Height;
+                        imgWidth = (int)image.Width;
+                        imgHeight = (int)image.Height;
                     }
                 }
 

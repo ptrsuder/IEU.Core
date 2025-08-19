@@ -1,4 +1,4 @@
-#some modifications from https://github.com/BlueAmulet/ESRGAN
+#parts of code from https://github.com/chaiNNer-org/chaiNNer
 import sys
 import os.path
 import glob
@@ -41,7 +41,10 @@ for model_path in model_paths:
     if should_use_fp16:
         model_descriptor.model.half()
     else:
-        model_descriptor.model.float()          
+        model_descriptor.model.float() 
+
+    print('Using fp16: {0}.\n'.format(should_use_fp16))
+    sys.stdout.flush()
    
     in_nc = model_descriptor.input_channels
     out_nc = model_descriptor.output_channels
@@ -73,6 +76,7 @@ for model_path in model_paths:
             base = os.path.splitext(os.path.basename(path))[0]
             inputpath = path
             outputpath = path.replace(test_img_folder,'')
+            
             # read image
             img_original = base64.b64decode(lrImages[path])
             img_np = np.frombuffer(img_original, dtype=np.uint8);
@@ -88,20 +92,17 @@ for model_path in model_paths:
                 img = img[:, :, :in_nc]
             elif img.shape[2] == 3 and in_nc == 4: # pad with solid alpha channel
                 img = np.dstack((img, np.full(img.shape[:-1], 1.)))
-
-            # if img.shape[2] == 3:
-            #     img = img[:, :, [2, 1, 0]]
-            # elif img.shape[2] == 4:
-            #     img = img[:, :, [2, 1, 0, 3]]
-            # if should_use_fp16:
-            #     img = torch.from_numpy(np.transpose(img, (2, 0, 1))).half()
-            # else:
-            #     img = torch.from_numpy(np.transpose(img, (2, 0, 1))).float() 
+            
                 
-            dtype = torch.float16 if use_fp16 else torch.float32
+            dtype = torch.float16 if should_use_fp16 else torch.float32
+
+            if model_descriptor.dtype != dtype or model_descriptor.device != device:
+                model_descriptor = model_descriptor.to(device, dtype)
+
             img = np.ascontiguousarray(img)
             img = np.copy(img)
             input_tensor = torch.from_numpy(img).to(device, dtype)
+
             t = input_tensor;
             if len(t.shape) == 3 and t.shape[2] == 3:
              # (H, W, C) RGB -> BGR
@@ -115,16 +116,13 @@ for model_path in model_paths:
                 t = t.unsqueeze(0).unsqueeze(0)
             elif len(t.shape) == 3:
             # (H, W, C) -> (1, C, H, W)
-                t = t.permute(2, 0, 1).unsqueeze(0)     
+                t = t.permute(2, 0, 1).unsqueeze(0)             
             
-            # img_LR = img.unsqueeze(0)
-            # img_LR = img_LR.to(device)
-            
-            img_LR = t;
-         
+            img_LR = t;         
            
-            output0 = model_descriptor.model(img_LR)
+            output0 = model_descriptor(img_LR)
             output = output0.data.squeeze(0).float().cpu().clamp_(0, 1).numpy()
+            #output = output0.detach().cpu().detach().float().numpy()
             
             if output.shape[0] == 3:
                 output = output[[2, 1, 0], :, :]

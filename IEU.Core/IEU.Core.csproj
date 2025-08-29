@@ -49,7 +49,7 @@
 
   <ItemGroup>
     <PackageReference Include="DdsFileTypePlusHack" Version="1.1.0-beta1" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.8.0" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.8.1" />
     <PackageReference Include="NetVips" Version="1.2.4" />
     <PackageReference Include="NetVips.Native.win-x64" Version="8.10.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

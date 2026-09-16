@@ -7,28 +7,30 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using System.Timers;
 using DdsFileTypePlus;
 using DynamicData;
 using ImageEnhancingUtility.Core.Utility;
 using ImageMagick;
 using Newtonsoft.Json;
-using ProtoBuf;
 using PaintDotNet;
+using PaintDotNet.SystemLayer;
+using ProtoBuf;
 using ReactiveUI;
 using Color = System.Drawing.Color;
 using Image = NetVips.Image;
 using Path = System.IO.Path;
 using ReactiveCommand = ReactiveUI.ReactiveCommand;
-using Unit = System.Reactive.Unit;
 using Timer = System.Timers.Timer;
-using System.Timers;
-using System.Reflection;
+using Unit = System.Reactive.Unit;
 
 
 //TODO:
@@ -834,9 +836,10 @@ namespace ImageEnhancingUtility.Core
                 finalImage.Write(destinationPath, MagickFormat.Dds);
         }
         #endregion
-        
+
         #region UPSCALE               
 
+        Process process_Test;
         async public Task<bool> Upscale(bool NoWindow = true, Profile HotProfile = null, bool async = true)
         {
             if (HotProfile == null)
@@ -1040,9 +1043,16 @@ namespace ImageEnhancingUtility.Core
         {
             foreach (var key in images.Keys)
             {
+                //if (process_Test.HasExited)
+                //{
+                //    Logger.Write($"Process exited with code {process_Test.ExitCode}", Color.Red);
+                //    return;
+                //}
+
                 string json = JsonConvert.SerializeObject(new Dictionary<string, string>() { { key, images[key] } });
                 //WriteToStream.Post(json);
                 await writer.WriteLineAsync(json);
+                await writer.FlushAsync();
             }
             if (fileQueue.Count == 0 && !IsSub)
             {
@@ -1094,7 +1104,10 @@ namespace ImageEnhancingUtility.Core
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            writer = process.StandardInput;
+            process_Test = process;
+            //writer = process.StandardInput;
+            writer = new StreamWriter(process.StandardInput.BaseStream, new UTF8Encoding(false), 1024);
+            writer.AutoFlush = true;          
             WriteModelsToStream();
             return;
         }
@@ -1368,6 +1381,7 @@ namespace ImageEnhancingUtility.Core
             if (CurrentPreset.InMemoryMode && !ignoreInMemory) //for preview
             {
                 writer = process.StandardInput;
+                writer.AutoFlush = true;
                 WriteModelsToStream();
                 if (IsSub)
                     WriteImageToStream(lrDict[lrDict.Keys.FirstOrDefault()]);
@@ -1430,12 +1444,20 @@ namespace ImageEnhancingUtility.Core
                     var modelName = regex.Match(outLine.Data).Groups[4].Value;
                     string base64img = img.Remove(0, 2);
                     base64img = base64img.Remove(base64img.Length - 1, 1);
-                    regex = new Regex("(.*?)(_alpha)?(_[R|G|B])?_tile-[0-9]+(.*)");
+                    regex = new Regex("(.*?)(_alpha)?_tile-[0-9]+(.*)");
+                    if(CurrentProfile.SplitRGB)
+                    {
+                        //TODO: handle regex better for cases with _R|G|B in name
+                        regex = new Regex("(.*?)(_alpha)?(_[R|G|B])_tile-[0-9]+(.*)");
+                    }
 
                     MagickImage magickImage = MagickImage.FromBase64(base64img) as MagickImage;
                  
                     var match = regex.Match(origPath);
-                    origPath = match.Groups[1].Value.Replace(LrPath, InputDirectoryPath) + match.Groups[4].Value;
+                    if(CurrentProfile.SplitRGB)
+                        origPath = match.Groups[1].Value.Replace(LrPath, InputDirectoryPath) + match.Groups[4].Value;
+                    else
+                        origPath = match.Groups[1].Value.Replace(LrPath, InputDirectoryPath) + match.Groups[3].Value;
                     if (origPath.Contains(memoryHelperName))
                     {
                         File.Delete(origPath);
@@ -1762,8 +1784,8 @@ namespace ImageEnhancingUtility.Core
                     images = new Dictionary<string, string>();                    
                 }
                 
-                await WriteImageToStream(images);
-                
+                await WriteImageToStream(images);                
+
             }, new ExecutionDataflowBlockOptions
             {
                 MaxDegreeOfParallelism = 1
@@ -1962,16 +1984,20 @@ namespace ImageEnhancingUtility.Core
             FileInfo preview = new FileInfo(PreviewDirPath + $"{DirSeparator}preview.png");
 
             Bitmap i2;
+            MagickImage magickImage = null;
             if (image == null)
                 if (File.Exists(imagePath))
-                    i2 = new Bitmap(ImageOperations.LoadImageToBitmap(imagePath));
+                    magickImage = ImageOperations.LoadImage(new FileInfo(imagePath));
+                //i2 = new Bitmap(ImageOperations.LoadImageToBitmap(imagePath));
                 else
                     return false;
             else
-                i2 = new Bitmap(image);
+                magickImage = ImageOperations.ConvertToMagickImage(new Bitmap(image));
+            //i2 = new Bitmap(image);
 
-            i2.Save(previewOriginal.FullName, ImageFormat.Png);
-            i2.Dispose();
+            magickImage.Write(previewOriginal.FullName);
+            //i2.Save(previewOriginal.FullName, ImageFormat.Png);
+            //i2.Dispose();
             
             //previewIEU = new IEU(true);
 

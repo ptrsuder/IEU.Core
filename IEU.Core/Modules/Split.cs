@@ -412,7 +412,7 @@ namespace ImageEnhancingUtility.Core
                         MagickImage outputImage = (MagickImage)inputImage.Clone();
 
                         outputImage.Crop(cropRectangle);
-                        MagickFormat format = MagickFormat.Png24;
+                        MagickFormat format = MagickFormat.Png;
                         if (CurrentProfile.RgbaModel) format = MagickFormat.Png32;                        
                         var dirpath = Path.GetDirectoryName(file.FullName).Replace(InputDirectoryPath, "");
                         string outPath = $"{LrPath}{dirpath}{DirSeparator}{Path.GetFileNameWithoutExtension(file.Name)}_tile-{tileIndex:D2}.png";

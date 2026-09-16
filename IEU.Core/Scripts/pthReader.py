@@ -2,12 +2,9 @@
 import torch
 import argparse
 
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument('-pretrained', '-p', type=str, required=False, help='Path to pretrained model.')
 args = parser.parse_args()
-
 
 print(args.pretrained)
 

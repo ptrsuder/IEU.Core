@@ -5,10 +5,12 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using DdsFileTypePlus;
 using ImageMagick;
+using ImageMagick.Factories;
 using PaintDotNet;
-using Path = System.IO.Path;
-using ImageFormat = System.Drawing.Imaging.ImageFormat;
+using Bitmap = System.Drawing.Bitmap;
 using Image = System.Drawing.Image;
+using ImageFormat = System.Drawing.Imaging.ImageFormat;
+using Path = System.IO.Path;
 
 
 namespace ImageEnhancingUtility.Core.Utility
@@ -40,7 +42,14 @@ namespace ImageEnhancingUtility.Core.Utility
             return result;
         }
 
-        public static MagickImage ConvertToMagickImage(Bitmap bitmap, string format = "PNG")
+        public static MagickImage ConvertToMagickImage(Bitmap bitmap)
+        {
+            var factory = new MagickFactory();
+            IMagickImage magickImage = factory.Image.Create(bitmap);
+            return magickImage as MagickImage;
+        }
+
+        public static MagickImage ConvertToMagickImageOld(Bitmap bitmap, string format = "PNG")
         {
             MagickImage result;
             ImageFormatConverter formatConv = new ImageFormatConverter();            
@@ -69,20 +78,48 @@ namespace ImageEnhancingUtility.Core.Utility
             return (byte[])converter.ConvertTo(img, typeof(byte[]));
         }
 
-        public static Surface ConvertToSurface(MagickImage image)
+        public unsafe static Surface ConvertToSurface(MagickImage image)
         {
-            Bitmap processedBitmap;
-            using (MemoryStream memoryStream = new MemoryStream())
+            // 1. Ensure the image is in a 32-bit format (RGBA)
+            // Surface in Paint.NET is always 32-bit BGRA
+            uint width = image.Width;
+            uint height = image.Height;
+            Surface surface = new Surface((int)width, (int)height);
+
+            // 2. Export pixels directly from Magick.NET in "BGRA" format
+            // This matches the internal memory layout of Paint.NET's Surface
+            using (var pixels = image.GetPixelsUnsafe())
             {
-                image.Write(memoryStream);
-                memoryStream.Position = 0;
-                processedBitmap = Image.FromStream(memoryStream) as Bitmap;
+                byte[] rawBytes = pixels.ToByteArray(0, 0, width, height, "BGRA");
+
+                fixed (byte* pSrc = rawBytes)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        // Calculate pointers for the source and destination rows
+                        byte* srcRow = pSrc + (y * width * 4);
+                        ColorBgra* dstRow = surface.GetRowAddressUnchecked(y);
+
+                        // Copy the entire row (width * 4 bytes)
+                        Buffer.MemoryCopy(srcRow, dstRow, (long)width * 4, (long)width * 4);
+                    }
+                }
             }
-            return Surface.CopyFromBitmap(processedBitmap);
+
+            return surface;
         }
 
         public static Bitmap ConvertToBitmap(MagickImage image)
-        {           
+        {
+            // Ensure the image has an alpha channel if you want transparency
+            image.HasAlpha = false; 
+
+            // This converts directly to System.Drawing.Bitmap
+            return image.ToBitmap();
+        }
+
+        public static Bitmap ConvertToBitmapOld(MagickImage image)
+        {
             Bitmap test;
             using (MemoryStream memoryStream = new MemoryStream())
             {
